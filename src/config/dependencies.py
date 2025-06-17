@@ -1,6 +1,6 @@
 import os
 
-from fastapi import Depends
+from fastapi import Depends, Request, HTTPException, status
 
 from config.settings import Settings, DevelopmentSettings, BaseAppSettings
 from security.interfaces import JWTManagerInterface
@@ -24,3 +24,23 @@ def get_jwt_manager(
         refresh_expires_delta=settings.REFRESH_TOKEN_EXPIRE_MINUTES,
         algorithm=settings.JWT_SIGNING_ALGORITHM
     )
+
+
+def get_token(request: Request) -> str:
+    authorization: str = request.headers.get("Authorization")
+
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header is missing."
+        )
+
+    scheme, _, token = authorization.partition(" ")
+
+    if scheme.lower() != "bearer" or not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Authorization header format. Expected 'Bearer <token>'"
+        )
+
+    return token

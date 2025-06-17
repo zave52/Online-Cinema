@@ -1,7 +1,7 @@
 from pydantic import EmailStr
 from fastapi_mail import FastMail, MessageSchema, MessageType, ConnectionConfig
 
-from notification.interfaces import EmailSenderInterface
+from notifications.interfaces import EmailSenderInterface
 
 
 class EmailSender(FastMail, EmailSenderInterface):

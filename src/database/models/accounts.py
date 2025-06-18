@@ -2,6 +2,7 @@ from enum import Enum
 from typing import List, Optional
 from datetime import datetime, date, timezone, timedelta
 
+from pydantic import EmailStr
 from sqlalchemy import (
     Integer,
     Enum as SqlEnum,
@@ -59,7 +60,7 @@ class UserModel(Base):
     id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
-    email: Mapped[str] = mapped_column(
+    email: Mapped[EmailStr] = mapped_column(
         String(255), unique=True, nullable=False, index=True
     )
     _hashed_password: Mapped[str] = mapped_column(
@@ -117,7 +118,7 @@ class UserModel(Base):
 
     @classmethod
     def create(
-        cls, email: str, raw_password: str, group_id: int | Mapped[int]
+        cls, email: EmailStr, raw_password: str, group_id: int | Mapped[int]
     ) -> "UserModel":
         user = cls(email=email, group_id=group_id)
         user.password = raw_password

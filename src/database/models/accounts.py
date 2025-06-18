@@ -214,7 +214,7 @@ class ActivationTokenModel(TokenBaseModel):
     __table_args__ = (UniqueConstraint("user_id"),)
 
     def __repr__(self) -> str:
-        return f"<ActivationTokenModel(id={self.id}, token={self.token}, expires_at={self.expired_at})>"
+        return f"<ActivationTokenModel(id={self.id}, token={self.token}, expired_at={self.expired_at})>"
 
 
 class PasswordResetTokenModel(TokenBaseModel):
@@ -229,7 +229,7 @@ class PasswordResetTokenModel(TokenBaseModel):
     __table_args__ = (UniqueConstraint("user_id"),)
 
     def __repr__(self) -> str:
-        return f"<PasswordResetTokenModel(id={self.id}, token={self.token}, expires_at={self.expired_at})>"
+        return f"<PasswordResetTokenModel(id={self.id}, token={self.token}, expired_at={self.expired_at})>"
 
 
 class RefreshTokenModel(TokenBaseModel):
@@ -255,4 +255,4 @@ class RefreshTokenModel(TokenBaseModel):
         return cls(user_id=user_id, token=token, expires_at=expires_at)
 
     def __repr__(self) -> str:
-        return f"<RefreshTokenModel(id={self.id}, token={self.token}, expires_at={self.expired_at})>"
+        return f"<RefreshTokenModel(id={self.id}, token={self.token}, expired_at={self.expired_at})>"

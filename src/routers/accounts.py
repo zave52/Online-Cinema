@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.dependencies import get_email_sender
+from config.dependencies import get_email_sender, get_base_url
 from database import get_db
 from database.models.accounts import (
     UserModel,
@@ -29,9 +29,10 @@ router = APIRouter()
 async def register_user(
     data: UserRegistrationRequestSchema,
     background_tasks: BackgroundTasks,
+    base_url: str = Depends(get_base_url),
     email_sender: EmailSenderInterface = Depends(get_email_sender),
     db: AsyncSession = Depends(get_db)
-):
+) -> UserRegistrationResponseSchema:
     stmt = select(UserModel).where(UserModel.email == data.email)
     result = await db.execute(stmt)
     existing_user = result.scalars().first()
@@ -42,7 +43,9 @@ async def register_user(
             detail=f"A user with this email {data.email} already exists."
         )
 
-    stmt = select(UserGroupModel).where(UserGroupModel.name == UserGroupEnum.USER)
+    stmt = select(UserGroupModel).where(
+        UserGroupModel.name == UserGroupEnum.USER
+    )
     result = await db.execute(stmt)
     user_group = result.scalars().first()
 
@@ -73,7 +76,7 @@ async def register_user(
             detail="An error occurred during user creation."
         ) from e
     else:
-        activation_link = "http://localhost/api/v1/accounts/activate"
+        activation_link = f"{base_url}/activate/"
 
         background_tasks.add_task(
             email_sender.send_activation_email,

@@ -1,9 +1,11 @@
 import os
+from urllib.parse import urljoin
 
 from fastapi import Depends, Request, HTTPException, status
 from fastapi_mail import ConnectionConfig
 
 from config.settings import Settings, DevelopmentSettings, BaseAppSettings
+from main import api_version_index
 from notifications.emails import EmailSender
 from notifications.interfaces import EmailSenderInterface
 from security.interfaces import JWTManagerInterface
@@ -65,3 +67,7 @@ def get_email_sender(
     )
 
     return EmailSender(config=config)
+
+
+def get_base_url(settings: BaseAppSettings = Depends(get_settings)) -> str:
+    return urljoin(str(settings.BASE_URL), api_version_index)

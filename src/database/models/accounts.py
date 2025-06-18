@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, cast
 from datetime import datetime, date, timezone, timedelta
 
 from pydantic import EmailStr
@@ -197,6 +197,9 @@ class TokenBaseModel(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False
     )
+
+    def is_expired(self) -> bool:
+        return cast(datetime, self.expired_at).replace(tzinfo=timezone.utc) < datetime.now(timezone.utc)
 
 
 class ActivationTokenModel(TokenBaseModel):

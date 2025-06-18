@@ -1,11 +1,12 @@
 import os
 from pathlib import Path
 
-from pydantic import EmailStr, SecretStr
+from pydantic import EmailStr, SecretStr, HttpUrl
 from pydantic_settings import BaseSettings
 
 
 class BaseAppSettings(BaseSettings):
+    BASE_URL: HttpUrl = os.getenv("BASE_URL", "http://127.0.0.1:8000")
     BASE_DIR: Path = Path(__file__).parent.parent
     PATH_TO_DB: str = str(BASE_DIR / "database" / "source" / "cinema.db")
 

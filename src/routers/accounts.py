@@ -20,7 +20,8 @@ from schemas.accounts import (
     UserRegistrationResponseSchema,
     MessageResponseSchema,
     UserActivationRequestSchema,
-    PasswordResetRequestSchema
+    PasswordResetRequestSchema,
+    PasswordResetCompleteRequestSchema
 )
 
 router = APIRouter()
@@ -189,3 +190,63 @@ async def request_password_reset_token(
     return MessageResponseSchema(
         message="If you are registered, you will receive an email with instructions."
     )
+
+
+@router.post(
+    "/password-reset/complete/",
+    response_model=MessageResponseSchema,
+    status_code=status.HTTP_200_OK
+)
+async def reset_password(
+    data: PasswordResetCompleteRequestSchema,
+    background_tasks: BackgroundTasks,
+    base_url: str = Depends(get_base_url),
+    email_sender: EmailSenderInterface = Depends(get_email_sender),
+    db: AsyncSession = Depends(get_db)
+) -> MessageResponseSchema:
+    stmt = select(UserModel).where(UserModel.email == data.email)
+    result = await db.execute(stmt)
+    user: UserModel = result.scalars().first()
+
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email or token."
+        )
+
+    stmt = (
+        select(PasswordResetTokenModel)
+        .where(PasswordResetTokenModel.user_id == user.id)
+    )
+    result = await db.execute(stmt)
+    token_record: PasswordResetTokenModel = result.scalars().first()
+
+    if not token_record or token_record.token != data.token or token_record.is_expired():
+        if token_record:
+            await db.delete(token_record)
+            await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email or token."
+        )
+
+    try:
+        user.password = data.password
+        await db.delete(token_record)
+        await db.commit()
+    except SQLAlchemyError as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while resetting the password."
+        )
+    else:
+        login_link = f"{base_url}/login/"
+
+        background_tasks.add_task(
+            email_sender.send_activation_complete_email,
+            user.email,
+            login_link
+        )
+
+    return MessageResponseSchema(message="Password reset successfully.")

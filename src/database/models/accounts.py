@@ -249,9 +249,9 @@ class RefreshTokenModel(TokenBaseModel):
 
     @classmethod
     def create(
-        cls, user_id: int | Mapped[int], days_valid: int, token: str
+        cls, user_id: int | Mapped[int], minutes_valid: int, token: str
     ) -> "RefreshTokenModel":
-        expires_at = datetime.now(timezone.utc) + timedelta(days=days_valid)
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=minutes_valid)
         return cls(user_id=user_id, token=token, expires_at=expires_at)
 
     def __repr__(self) -> str:

@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import List, Optional, cast
-from datetime import datetime, date, timezone, timedelta
+from datetime import datetime, timezone, timedelta
 
 from pydantic import EmailStr
 from sqlalchemy import (
@@ -11,8 +11,6 @@ from sqlalchemy import (
     DateTime,
     func,
     ForeignKey,
-    Text,
-    Date,
     UniqueConstraint
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
@@ -143,36 +141,6 @@ class UserModel(Base):
         return validate_email(email.lower())
 
 
-class UserProfileModel(Base):
-    __tablename__ = "user_profiles"
-
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True, autoincrement=True
-    )
-    first_name: Mapped[str] = mapped_column(String(100))
-    last_name: Mapped[str] = mapped_column(String(100))
-    avatar: Mapped[Optional[str]] = mapped_column(String(255))
-    gender: Mapped[Optional[GenderEnum]] = mapped_column(SqlEnum(GenderEnum))
-    date_of_birth: Mapped[Optional[date]] = mapped_column(Date)
-    info: Mapped[Optional[str]] = mapped_column(Text)
-
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True
-    )
-    user: Mapped[UserModel] = relationship(
-        UserModel,
-        back_populates="profile",
-        cascade="all, delete-orphan"
-    )
-
-    def __repr__(self) -> str:
-        return (
-            f"<UserModel(id={self.id}, first_name={self.first_name}, "
-            f"last_name={self.last_name}, gender={self.gender}, "
-            f"date_of_birth={self.date_of_birth})>"
-        )
-
-
 class TokenBaseModel(Base):
     __abstract__ = True
 
@@ -199,7 +167,9 @@ class TokenBaseModel(Base):
     )
 
     def is_expired(self) -> bool:
-        return cast(datetime, self.expired_at).replace(tzinfo=timezone.utc) < datetime.now(timezone.utc)
+        return cast(datetime, self.expired_at).replace(
+            tzinfo=timezone.utc
+        ) < datetime.now(timezone.utc)
 
 
 class ActivationTokenModel(TokenBaseModel):
@@ -251,7 +221,9 @@ class RefreshTokenModel(TokenBaseModel):
     def create(
         cls, user_id: int | Mapped[int], minutes_valid: int, token: str
     ) -> "RefreshTokenModel":
-        expires_at = datetime.now(timezone.utc) + timedelta(minutes=minutes_valid)
+        expires_at = datetime.now(timezone.utc) + timedelta(
+            minutes=minutes_valid
+        )
         return cls(user_id=user_id, token=token, expires_at=expires_at)
 
     def __repr__(self) -> str:

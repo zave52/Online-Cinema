@@ -58,6 +58,10 @@ class TokenRefreshResponseSchema(BaseModel):
     token_type: str = "bearer"
 
 
+class TokenVerifyRequestSchema(BaseModel):
+    access_token: str
+
+
 class UserActivationRequestSchema(BaseModel):
     email: EmailStr
     token: str

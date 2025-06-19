@@ -6,7 +6,6 @@ from sqlalchemy.orm import joinedload
 
 from config.dependencies import (
     get_email_sender,
-    get_base_url,
     get_jwt_manager,
     get_settings
 )
@@ -47,7 +46,7 @@ router = APIRouter()
 async def register_user(
     data: UserRegistrationRequestSchema,
     background_tasks: BackgroundTasks,
-    base_url: str = Depends(get_base_url),
+    settings: BaseAppSettings = Depends(get_settings),
     email_sender: EmailSenderInterface = Depends(get_email_sender),
     db: AsyncSession = Depends(get_db)
 ) -> UserRegistrationResponseSchema:
@@ -94,7 +93,7 @@ async def register_user(
             detail="An error occurred during user creation."
         ) from e
     else:
-        activation_link = f"{base_url}/activate/"
+        activation_link = f"{settings.BASE_URL}/activate/"
 
         background_tasks.add_task(
             email_sender.send_activation_email,
@@ -113,7 +112,7 @@ async def register_user(
 async def activate_account(
     data: UserActivationRequestSchema,
     background_tasks: BackgroundTasks,
-    base_url: str = Depends(get_base_url),
+    settings: BaseAppSettings = Depends(get_settings),
     email_sender: EmailSenderInterface = Depends(get_email_sender),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
@@ -149,7 +148,7 @@ async def activate_account(
     await db.delete(token_record)
     await db.commit()
 
-    login_link = f"{base_url}/login/"
+    login_link = f"{settings.BASE_URL}/login/"
 
     background_tasks.add_task(
         email_sender.send_activation_complete_email,
@@ -168,7 +167,7 @@ async def activate_account(
 async def request_password_reset_token(
     data: PasswordResetRequestSchema,
     background_tasks: BackgroundTasks,
-    base_url: str = Depends(get_base_url),
+    settings: BaseAppSettings = Depends(get_settings),
     email_sender: EmailSenderInterface = Depends(get_email_sender),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
@@ -191,7 +190,7 @@ async def request_password_reset_token(
     db.add(reset_token)
     await db.commit()
 
-    password_reset_link = f"{base_url}/password-reset/complete/"
+    password_reset_link = f"{settings.BASE_URL}/password-reset/complete/"
 
     background_tasks.add_task(
         email_sender.send_password_reset_email,
@@ -212,7 +211,7 @@ async def request_password_reset_token(
 async def reset_password(
     data: PasswordResetCompleteRequestSchema,
     background_tasks: BackgroundTasks,
-    base_url: str = Depends(get_base_url),
+    settings: BaseAppSettings = Depends(get_settings),
     email_sender: EmailSenderInterface = Depends(get_email_sender),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
@@ -253,7 +252,7 @@ async def reset_password(
             detail="An error occurred while resetting the password."
         )
     else:
-        login_link = f"{base_url}/login/"
+        login_link = f"{settings.BASE_URL}/login/"
 
         background_tasks.add_task(
             email_sender.send_activation_complete_email,

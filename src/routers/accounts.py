@@ -2,6 +2,7 @@ from fastapi import APIRouter, status, Depends, HTTPException, BackgroundTasks
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from config.dependencies import get_email_sender, get_base_url
 from database import get_db
@@ -15,7 +16,9 @@ from notifications.interfaces import EmailSenderInterface
 
 from schemas.accounts import (
     UserRegistrationRequestSchema,
-    UserRegistrationResponseSchema
+    UserRegistrationResponseSchema,
+    MessageResponseSchema,
+    UserActivationRequestSchema
 )
 
 router = APIRouter()
@@ -85,3 +88,58 @@ async def register_user(
         )
 
     return UserRegistrationResponseSchema.model_validate(new_user)
+
+
+@router.post(
+    "/activate/",
+    response_model=MessageResponseSchema,
+    status_code=status.HTTP_200_OK
+)
+async def activate_account(
+    data: UserActivationRequestSchema,
+    background_tasks: BackgroundTasks,
+    base_url: str = Depends(get_base_url),
+    email_sender: EmailSenderInterface = Depends(get_email_sender),
+    db: AsyncSession = Depends(get_db)
+) -> MessageResponseSchema:
+    stmt = (
+        select(ActivationTokenModel)
+        .options(joinedload(ActivationTokenModel.user))
+        .join(UserModel).where(
+            ActivationTokenModel.token == data.token,
+            UserModel.email == data.email
+        )
+    )
+    result = await db.execute(stmt)
+    token_record: ActivationTokenModel = result.scalars().first()
+
+    if not token_record or token_record.is_expired():
+        if token_record:
+            await db.delete(token_record)
+            await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired activation token."
+        )
+
+    user: UserModel = token_record.user
+
+    if user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User account is already active."
+        )
+
+    user.is_active = True
+    await db.delete(token_record)
+    await db.commit()
+
+    login_link = f"{base_url}/login/"
+
+    background_tasks.add_task(
+        email_sender.send_activation_complete_email,
+        user.email,
+        login_link
+    )
+
+    return MessageResponseSchema(message="User account activated successfully.")

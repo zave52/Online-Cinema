@@ -1,5 +1,5 @@
 from fastapi import APIRouter, status, Depends, HTTPException, BackgroundTasks
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
@@ -10,7 +10,8 @@ from database.models.accounts import (
     UserModel,
     UserGroupModel,
     ActivationTokenModel,
-    UserGroupEnum
+    UserGroupEnum,
+    PasswordResetTokenModel
 )
 from notifications.interfaces import EmailSenderInterface
 
@@ -18,7 +19,8 @@ from schemas.accounts import (
     UserRegistrationRequestSchema,
     UserRegistrationResponseSchema,
     MessageResponseSchema,
-    UserActivationRequestSchema
+    UserActivationRequestSchema,
+    PasswordResetRequestSchema
 )
 
 router = APIRouter()
@@ -143,3 +145,47 @@ async def activate_account(
     )
 
     return MessageResponseSchema(message="User account activated successfully.")
+
+
+@router.post(
+    "/password-reset/request/",
+    response_model=MessageResponseSchema,
+    status_code=status.HTTP_200_OK
+)
+async def request_password_reset_token(
+    data: PasswordResetRequestSchema,
+    background_tasks: BackgroundTasks,
+    base_url: str = Depends(get_base_url),
+    email_sender: EmailSenderInterface = Depends(get_email_sender),
+    db: AsyncSession = Depends(get_db)
+) -> MessageResponseSchema:
+    stmt = select(UserModel).where(UserModel.email == data.email)
+    result = await db.execute(stmt)
+    user: UserModel = result.scalars().first()
+
+    if not user or not user.is_active:
+        return MessageResponseSchema(
+            message="If you are registered, you will receive an email with instructions."
+        )
+
+    stmt = (
+        delete(PasswordResetTokenModel)
+        .where(PasswordResetTokenModel.user_id == user.id)
+    )
+    await db.execute(stmt)
+
+    reset_token = PasswordResetTokenModel(user_id=user.id)
+    db.add(reset_token)
+    await db.commit()
+
+    password_reset_link = f"{base_url}/password-reset/complete/"
+
+    background_tasks.add_task(
+        email_sender.send_password_reset_email,
+        user.email,
+        password_reset_link
+    )
+
+    return MessageResponseSchema(
+        message="If you are registered, you will receive an email with instructions."
+    )

@@ -19,6 +19,7 @@ from database.models.accounts import (
     UserGroupEnum,
     PasswordResetTokenModel, RefreshTokenModel
 )
+from exceptions.security import BaseSecurityError
 from notifications.interfaces import EmailSenderInterface
 
 from schemas.accounts import (
@@ -29,7 +30,9 @@ from schemas.accounts import (
     PasswordResetRequestSchema,
     PasswordResetCompleteRequestSchema,
     UserLoginResponseSchema,
-    UserLoginRequestSchema
+    UserLoginRequestSchema,
+    TokenRefreshResponseSchema,
+    TokenRefreshRequestSchema
 )
 from security.interfaces import JWTManagerInterface
 
@@ -312,3 +315,49 @@ async def login_user(
         refresh_token=jwt_refresh_token,
         access_token=jwt_access_token
     )
+
+
+@router.post(
+    "/refresh/",
+    response_model=TokenRefreshResponseSchema,
+    status_code=status.HTTP_200_OK
+)
+async def refresh_access_token(
+    data: TokenRefreshRequestSchema,
+    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
+    db: AsyncSession = Depends(get_db)
+) -> TokenRefreshResponseSchema:
+    try:
+        decoded_token = jwt_manager.decode_refresh_token(data.refresh_token)
+        user_id = decoded_token.get("user_id")
+    except BaseSecurityError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+    stmt = select(RefreshTokenModel).where(
+        RefreshTokenModel.token == data.refresh_token
+    )
+    result = await db.execute(stmt)
+    refresh_token_record: RefreshTokenModel = result.scalars().first()
+
+    if not refresh_token_record:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token not found."
+        )
+
+    stmt = select(UserModel).where(UserModel.id == user_id)
+    result = await db.execute(stmt)
+    user = result.scalars().first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found."
+        )
+
+    new_access_token = jwt_manager.create_access_token({"user_id": user_id})
+
+    return TokenRefreshResponseSchema(access_token=new_access_token)

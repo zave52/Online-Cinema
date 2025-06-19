@@ -32,7 +32,7 @@ from schemas.accounts import (
     UserLoginResponseSchema,
     UserLoginRequestSchema,
     TokenRefreshResponseSchema,
-    TokenRefreshRequestSchema
+    TokenRefreshRequestSchema, TokenVerifyRequestSchema
 )
 from security.interfaces import JWTManagerInterface
 
@@ -361,3 +361,32 @@ async def refresh_access_token(
     new_access_token = jwt_manager.create_access_token({"user_id": user_id})
 
     return TokenRefreshResponseSchema(access_token=new_access_token)
+
+
+@router.post(
+    "/verify/",
+    response_model=MessageResponseSchema,
+    status_code=status.HTTP_200_OK
+)
+async def verify_access_token(
+    data: TokenVerifyRequestSchema,
+    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
+    db: AsyncSession = Depends(get_db)
+) -> MessageResponseSchema:
+    try:
+        decoded_token = jwt_manager.decode_access_token(data.access_token)
+        user_id = decoded_token.get("user_id")
+
+        stmt = select(UserModel).where(UserModel.id == user_id)
+        result = await db.execute(stmt)
+        user: UserModel = result.scalars().first()
+
+        if not user or not user.is_active:
+            raise BaseSecurityError
+    except BaseSecurityError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token invalid or expired."
+        )
+
+    return MessageResponseSchema(message="Token valid.")

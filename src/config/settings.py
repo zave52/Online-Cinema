@@ -27,8 +27,8 @@ class BaseAppSettings(BaseSettings):
     MAIL_PASSWORD: SecretStr = os.getenv("MAIL_PASSWORD", "some_password")
     MAIL_FROM: EmailStr = os.getenv("MAIL_FROM", "test@email.com")
     MAIL_FROM_NAME: str = os.getenv("MAIL_FROM_NAME", "Test User")
-    MAIL_STARTTLS: bool = os.getenv("MAIL_STARTTLS", False).lower() == "true"
-    MAIL_SSL_TLS: bool = os.getenv("MAIL_SSL_TLS", False).lower() == "true"
+    MAIL_STARTTLS: bool = os.getenv("MAIL_STARTTLS", "False").lower() == "true"
+    MAIL_SSL_TLS: bool = os.getenv("MAIL_SSL_TLS", "False").lower() == "true"
 
 
 class Settings(BaseAppSettings):

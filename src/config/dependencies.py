@@ -9,6 +9,8 @@ from notifications.emails import EmailSender
 from notifications.interfaces import EmailSenderInterface
 from security.interfaces import JWTManagerInterface
 from security.manager import JWTManager
+from storages.interfaces import S3StorageInterface
+from storages.s3 import S3Storage
 
 
 def get_settings() -> BaseAppSettings:
@@ -66,3 +68,14 @@ def get_email_sender(
     )
 
     return EmailSender(config=config)
+
+
+def get_s3_storage(
+    settings: BaseAppSettings = Depends(get_settings)
+) -> S3StorageInterface:
+    return S3Storage(
+        access_key=settings.S3_STORAGE_ACCESS_KEY,
+        secret_key=settings.S3_STORAGE_SECRET_KEY,
+        endpoint_url=settings.S3_STORAGE_ENDPOINT,
+        bucket_name=settings.S3_BUCKET_NAME
+    )

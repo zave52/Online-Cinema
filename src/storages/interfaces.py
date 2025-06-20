@@ -6,7 +6,7 @@ class S3StorageInterface(ABC):
     async def upload_file(
         self,
         file_name: str,
-        file_date: bytes | bytearray
+        file_data: bytes | bytearray
     ) -> None:
         pass
 

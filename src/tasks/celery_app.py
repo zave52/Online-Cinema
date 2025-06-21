@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Any, Callable, Coroutine, ParamSpec, TypeVar
+from typing import Any, Callable, Coroutine
 
 from celery.app import Celery
 from asgiref.sync import AsyncToSync

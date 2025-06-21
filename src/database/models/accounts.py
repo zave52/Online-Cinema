@@ -15,7 +15,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
-from base import Base
+from database.models.base import Base
 from database.validators.accounts import (
     validate_email,
     validate_password_strength

@@ -15,7 +15,7 @@ class BaseAppSettings(BaseSettings):
         str(os.urandom(32))
     )
     SECRET_KEY_REFRESH: str = os.getenv(
-        "SECRET_KEY_ACCESS",
+        "SECRET_KEY_REFRESH",
         str(os.urandom(32))
     )
     JWT_SIGNING_ALGORITHM: str = os.getenv("JWT_SIGNING_ALGORITHM", "HS256")

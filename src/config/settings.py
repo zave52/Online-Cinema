@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
+from typing import Dict, Any
 
+from celery.schedules import crontab
 from pydantic import EmailStr, SecretStr, HttpUrl
 from pydantic_settings import BaseSettings
 
@@ -8,7 +10,7 @@ from pydantic_settings import BaseSettings
 class BaseAppSettings(BaseSettings):
     BASE_URL: HttpUrl = os.getenv("BASE_URL", "http://127.0.0.1:8000")
     BASE_DIR: Path = Path(__file__).parent.parent
-    PATH_TO_DB: str = str(BASE_DIR / "database" / "source" / "cinema.db")
+    PATH_TO_DB: str = str(BASE_DIR / "database" / "source" / "online_cinema.db")
 
     SECRET_KEY_ACCESS: str = os.getenv(
         "SECRET_KEY_ACCESS",
@@ -53,3 +55,25 @@ class Settings(BaseAppSettings):
 
 class DevelopmentSettings(BaseAppSettings):
     pass
+
+
+class CelerySettings(BaseSettings):
+    broker_url: str = os.getenv(
+        "CELERY_BROKER_URL",
+        "redis://localhost:6379/0"
+    )
+    result_backend: str = os.getenv(
+        "CELERY_RESULT_BACKEND",
+        "redis://localhost:6379/1"
+    )
+
+    imports: tuple = ("tasks.tasks",)
+
+    @property
+    def beat_schedule(self) -> Dict[str, Any]:
+        return {
+            "run-every-day-at-midnight": {
+                "task": "tasks.tasks.delete_expires_activation_tokens",
+                "schedule": crontab(minute="0", hour="0"),
+            },
+        }

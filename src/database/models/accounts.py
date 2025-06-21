@@ -155,7 +155,7 @@ class TokenBaseModel(Base):
         unique=True,
         default=generate_secure_token
     )
-    expired_at: Mapped[datetime] = mapped_column(
+    expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         default=lambda: datetime.now(timezone.utc) + timedelta(days=1)
@@ -167,7 +167,7 @@ class TokenBaseModel(Base):
     )
 
     def is_expired(self) -> bool:
-        return cast(datetime, self.expired_at).replace(
+        return cast(datetime, self.expires_at).replace(
             tzinfo=timezone.utc
         ) < datetime.now(timezone.utc)
 
@@ -184,7 +184,7 @@ class ActivationTokenModel(TokenBaseModel):
     __table_args__ = (UniqueConstraint("user_id"),)
 
     def __repr__(self) -> str:
-        return f"<ActivationTokenModel(id={self.id}, token={self.token}, expired_at={self.expired_at})>"
+        return f"<ActivationTokenModel(id={self.id}, token={self.token}, expires_at={self.expires_at})>"
 
 
 class PasswordResetTokenModel(TokenBaseModel):
@@ -199,7 +199,7 @@ class PasswordResetTokenModel(TokenBaseModel):
     __table_args__ = (UniqueConstraint("user_id"),)
 
     def __repr__(self) -> str:
-        return f"<PasswordResetTokenModel(id={self.id}, token={self.token}, expired_at={self.expired_at})>"
+        return f"<PasswordResetTokenModel(id={self.id}, token={self.token}, expires_at={self.expires_at})>"
 
 
 class RefreshTokenModel(TokenBaseModel):
@@ -227,4 +227,4 @@ class RefreshTokenModel(TokenBaseModel):
         return cls(user_id=user_id, token=token, expires_at=expires_at)
 
     def __repr__(self) -> str:
-        return f"<RefreshTokenModel(id={self.id}, token={self.token}, expired_at={self.expired_at})>"
+        return f"<RefreshTokenModel(id={self.id}, token={self.token}, expires_at={self.expires_at})>"

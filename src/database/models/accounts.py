@@ -177,8 +177,7 @@ class ActivationTokenModel(TokenBaseModel):
 
     user: Mapped[UserModel] = relationship(
         UserModel,
-        back_populates="activation_token",
-        cascade="all, delete-orphan"
+        back_populates="activation_token"
     )
 
     __table_args__ = (UniqueConstraint("user_id"),)
@@ -192,8 +191,7 @@ class PasswordResetTokenModel(TokenBaseModel):
 
     user: Mapped[UserModel] = relationship(
         UserModel,
-        back_populates="password_reset_token",
-        cascade="all, delete-orphan"
+        back_populates="password_reset_token"
     )
 
     __table_args__ = (UniqueConstraint("user_id"),)
@@ -207,8 +205,7 @@ class RefreshTokenModel(TokenBaseModel):
 
     user: Mapped[UserModel] = relationship(
         UserModel,
-        back_populates="refresh_token",
-        cascade="all, delete-orphan"
+        back_populates="refresh_token"
     )
     token: Mapped[str] = mapped_column(
         String(512),

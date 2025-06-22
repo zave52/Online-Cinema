@@ -26,8 +26,7 @@ class UserProfileModel(Base):
     )
     user: Mapped[UserModel] = relationship(
         UserModel,
-        back_populates="profile",
-        cascade="all, delete-orphan"
+        back_populates="profile"
     )
 
     def __repr__(self) -> str:

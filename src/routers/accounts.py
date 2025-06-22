@@ -7,7 +7,7 @@ from sqlalchemy.orm import joinedload
 from config.dependencies import (
     get_email_sender,
     get_jwt_manager,
-    get_settings
+    get_settings, get_token
 )
 from config.settings import BaseAppSettings
 from database import get_db
@@ -31,7 +31,8 @@ from schemas.accounts import (
     UserLoginResponseSchema,
     UserLoginRequestSchema,
     TokenRefreshResponseSchema,
-    TokenRefreshRequestSchema, TokenVerifyRequestSchema
+    TokenRefreshRequestSchema,
+    TokenVerifyRequestSchema
 )
 from security.interfaces import JWTManagerInterface
 
@@ -313,6 +314,75 @@ async def login_user(
     return UserLoginResponseSchema(
         refresh_token=jwt_refresh_token,
         access_token=jwt_access_token
+    )
+
+
+@router.post(
+    "/logout/",
+    response_model=MessageResponseSchema,
+    status_code=status.HTTP_200_OK
+)
+async def logout_user(
+    data: TokenRefreshRequestSchema,
+    access_token: str = Depends(get_token),
+    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
+    db: AsyncSession = Depends(get_db)
+) -> MessageResponseSchema:
+    try:
+        decoded_access_token = jwt_manager.decode_access_token(access_token)
+        access_token_user_id = decoded_access_token.get("user_id")
+
+        decoded_refresh_token = jwt_manager.decode_refresh_token(
+            data.refresh_token
+        )
+        refresh_token_user_id = decoded_refresh_token.get("user_id")
+
+        if access_token_user_id != refresh_token_user_id:
+            raise BaseSecurityError
+    except BaseSecurityError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or mismatched tokens"
+        )
+
+    stmt_user = (
+        select(UserModel)
+        .join(RefreshTokenModel)
+        .where(UserModel.id == access_token_user_id)
+    )
+    result = await db.execute(stmt_user)
+    user: UserModel = result.scalars().first()
+
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found or inactive"
+        )
+
+    stmt_refresh_token = (
+        select(RefreshTokenModel)
+        .where(RefreshTokenModel.token == data.refresh_token)
+    )
+    result = await db.execute(stmt_refresh_token)
+    refresh_token_record: RefreshTokenModel = result.scalars().first()
+
+    if not refresh_token_record:
+        return MessageResponseSchema(
+            message="Successfully logged out."
+        )
+
+    try:
+        await db.delete(refresh_token_record)
+        await db.commit()
+    except SQLAlchemyError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred during logout."
+        )
+
+    return MessageResponseSchema(
+        message="Successfully logged out."
     )
 
 

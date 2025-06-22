@@ -129,3 +129,7 @@ class ProfileCreateResponseSchema(ProfileBaseModel):
     id: int
     user_id: int
     avatar: HttpUrl
+
+
+class ProfileRetrieveSchema(ProfileCreateResponseSchema):
+    email: str

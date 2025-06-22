@@ -17,7 +17,8 @@ from exceptions.security import BaseSecurityError
 from exceptions.storages import S3FileUploadError
 from schemas.profiles import (
     ProfileCreateResponseSchema,
-    ProfileCreateRequestSchema
+    ProfileCreateRequestSchema,
+    ProfileRetrieveSchema
 )
 from database import get_db
 from security.interfaces import JWTManagerInterface
@@ -123,5 +124,80 @@ async def create_profile(
         gender=cast(str, new_profile.gender),
         date_of_birth=new_profile.date_of_birth,
         info=new_profile.info,
+        avatar=cast(HttpUrl, avatar_url)
+    )
+
+
+@router.get(
+    "/users/{user_id}/profile/",
+    response_model=ProfileRetrieveSchema,
+    status_code=status.HTTP_200_OK
+)
+async def get_user_profile(
+    user_id: int,
+    token: str = Depends(get_token),
+    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
+    s3_storage: S3StorageInterface = Depends(get_s3_storage),
+    db: AsyncSession = Depends(get_db)
+) -> ProfileRetrieveSchema:
+    try:
+        decoded_token = jwt_manager.decode_access_token(token)
+        token_user_id = decoded_token.get("user_id")
+    except BaseSecurityError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e)
+        )
+
+    if token_user_id != user_id:
+        stmt = (
+            select(UserGroupModel)
+            .join(UserModel)
+            .where(UserModel.id == token_user_id)
+        )
+        result = await db.execute(stmt)
+        user_group: UserGroupModel = result.scalars().first()
+
+        if not user_group or user_group.name != UserGroupEnum.ADMIN:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to view this profile."
+            )
+
+    user_stmt = select(UserModel).where(UserModel.id == user_id)
+    user_result = await db.execute(user_stmt)
+    user = user_result.scalars().first()
+
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found or is not active."
+        )
+
+    stmt = (
+        select(UserProfileModel)
+        .join(UserModel)
+        .where(UserModel.id == user_id)
+    )
+    result = await db.execute(stmt)
+    user_profile: UserProfileModel = result.scalars().first()
+
+    if not user_profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Profile for this user not found."
+        )
+
+    avatar_url = await s3_storage.get_file_url(file_name=user_profile.avatar)
+
+    return ProfileRetrieveSchema(
+        id=user_profile.id,
+        user_id=user_profile.user_id,
+        email=cast(str, user_profile.user.email),
+        first_name=user_profile.first_name,
+        last_name=user_profile.last_name,
+        gender=cast(str, user_profile.gender),
+        info=user_profile.info,
+        date_of_birth=user_profile.date_of_birth,
         avatar=cast(HttpUrl, avatar_url)
     )

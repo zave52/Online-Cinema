@@ -358,11 +358,11 @@ class ProfilePatchRequestSchema(BaseModel):
         return cleaned_info
 
 
-class ProfileCreateResponseSchema(ProfileBaseModel):
+class ProfileResponseSchema(ProfileBaseModel):
     id: int
     user_id: int
     avatar: HttpUrl
 
 
-class ProfileRetrieveSchema(ProfileCreateResponseSchema):
+class ProfileRetrieveSchema(ProfileResponseSchema):
     email: str

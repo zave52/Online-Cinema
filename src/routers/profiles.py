@@ -16,7 +16,7 @@ from database.models.profiles import UserProfileModel
 from exceptions.security import BaseSecurityError
 from exceptions.storages import S3FileUploadError
 from schemas.profiles import (
-    ProfileCreateResponseSchema,
+    ProfileResponseSchema,
     ProfileCreateRequestSchema,
     ProfileRetrieveSchema,
     ProfileUpdateRequestSchema,
@@ -31,7 +31,7 @@ router = APIRouter()
 
 @router.post(
     "/users/{user_id}/profile/",
-    response_model=ProfileCreateResponseSchema,
+    response_model=ProfileResponseSchema,
     status_code=status.HTTP_201_CREATED
 )
 async def create_profile(
@@ -43,7 +43,7 @@ async def create_profile(
     jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
     s3_storage: S3StorageInterface = Depends(get_s3_storage),
     db: AsyncSession = Depends(get_db)
-) -> ProfileCreateResponseSchema:
+) -> ProfileResponseSchema:
     try:
         payload = jwt_manager.decode_access_token(token)
         token_user_id = payload.get("user_id")
@@ -118,7 +118,7 @@ async def create_profile(
 
     avatar_url = await s3_storage.get_file_url(new_profile.avatar)
 
-    return ProfileCreateResponseSchema(
+    return ProfileResponseSchema(
         id=new_profile.id,
         user_id=new_profile.user_id,
         first_name=new_profile.first_name,
@@ -207,7 +207,7 @@ async def get_user_profile(
 
 @router.put(
     "/users/{user_id}/profile/",
-    response_model=ProfileCreateResponseSchema,
+    response_model=ProfileResponseSchema,
     status_code=status.HTTP_200_OK
 )
 async def update_profile(
@@ -219,7 +219,7 @@ async def update_profile(
     jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
     s3_storage: S3StorageInterface = Depends(get_s3_storage),
     db: AsyncSession = Depends(get_db)
-) -> ProfileCreateResponseSchema:
+) -> ProfileResponseSchema:
     try:
         decoded_token = jwt_manager.decode_access_token(token)
         token_user_id = decoded_token.get("user_id")
@@ -295,7 +295,7 @@ async def update_profile(
 
     avatar_url = await s3_storage.get_file_url(profile.avatar)
 
-    return ProfileCreateResponseSchema(
+    return ProfileResponseSchema(
         id=profile.id,
         user_id=profile.user_id,
         first_name=profile.first_name,
@@ -309,7 +309,7 @@ async def update_profile(
 
 @router.patch(
     "/users/{user_id}/profile/",
-    response_model=ProfileCreateResponseSchema,
+    response_model=ProfileResponseSchema,
     status_code=status.HTTP_200_OK
 )
 async def patch_profile(
@@ -321,7 +321,7 @@ async def patch_profile(
     jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
     s3_storage: S3StorageInterface = Depends(get_s3_storage),
     db: AsyncSession = Depends(get_db)
-) -> ProfileCreateResponseSchema:
+) -> ProfileResponseSchema:
     try:
         payload = jwt_manager.decode_access_token(token)
         token_user_id = payload.get("user_id")
@@ -406,7 +406,7 @@ async def patch_profile(
 
     avatar_url = await s3_storage.get_file_url(profile.avatar)
 
-    return ProfileCreateResponseSchema(
+    return ProfileResponseSchema(
         id=profile.id,
         user_id=profile.user_id,
         first_name=profile.first_name,

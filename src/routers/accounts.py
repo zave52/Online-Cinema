@@ -37,7 +37,8 @@ from schemas.accounts import (
     TokenVerifyRequestSchema,
     ResendActivationTokenRequestSchema,
     PasswordChangeRequestSchema,
-    UserGroupUpdateRequestSchema
+    UserGroupUpdateRequestSchema,
+    UserManualActivationSchema
 )
 from security.interfaces import JWTManagerInterface
 
@@ -663,4 +664,86 @@ async def change_user_group(
 
     return MessageResponseSchema(
         message=f"User's group successfully changed to {data.group_name.value}."
+    )
+
+
+@router.post(
+    "/admin/users/activate/",
+    response_model=MessageResponseSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["admin"]
+)
+async def admin_activate_user(
+    data: UserManualActivationSchema,
+    background_tasks: BackgroundTasks,
+    token: str = Depends(get_token),
+    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
+    email_sender: EmailSenderInterface = Depends(get_email_sender),
+    settings: BaseAppSettings = Depends(get_settings),
+    db: AsyncSession = Depends(get_db)
+) -> MessageResponseSchema:
+    try:
+        decoded_token = jwt_manager.decode_access_token(token)
+        admin_user_id = decoded_token.get("user_id")
+    except BaseSecurityError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e)
+        )
+
+    stmt = (
+        select(UserGroupModel)
+        .join(UserModel)
+        .where(UserModel.id == admin_user_id)
+    )
+    result = await db.execute(stmt)
+    admin_group: UserGroupModel = result.scalars().first()
+
+    if not admin_group or admin_group.name != UserGroupEnum.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can manually activate users."
+        )
+
+    stmt = select(UserModel).where(UserModel.email == data.email)
+    result = await db.execute(stmt)
+    target_user: UserModel = result.scalars().first()
+
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with email {data.email} not found."
+        )
+
+    if target_user.is_active:
+        return MessageResponseSchema(
+            message=f"User account for {data.email} is already active."
+        )
+
+    try:
+        stmt = (
+            delete(ActivationTokenModel)
+            .where(ActivationTokenModel.user_id == target_user.id)
+        )
+        await db.execute(stmt)
+
+        target_user.is_active = True
+        await db.commit()
+    except SQLAlchemyError as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to activate user account."
+        ) from e
+    else:
+        login_link = f"{settings.BASE_URL}/login/"
+
+        background_tasks.add_task(
+            email_sender.send_activation_complete_email,
+            target_user.email,
+            login_link
+        )
+
+    return MessageResponseSchema(
+        message=f"User account for {data.email} has been manually activated."
     )

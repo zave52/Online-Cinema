@@ -39,6 +39,10 @@ class PasswordResetRequestSchema(BaseModel):
     email: EmailStr
 
 
+class ResendActivationTokenRequestSchema(PasswordResetRequestSchema):
+    pass
+
+
 class PasswordResetCompleteRequestSchema(BaseEmailPasswordSchema):
     token: str
 

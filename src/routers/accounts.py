@@ -36,7 +36,8 @@ from schemas.accounts import (
     TokenRefreshRequestSchema,
     TokenVerifyRequestSchema,
     ResendActivationTokenRequestSchema,
-    PasswordChangeRequestSchema
+    PasswordChangeRequestSchema,
+    UserGroupUpdateRequestSchema
 )
 from security.interfaces import JWTManagerInterface
 
@@ -586,3 +587,80 @@ async def verify_access_token(
         )
 
     return MessageResponseSchema(message="Token valid.")
+
+
+@router.post(
+    "/admin/users/{user_id}/change-group/",
+    response_model=MessageResponseSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["admin"]
+)
+async def change_user_group(
+    user_id: int,
+    data: UserGroupUpdateRequestSchema,
+    token: str = Depends(get_token),
+    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
+    db: AsyncSession = Depends(get_db)
+) -> MessageResponseSchema:
+    try:
+        decoded_token = jwt_manager.decode_access_token(token)
+        admin_user_id = decoded_token.get("user_id")
+    except BaseSecurityError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e)
+        )
+
+    stmt = (
+        select(UserGroupModel)
+        .join(UserModel)
+        .where(UserModel.id == admin_user_id)
+    )
+    result = await db.execute(stmt)
+    admin_group: UserGroupModel = result.scalars().first()
+
+    if not admin_group or admin_group.name != UserGroupEnum.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can change user groups."
+        )
+
+    stmt = select(UserModel).where(UserModel.id == user_id)
+    result = await db.execute(stmt)
+    target_user: UserModel = result.scalars().first()
+
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with ID {user_id} not found."
+        )
+
+    stmt = select(UserGroupModel).where(UserGroupModel.name == data.group_name)
+    result = await db.execute(stmt)
+    target_group: UserGroupModel = result.scalars().first()
+
+    if not target_group:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Group {data.group_name.value} not found."
+        )
+
+    if target_user.group_id == target_group.id:
+        return MessageResponseSchema(
+            message=f"User already has the {data.group_name.value} role."
+        )
+
+    try:
+        target_user.group_id = target_group.id
+        await db.commit()
+        await db.refresh(target_user)
+    except SQLAlchemyError as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update user's group."
+        ) from e
+
+    return MessageResponseSchema(
+        message=f"User's group successfully changed to {data.group_name.value}."
+    )

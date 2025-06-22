@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
 
+from database.models.accounts import UserGroupEnum
 from database.validators.accounts import validate_password_strength
 
 
@@ -78,3 +79,7 @@ class UserActivationRequestSchema(BaseModel):
 
 class MessageResponseSchema(BaseModel):
     message: str
+
+
+class UserGroupUpdateRequestSchema(BaseModel):
+    group_name: UserGroupEnum

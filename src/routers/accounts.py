@@ -7,7 +7,8 @@ from sqlalchemy.orm import joinedload
 from config.dependencies import (
     get_email_sender,
     get_jwt_manager,
-    get_settings, get_token
+    get_settings,
+    get_token
 )
 from config.settings import BaseAppSettings
 from database import get_db
@@ -16,7 +17,8 @@ from database.models.accounts import (
     UserGroupModel,
     ActivationTokenModel,
     UserGroupEnum,
-    PasswordResetTokenModel, RefreshTokenModel
+    PasswordResetTokenModel,
+    RefreshTokenModel
 )
 from exceptions.security import BaseSecurityError
 from notifications.interfaces import EmailSenderInterface
@@ -33,7 +35,8 @@ from schemas.accounts import (
     TokenRefreshResponseSchema,
     TokenRefreshRequestSchema,
     TokenVerifyRequestSchema,
-    ResendActivationTokenRequestSchema
+    ResendActivationTokenRequestSchema,
+    PasswordChangeRequestSchema
 )
 from security.interfaces import JWTManagerInterface
 
@@ -316,6 +319,76 @@ async def reset_password(
         )
 
     return MessageResponseSchema(message="Password reset successfully.")
+
+
+@router.post(
+    "/password-change/",
+    response_model=MessageResponseSchema,
+    status_code=status.HTTP_200_OK
+)
+async def change_password(
+    data: PasswordChangeRequestSchema,
+    background_tasks: BackgroundTasks,
+    token: str = Depends(get_token),
+    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
+    email_sender: EmailSenderInterface = Depends(get_email_sender),
+    db: AsyncSession = Depends(get_db)
+) -> MessageResponseSchema:
+    try:
+        decoded_token = jwt_manager.decode_access_token(token)
+        user_id = decoded_token.get("user_id")
+    except BaseSecurityError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e)
+        )
+
+    stmt = select(UserModel).where(UserModel.id == user_id)
+    result = await db.execute(stmt)
+    user: UserModel = result.scalars().first()
+
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found or inactive."
+        )
+
+    if not user.verify_password(data.old_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Current password is incorrect."
+        )
+
+    if data.old_password == data.new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be different from the current password."
+        )
+
+    try:
+        user.password = data.new_password
+
+        stmt = (
+            delete(RefreshTokenModel)
+            .where(RefreshTokenModel.user_id == user_id)
+        )
+        await db.execute(stmt)
+
+        await db.commit()
+        await db.refresh(user)
+    except SQLAlchemyError as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred during password change."
+        )
+    else:
+        background_tasks.add_task(
+            email_sender.send_password_changed_email,
+            user.email
+        )
+
+    return MessageResponseSchema(message="Password changed successfully.")
 
 
 @router.post(

@@ -75,3 +75,15 @@ class EmailSender(FastMail, EmailSenderInterface):
             message=message,
             template_name="password_reset_complete.html"
         )
+
+    async def send_password_changed_email(self, email: EmailStr) -> None:
+        message = MessageSchema(
+            recipients=[email],
+            subject="Password Change Successfully",
+            subtype=MessageType.html
+        )
+
+        await self.send_message(
+            message=message,
+            template_name="password_change_successfully"
+        )

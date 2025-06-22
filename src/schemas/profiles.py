@@ -168,7 +168,10 @@ class ProfileUpdateRequestSchema(ProfileBaseModel):
 
     @field_validator("avatar")
     @classmethod
-    def validate_avatar(cls, avatar: Optional[UploadFile]) -> Optional[UploadFile]:
+    def validate_avatar(
+        cls,
+        avatar: Optional[UploadFile]
+    ) -> Optional[UploadFile]:
         if avatar is None:
             return None
         try:
@@ -284,7 +287,10 @@ class ProfilePatchRequestSchema(BaseModel):
 
     @field_validator("avatar")
     @classmethod
-    def validate_avatar(cls, avatar: Optional[UploadFile]) -> Optional[UploadFile]:
+    def validate_avatar(
+        cls,
+        avatar: Optional[UploadFile]
+    ) -> Optional[UploadFile]:
         if avatar is None:
             return None
         try:
@@ -322,7 +328,10 @@ class ProfilePatchRequestSchema(BaseModel):
 
     @field_validator("date_of_birth")
     @classmethod
-    def validate_date_of_birth(cls, date_of_birth: Optional[date]) -> Optional[date]:
+    def validate_date_of_birth(
+        cls,
+        date_of_birth: Optional[date]
+    ) -> Optional[date]:
         if date_of_birth is None:
             return None
         try:

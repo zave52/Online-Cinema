@@ -11,13 +11,16 @@ from validation.profiles import (
 )
 
 
-class ProfileCreateRequestSchema(BaseModel):
+class ProfileBaseModel(BaseModel):
     first_name: str
     last_name: str
-    avatar: UploadFile
     gender: str
     date_of_birth: date
     info: str
+
+
+class ProfileCreateRequestSchema(ProfileBaseModel):
+    avatar: UploadFile
 
     @classmethod
     def from_form(
@@ -122,12 +125,7 @@ class ProfileCreateRequestSchema(BaseModel):
             )
 
 
-class ProfileCreateResponseSchema(BaseModel):
+class ProfileCreateResponseSchema(ProfileBaseModel):
     id: int
     user_id: int
-    last_name: str
-    first_name: str
-    gender: str
     avatar: HttpUrl
-    date_of_birth: date
-    info: str

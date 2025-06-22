@@ -22,9 +22,9 @@ def validate_image(image: UploadFile) -> None:
         raise ValueError("Image size exceeds 1 MB")
 
     try:
-        image = Image.open(BytesIO(contents))
+        pil_image = Image.open(BytesIO(contents))
         image.file.seek(0)
-        image_format = image.format
+        image_format = pil_image.format
         if image_format not in supported_image_formats:
             raise ValueError(
                 f"Unsupported image format: {image_format}. Use one of next: {supported_image_formats}"

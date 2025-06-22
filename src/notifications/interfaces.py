@@ -35,3 +35,10 @@ class EmailSenderInterface(ABC):
         login_link: str
     ):
         pass
+
+    @abstractmethod
+    async def send_password_changed_email(
+        self,
+        email: EmailStr
+    ) -> None:
+        pass

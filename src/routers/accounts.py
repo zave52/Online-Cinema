@@ -32,7 +32,8 @@ from schemas.accounts import (
     UserLoginRequestSchema,
     TokenRefreshResponseSchema,
     TokenRefreshRequestSchema,
-    TokenVerifyRequestSchema
+    TokenVerifyRequestSchema,
+    ResendActivationTokenRequestSchema
 )
 from security.interfaces import JWTManagerInterface
 
@@ -103,6 +104,59 @@ async def register_user(
         )
 
     return UserRegistrationResponseSchema.model_validate(new_user)
+
+
+@router.post(
+    "/activate/resend/",
+    response_model=MessageResponseSchema,
+    status_code=status.HTTP_200_OK
+)
+async def resend_activation_token(
+    data: ResendActivationTokenRequestSchema,
+    background_tasks: BackgroundTasks,
+    settings: BaseAppSettings = Depends(get_settings),
+    email_sender: EmailSenderInterface = Depends(get_email_sender),
+    db: AsyncSession = Depends(get_db)
+) -> MessageResponseSchema:
+    standard_response = MessageResponseSchema(
+        message="If your account exists and is not activated, you will receive an email with instructions."
+    )
+
+    stmt = select(UserModel).where(UserModel.email == data.email)
+    result = await db.execute(stmt)
+    user: UserModel = result.scalars().first()
+
+    if not user or user.is_active:
+        return standard_response
+
+    stmt = (
+        delete(ActivationTokenModel)
+        .where(ActivationTokenModel.id == user.id)
+    )
+
+    try:
+        await db.execute(stmt)
+
+        new_activation_token = ActivationTokenModel(user_id=user.id)
+        db.add(new_activation_token)
+        await db.commit()
+        await db.refresh(new_activation_token)
+    except SQLAlchemyError as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred during resending activation token."
+        )
+    else:
+        activation_link = f"{settings.BASE_URL}/activate/"
+
+        background_tasks.add_task(
+            email_sender.send_activation_email,
+            user.email,
+            activation_link
+        )
+
+    return standard_response
 
 
 @router.post(

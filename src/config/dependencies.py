@@ -1,7 +1,7 @@
 import os
-from urllib.parse import urljoin
 
-from fastapi import Depends, Request, HTTPException, status
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi_mail import ConnectionConfig
 
 from config.settings import Settings, DevelopmentSettings, BaseAppSettings
@@ -11,6 +11,8 @@ from security.interfaces import JWTManagerInterface
 from security.manager import JWTManager
 from storages.interfaces import S3StorageInterface
 from storages.s3 import S3Storage
+
+bearer_scheme = HTTPBearer()
 
 
 def get_settings() -> BaseAppSettings:
@@ -32,24 +34,16 @@ def get_jwt_manager(
     )
 
 
-def get_token(request: Request) -> str:
-    authorization: str = request.headers.get("Authorization")
-
-    if not authorization:
+async def get_token(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
+) -> str:
+    if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header is missing."
+            detail="Not authenticated",
+            headers={"Authorization": "Bearer"},
         )
-
-    scheme, _, token = authorization.partition(" ")
-
-    if scheme.lower() != "bearer" or not token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid Authorization header format. Expected 'Bearer <token>'"
-        )
-
-    return token
+    return credentials.credentials
 
 
 def get_email_sender(

@@ -83,3 +83,7 @@ class MessageResponseSchema(BaseModel):
 
 class UserGroupUpdateRequestSchema(BaseModel):
     group_name: UserGroupEnum
+
+
+class UserManualActivationSchema(BaseModel):
+    email: EmailStr

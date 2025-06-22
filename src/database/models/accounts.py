@@ -96,7 +96,7 @@ class UserModel(Base):
         back_populates="user",
         cascade="all, delete-orphan"
     )
-    password_refresh_token: Mapped[
+    password_reset_token: Mapped[
         Optional["PasswordResetTokenModel"]] = relationship(
         "PasswordResetTokenModel",
         back_populates="user",

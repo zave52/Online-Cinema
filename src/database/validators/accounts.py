@@ -7,15 +7,12 @@ from email_validator import EmailNotValidError
 def validate_password_strength(password: str) -> str:
     if len(password) < 8:
         raise ValueError("Password must contain at least 8 characters.")
-    elif re.search("r[A-Z]", password):
-        raise ValueError("Password must contain at least one uppercase letter.")
-    elif re.search("r[a-z]", password):
-        raise ValueError("Password must contain at least one lower letter.")
-    elif re.search("r[0-9]", password):
-        raise ValueError("Password must contain at least one digit.")
-    elif re.search("r[@$!%*?&#]", password):
+
+    pattern = r"^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[@$!%*?&#]).*$"
+    if not re.match(pattern, password):
         raise ValueError(
-            "Password must contain at least one special character: @, $, !, %, *, ?, &, #."
+            "Password must contain at least one uppercase letter, one lowercase letter, "
+            "one digit, and one special character (@, $, !, %, *, ?, &, #)."
         )
 
     return password

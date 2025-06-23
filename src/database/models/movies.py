@@ -15,6 +15,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.models.accounts import UserModel
 from database.models.base import Base
+from database.models.movies import RateMovieModel
 
 movie_genre_association = Table(
     "movie_genres",
@@ -195,6 +196,10 @@ class MovieModel(Base):
         "FavoriteMovieModel",
         back_populates="movie"
     )
+    rates: Mapped[List["RateMovieModel"]] = relationship(
+        RateMovieModel,
+        back_populates="movie"
+    )
 
     __table_args__ = (UniqueConstraint("name", "year", "time"),)
 
@@ -290,3 +295,33 @@ class FavoriteMovieModel(Base):
 
     def __repr__(self) -> str:
         return f"<FavoriteMovieModel(id={self.id}, movie_id={self.movie_id}, user_id={self.user_id})>"
+
+
+class RateMovieModel(Base):
+    __tablename__ = "rates"
+
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
+    movie_id: Mapped[int] = mapped_column(
+        ForeignKey("movies.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    movie: Mapped[MovieModel] = relationship(
+        MovieModel,
+        back_populates="rates"
+    )
+    users: Mapped[UserModel] = relationship(
+        UserModel,
+        back_populates="rate_movies"
+    )
+
+    __table_args__ = (UniqueConstraint("movie_id", "user_id"),)
+
+    def __repr__(self) -> str:
+        return f"<RateMovieModel(id={self.id}, movie_id={self.movie_id}, user_id={self.user_id})>"

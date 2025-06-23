@@ -1,4 +1,5 @@
 from typing import Optional, List
+from uuid import UUID as PY_UUID
 
 from sqlalchemy import (
     Integer,
@@ -9,7 +10,8 @@ from sqlalchemy import (
     ForeignKey,
     UniqueConstraint,
     Table,
-    Column
+    Column,
+    UUID
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -74,7 +76,7 @@ class GenreModel(Base):
     id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
-    name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
 
     movies: Mapped[List["MovieModel"]] = relationship(
         "MovieModel",
@@ -92,7 +94,7 @@ class StarModel(Base):
     id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
-    name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
 
     movies: Mapped[List["MovieModel"]] = relationship(
         "MovieModel",
@@ -110,7 +112,7 @@ class DirectorModel(Base):
     id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
-    name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
 
     movies: Mapped[List["MovieModel"]] = relationship(
         "MovieModel",
@@ -149,7 +151,7 @@ class MovieModel(Base):
     id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
-    uuid: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    uuid: Mapped[PY_UUID] = mapped_column(UUID, unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     year: Mapped[int] = mapped_column(Integer, nullable=False)
     time: Mapped[int] = mapped_column(Integer, nullable=False)

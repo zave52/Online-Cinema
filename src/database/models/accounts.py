@@ -16,6 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from database.models.base import Base
+from database.models.movies import LikeModel
 from database.validators.accounts import (
     validate_email,
     validate_password_strength
@@ -104,6 +105,11 @@ class UserModel(Base):
     )
     refresh_tokens: Mapped[List["RefreshTokenModel"]] = relationship(
         "RefreshTokenModel",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    likes: Mapped[List[LikeModel]] = relationship(
+        LikeModel,
         back_populates="user",
         cascade="all, delete-orphan"
     )

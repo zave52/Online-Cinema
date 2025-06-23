@@ -13,6 +13,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from database.models.accounts import UserModel
 from database.models.base import Base
 
 movie_genre_association = Table(
@@ -182,8 +183,42 @@ class MovieModel(Base):
         secondary=movie_star_association,
         back_populates="movies"
     )
+    likes: Mapped[List["LikeModel"]] = relationship(
+        "LikeModel",
+        back_populates="movie"
+    )
 
     __table_args__ = (UniqueConstraint("name", "year", "time"),)
 
     def __repr__(self) -> str:
         return f"<MovieModel(id={self.id}, name={self.name}, year={self.year}, time={self.time})>"
+
+
+class LikeModel(Base):
+    __tablename__ = "likes"
+
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
+    movie_id: Mapped[int] = mapped_column(
+        ForeignKey("movies.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    movie: Mapped[MovieModel] = relationship(
+        MovieModel,
+        back_populates="likes",
+    )
+    user: Mapped[UserModel] = relationship(
+        UserModel,
+        back_populates="likes"
+    )
+
+    __table_args__ = (UniqueConstraint("movie_id", "user_id"))
+
+    def __repr__(self) -> str:
+        return f"<LikeModel(id={self.id}, movie_id={self.movie_id}, user_id={self.user_id})>"

@@ -15,7 +15,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.models.accounts import UserModel
 from database.models.base import Base
-from database.models.movies import RateMovieModel
 
 movie_genre_association = Table(
     "movie_genres",
@@ -197,7 +196,7 @@ class MovieModel(Base):
         back_populates="movie"
     )
     rates: Mapped[List["RateMovieModel"]] = relationship(
-        RateMovieModel,
+        "RateMovieModel",
         back_populates="movie"
     )
 

@@ -230,7 +230,7 @@ class LikeModel(Base):
         back_populates="likes"
     )
 
-    __table_args__ = (UniqueConstraint("movie_id", "user_id"))
+    __table_args__ = (UniqueConstraint("movie_id", "user_id"),)
 
     def __repr__(self) -> str:
         return f"<LikeModel(id={self.id}, movie_id={self.movie_id}, user_id={self.user_id})>"

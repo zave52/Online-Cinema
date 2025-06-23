@@ -319,7 +319,7 @@ class RateMovieModel(Base):
         MovieModel,
         back_populates="rates"
     )
-    users: Mapped[UserModel] = relationship(
+    user: Mapped[UserModel] = relationship(
         UserModel,
         back_populates="rate_movies"
     )

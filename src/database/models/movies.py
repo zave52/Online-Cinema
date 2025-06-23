@@ -292,6 +292,8 @@ class FavoriteMovieModel(Base):
         back_populates="favorite_movies"
     )
 
+    __table_args__ = (UniqueConstraint("movie_id", "user_id"),)
+
     def __repr__(self) -> str:
         return f"<FavoriteMovieModel(id={self.id}, movie_id={self.movie_id}, user_id={self.user_id})>"
 

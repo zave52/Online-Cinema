@@ -16,7 +16,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from database.models.base import Base
-from database.models.movies import LikeModel
 from database.validators.accounts import (
     validate_email,
     validate_password_strength
@@ -108,8 +107,13 @@ class UserModel(Base):
         back_populates="user",
         cascade="all, delete-orphan"
     )
-    likes: Mapped[List[LikeModel]] = relationship(
-        LikeModel,
+    likes: Mapped[List["LikeModel"]] = relationship(
+        "LikeModel",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    comments: Mapped[List["CommentModel"]] = relationship(
+        "CommentModel",
         back_populates="user",
         cascade="all, delete-orphan"
     )

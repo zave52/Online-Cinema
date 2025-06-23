@@ -187,6 +187,10 @@ class MovieModel(Base):
         "LikeModel",
         back_populates="movie"
     )
+    comments: Mapped[List["CommentModel"]] = relationship(
+        "CommentModel",
+        back_populates="movie"
+    )
 
     __table_args__ = (UniqueConstraint("name", "year", "time"),)
 
@@ -222,3 +226,35 @@ class LikeModel(Base):
 
     def __repr__(self) -> str:
         return f"<LikeModel(id={self.id}, movie_id={self.movie_id}, user_id={self.user_id})>"
+
+
+class CommentModel(Base):
+    __tablename__ = "comments"
+
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
+    content: Mapped[str] = mapped_column(
+        Text, nullable=False
+    )
+
+    movie_id: Mapped[int] = mapped_column(
+        ForeignKey("movies.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    movie: Mapped[MovieModel] = relationship(
+        MovieModel,
+        back_populates="comments"
+    )
+    user: Mapped[UserModel] = relationship(
+        UserModel,
+        back_populates="comments"
+    )
+
+    def __repr__(self) -> str:
+        return f"<CommentModel(id={self.id}, content={self.content}, movie_id={self.movie_id}, user_id={self.user_id})>"

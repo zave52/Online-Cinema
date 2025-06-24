@@ -1,4 +1,4 @@
-from typing import List, Any
+from typing import List, Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -68,3 +68,13 @@ class MovieListItemSchema(BaseModel):
         if not v:
             return []
         return [genre.name for genre in v]
+
+
+class MovieListResponseSchema(BaseModel):
+    movies: List[MovieListItemSchema]
+    prev_page: Optional[str]
+    next_page: Optional[str]
+    total_pages: int
+    total_items: int
+
+    model_config = ConfigDict(from_attributes=True)

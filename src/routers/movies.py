@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, joinedload
 
-from config.dependencies import get_token, get_jwt_manager
+from config.dependencies import get_token, get_jwt_manager, RoleChecker
 from database import get_db
 from database.models.accounts import UserModel, UserGroupModel, UserGroupEnum
 
@@ -32,6 +32,10 @@ from schemas.movies import (
 from security.interfaces import JWTManagerInterface
 
 router = APIRouter()
+
+moderator_and_admin = RoleChecker(
+    [UserGroupEnum.MODERATOR, UserGroupEnum.ADMIN]
+)
 
 
 @router.get(

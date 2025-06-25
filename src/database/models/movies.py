@@ -1,5 +1,5 @@
 from typing import Optional, List
-from uuid import UUID as PY_UUID
+from uuid import UUID as PY_UUID, uuid4
 
 from sqlalchemy import (
     Integer,
@@ -151,7 +151,12 @@ class MovieModel(Base):
     id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
-    uuid: Mapped[PY_UUID] = mapped_column(UUID, unique=True, nullable=False)
+    uuid: Mapped[PY_UUID] = mapped_column(
+        UUID,
+        unique=True,
+        nullable=False,
+        default=uuid4
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     year: Mapped[int] = mapped_column(Integer, nullable=False)
     time: Mapped[int] = mapped_column(Integer, nullable=False)

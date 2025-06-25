@@ -20,6 +20,10 @@ class GenreSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class GenreListSchema(BaseListSchema):
+    genres: List[GenreSchema]
+
+
 class StarSchema(BaseModel):
     id: int
     name: str = Field(..., max_length=100)
@@ -27,11 +31,19 @@ class StarSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class StarListSchema(BaseListSchema):
+    stars: List[StarSchema]
+
+
 class DirectorSchema(BaseModel):
     id: int
     name: str = Field(..., max_length=100)
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class DirectorListSchema(BaseListSchema):
+    directors: List[DirectorSchema]
 
 
 class CertificationSchema(BaseModel):

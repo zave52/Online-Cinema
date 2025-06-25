@@ -7,9 +7,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, joinedload
 
-from config.dependencies import get_token, get_jwt_manager, RoleChecker
+from config.dependencies import RoleChecker
 from database import get_db
-from database.models.accounts import UserModel, UserGroupModel, UserGroupEnum
+from database.models.accounts import UserGroupEnum
 
 from database.models.movies import (
     MovieModel,
@@ -19,7 +19,6 @@ from database.models.movies import (
     CertificationModel,
     CommentModel
 )
-from exceptions.security import BaseSecurityError
 from schemas.movies import (
     MovieListResponseSchema,
     MovieListItemSchema,
@@ -31,7 +30,6 @@ from schemas.movies import (
     NameSchema,
     GenreSchema
 )
-from security.interfaces import JWTManagerInterface
 
 router = APIRouter()
 
@@ -211,19 +209,9 @@ async def get_movie_by_id(
 )
 async def create_movie(
     data: MovieCreateRequestSchema,
-    token: str = Depends(get_token),
-    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
+    authorization: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
 ) -> MovieCreateResponseSchema:
-    try:
-        decoded_token = jwt_manager.decode_access_token(token)
-        user_id = decoded_token.get("user_id")
-    except BaseSecurityError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
-        )
-
     existing_stmt = (
         select(MovieModel)
         .where(
@@ -241,22 +229,6 @@ async def create_movie(
             detail=f"A movie with the name '{existing_movie.name}', release year "
                    f"'{existing_movie}' and time duration '{existing_movie.time}' "
                    f"already exists."
-        )
-
-    group_stmt = (
-        select(UserGroupModel)
-        .join(UserModel)
-        .where(UserModel.id == user_id)
-    )
-    result = await db.execute(group_stmt)
-    user_group = result.scalars().first()
-
-    if not user_group or user_group not in (
-            UserGroupEnum.MODERATOR, UserGroupEnum.ADMIN
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only administrators and moderators can create movie."
         )
 
     try:
@@ -353,19 +325,9 @@ async def create_movie(
 async def update_movie(
     movie_id: int,
     data: MovieUpdateSchema,
-    token: str = Depends(get_token),
-    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
+    authorization: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
-    try:
-        decoded_token = jwt_manager.decode_access_token(token)
-        user_id = decoded_token.get("user_id")
-    except BaseSecurityError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
-        )
-
     movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
     result = await db.execute(movie_stmt)
     movie = result.scalars().first()
@@ -374,22 +336,6 @@ async def update_movie(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Movie with the given id was not found."
-        )
-
-    group_stmt = (
-        select(UserGroupModel)
-        .join(UserModel)
-        .where(UserModel.id == user_id)
-    )
-    result = await db.execute(group_stmt)
-    user_group = result.scalars().first()
-
-    if not user_group or user_group not in (
-            UserGroupEnum.MODERATOR, UserGroupEnum.ADMIN
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only administrators and moderators can update movie."
         )
 
     movie_update_data = data.model_dump(exclude_unset=True)
@@ -497,19 +443,9 @@ async def update_movie(
 )
 async def delete_movie(
     movie_id: int,
-    token: str = Depends(get_token),
-    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
+    authorization: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
 ) -> None:
-    try:
-        decoded_token = jwt_manager.decode_access_token(token)
-        user_id = decoded_token.get("user_id")
-    except BaseSecurityError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
-        )
-
     movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
     result = await db.execute(movie_stmt)
     movie = result.scalars().first()
@@ -518,22 +454,6 @@ async def delete_movie(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Movie with the given id was not found."
-        )
-
-    group_stmt = (
-        select(UserGroupModel)
-        .join(UserModel)
-        .where(UserModel.id == user_id)
-    )
-    result = await db.execute(group_stmt)
-    user_group = result.scalars().first()
-
-    if not user_group or user_group not in (
-            UserGroupEnum.MODERATOR, UserGroupEnum.ADMIN
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only administrators and moderators can update movie."
         )
 
     # TODO: Prevent the deletion of a movie if at least one user has purchased it.

@@ -116,3 +116,21 @@ class MovieCreateRequestSchema(MovieBaseSchema):
 
 class MovieCreateResponseSchema(MovieBaseExtendedSchema):
     pass
+
+
+class MovieUpdateSchema(BaseModel):
+    name: Optional[str] = None
+    year: Optional[int] = None
+    time: Optional[int] = Field(None, ge=0)
+    imdb: Optional[float] = Field(None, ge=0, le=10)
+    votes: Optional[int] = Field(None, ge=0)
+    meta_score: Optional[float] = Field(None, ge=0, le=100)
+    gross: Optional[float] = Field(None, ge=0)
+    description: Optional[str] = None
+    price: Optional[float] = Field(None, max_digits=10, decimal_places=2)
+    certification: Optional[str] = None
+    genres: Optional[List[str]] = None
+    stars: Optional[List[str]] = None
+    directors: Optional[List[str]] = None
+
+    model_config = ConfigDict(from_attributes=True)

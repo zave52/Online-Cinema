@@ -42,9 +42,9 @@ class MovieBaseSchema(BaseModel):
     name: str = Field(..., max_length=255)
     year: int
     time: int = Field(..., ge=0)
-    imdb: float = Field(..., ge=0)
+    imdb: float = Field(..., ge=0, le=10)
     votes: int = Field(..., ge=0)
-    meta_score: float = Field(..., ge=0)
+    meta_score: float = Field(..., ge=0, le=100)
     gross: float = Field(..., ge=0)
     description: str
     price: float = Field(..., max_digits=10, decimal_places=2)

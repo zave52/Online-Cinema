@@ -65,7 +65,7 @@ class MovieBaseExtendedSchema(MovieBaseSchema):
 class MovieDetailSchema(MovieBaseExtendedSchema):
     likes: int
     favorites: int
-    rates: float
+    average_rating: float
     comments: List[CommentSchema]
 
 

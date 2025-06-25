@@ -1,4 +1,5 @@
 from typing import List, Any, Optional
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -50,6 +51,19 @@ class MovieBaseSchema(BaseModel):
     price: float = Field(..., max_digits=10, decimal_places=2)
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class MovieDetailSchema(MovieBaseSchema):
+    id: int
+    uuid: UUID
+    certification: CertificationSchema
+    genres: List[GenreSchema]
+    stars: List[StarSchema]
+    directors: List[DirectorSchema]
+    likes: int
+    favorites: int
+    rates: float
+    comments: List[CommentSchema]
 
 
 class MovieListItemSchema(BaseModel):

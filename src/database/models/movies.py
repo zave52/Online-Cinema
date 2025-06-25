@@ -258,6 +258,10 @@ class CommentModel(Base):
         nullable=False,
         default=datetime.utcnow()
     )
+    parent_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("comments.id", ondelete="CASCADE"),
+        nullable=True
+    )
 
     movie_id: Mapped[int] = mapped_column(
         ForeignKey("movies.id", ondelete="CASCADE"),
@@ -275,6 +279,11 @@ class CommentModel(Base):
     user: Mapped[UserModel] = relationship(
         UserModel,
         back_populates="comments"
+    )
+    replies: Mapped[List["CommentModel"]] = relationship(
+        "CommentModel",
+        backref="parent",
+        remote_side=[id]
     )
 
     def __repr__(self) -> str:

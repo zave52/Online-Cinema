@@ -39,6 +39,10 @@ class CommentSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class NameSchema(BaseModel):
+    name: str = Field(..., max_length=100)
+
+
 class MovieBaseSchema(BaseModel):
     name: str = Field(..., max_length=255)
     year: int

@@ -27,7 +27,9 @@ from schemas.movies import (
     MovieCreateRequestSchema,
     MovieDetailSchema,
     MovieUpdateSchema,
-    MessageResponseSchema
+    MessageResponseSchema,
+    NameSchema,
+    GenreSchema
 )
 from security.interfaces import JWTManagerInterface
 
@@ -540,3 +542,32 @@ async def delete_movie(
     await db.commit()
 
     return
+
+
+@router.post(
+    "/genres/",
+    response_model=GenreSchema,
+    status_code=status.HTTP_201_CREATED,
+    tags=["admin", "moderator"]
+)
+async def create_genre(
+    data: NameSchema,
+    authorized: None = Depends(moderator_and_admin),
+    db: AsyncSession = Depends(get_db)
+) -> GenreSchema:
+    stmt = select(GenreModel).where(GenreModel.name == data.name)
+    result = await db.execute(stmt)
+    existing_genre = result.scalars().first()
+
+    if existing_genre:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"A genre with the name '{data.name}' already exists."
+        )
+
+    genre = GenreModel(name=data.name)
+    db.add(genre)
+    await db.commit()
+    await db.refresh(genre)
+
+    return GenreSchema.model_validate(genre)

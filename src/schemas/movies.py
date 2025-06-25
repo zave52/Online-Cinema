@@ -4,6 +4,15 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
+class BaseListSchema(BaseModel):
+    prev_page: Optional[str]
+    next_page: Optional[str]
+    total_pages: int
+    total_items: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class GenreSchema(BaseModel):
     id: int
     name: str = Field(..., max_length=100)

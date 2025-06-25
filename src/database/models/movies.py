@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional, List
 from uuid import UUID as PY_UUID, uuid4
 
@@ -11,7 +12,7 @@ from sqlalchemy import (
     UniqueConstraint,
     Table,
     Column,
-    UUID
+    UUID, DateTime
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -251,6 +252,11 @@ class CommentModel(Base):
     )
     content: Mapped[str] = mapped_column(
         Text, nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        nullable=False,
+        default=datetime.utcnow()
     )
 
     movie_id: Mapped[int] = mapped_column(

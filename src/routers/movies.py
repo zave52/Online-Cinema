@@ -25,7 +25,9 @@ from schemas.movies import (
     MovieListItemSchema,
     MovieCreateResponseSchema,
     MovieCreateRequestSchema,
-    MovieDetailSchema
+    MovieDetailSchema,
+    MovieUpdateSchema,
+    MessageResponseSchema
 )
 from security.interfaces import JWTManagerInterface
 
@@ -334,3 +336,149 @@ async def create_movie(
         )
 
     return MovieCreateResponseSchema.model_validate(movie)
+
+
+@router.patch(
+    "/movies/{movie_id}/",
+    response_model=MessageResponseSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["admin", "moderator"]
+)
+async def update_movie(
+    movie_id: int,
+    data: MovieUpdateSchema,
+    token: str = Depends(get_token),
+    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
+    db: AsyncSession = Depends(get_db)
+) -> MessageResponseSchema:
+    try:
+        decoded_token = jwt_manager.decode_access_token(token)
+        user_id = decoded_token.get("user_id")
+    except BaseSecurityError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e)
+        )
+
+    movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
+    result = await db.execute(movie_stmt)
+    movie = result.scalars().first()
+
+    if not movie:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Movie with the given id was not found."
+        )
+
+    group_stmt = (
+        select(UserGroupModel)
+        .join(UserModel)
+        .where(UserModel.id == user_id)
+    )
+    result = await db.execute(group_stmt)
+    user_group = result.scalars().first()
+
+    if not user_group or user_group not in (
+            UserGroupEnum.MODERATOR, UserGroupEnum.ADMIN
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators and moderators can update movie."
+        )
+
+    movie_update_data = data.model_dump(exclude_unset=True)
+
+    try:
+        if "certification" in movie_update_data:
+            certification_stmt = (
+                select(CertificationModel)
+                .where(
+                    CertificationModel.name == movie_update_data[
+                        "certification"]
+                )
+            )
+            result = await db.execute(certification_stmt)
+            certification = result.scalars().first()
+
+            if not certification:
+                certification = CertificationModel(
+                    name=movie_update_data["certification"]
+                )
+                db.add(certification)
+                await db.flush()
+
+            movie_update_data["certification"] = certification
+
+        if "genres" in movie_update_data:
+            genres = []
+            for genre_name in movie_update_data["genres"]:
+                genre_stmt = (
+                    select(GenreModel)
+                    .where(GenreModel.name == genre_name)
+                )
+                result = await db.execute(genre_stmt)
+                genre = result.scalars().first()
+
+                if not genre:
+                    genre = GenreModel(name=genre_name)
+                    db.add(genre)
+                    await db.flush()
+
+                genres.append(genre)
+
+            movie_update_data["genres"] = genres
+
+        if "stars" in movie_update_data:
+            stars = []
+            for star_name in movie_update_data["stars"]:
+                star_stmt = (
+                    select(StarModel)
+                    .where(StarModel.name == star_name)
+                )
+                result = await db.execute(star_stmt)
+                star = result.scalars().first()
+
+                if not star:
+                    star = StarModel(name=star_name)
+                    db.add(star)
+                    await db.flush()
+
+                stars.append(star)
+
+            movie_update_data["stars"] = stars
+
+        if "directors" in movie_update_data:
+            directors = []
+            for director_name in movie_update_data["directors"]:
+                director_stmt = (
+                    select(DirectorModel)
+                    .where(DirectorModel.name == director_name)
+                )
+                result = await db.execute(director_stmt)
+                director = result.scalars().first()
+
+                if not director:
+                    director = DirectorModel(name=director_name)
+                    db.add(director)
+                    await db.flush()
+
+                directors.append(director)
+
+            movie_update_data["directors"] = directors
+
+        for field, value in movie_update_data.items():
+            setattr(movie, field, value)
+
+        await db.commit()
+        await db.refresh(
+            movie,
+            ["certification", "genres", "stars", "directors"]
+        )
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid input data"
+        )
+
+    return MessageResponseSchema(message="Movie updated successfully.")

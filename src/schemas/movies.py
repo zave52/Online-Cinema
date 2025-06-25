@@ -97,7 +97,7 @@ class MovieListResponseSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class MovieCreateSchema(MovieBaseSchema):
+class MovieCreateRequestSchema(MovieBaseSchema):
     certification: str
     genres: List[str]
     stars: List[str]
@@ -112,3 +112,7 @@ class MovieCreateSchema(MovieBaseSchema):
     @classmethod
     def normalize_list_fields(cls, value: List[str]) -> List[str]:
         return [item.title() for item in value]
+
+
+class MovieCreateResponseSchema(MovieBaseExtendedSchema):
+    pass

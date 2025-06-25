@@ -482,3 +482,57 @@ async def update_movie(
         )
 
     return MessageResponseSchema(message="Movie updated successfully.")
+
+
+@router.delete(
+    "/movies/{movie_id}/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["admin", "moderator"]
+)
+async def delete_movie(
+    movie_id: int,
+    token: str = Depends(get_token),
+    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
+    db: AsyncSession = Depends(get_db)
+) -> None:
+    try:
+        decoded_token = jwt_manager.decode_access_token(token)
+        user_id = decoded_token.get("user_id")
+    except BaseSecurityError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e)
+        )
+
+    movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
+    result = await db.execute(movie_stmt)
+    movie = result.scalars().first()
+
+    if not movie:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Movie with the given id was not found."
+        )
+
+    group_stmt = (
+        select(UserGroupModel)
+        .join(UserModel)
+        .where(UserModel.id == user_id)
+    )
+    result = await db.execute(group_stmt)
+    user_group = result.scalars().first()
+
+    if not user_group or user_group not in (
+            UserGroupEnum.MODERATOR, UserGroupEnum.ADMIN
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators and moderators can update movie."
+        )
+
+    # TODO: Prevent the deletion of a movie if at least one user has purchased it.
+
+    await db.delete(movie)
+    await db.commit()
+
+    return

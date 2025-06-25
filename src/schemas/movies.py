@@ -112,14 +112,8 @@ class MovieListItemSchema(BaseModel):
         return [genre.name for genre in v]
 
 
-class MovieListResponseSchema(BaseModel):
+class MovieListResponseSchema(BaseListSchema):
     movies: List[MovieListItemSchema]
-    prev_page: Optional[str]
-    next_page: Optional[str]
-    total_pages: int
-    total_items: int
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 class MovieCreateRequestSchema(MovieBaseSchema):

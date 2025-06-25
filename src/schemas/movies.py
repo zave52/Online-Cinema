@@ -119,7 +119,7 @@ class MovieCreateResponseSchema(MovieBaseExtendedSchema):
 
 
 class MovieUpdateSchema(BaseModel):
-    name: Optional[str] = None
+    name: Optional[str] = Field(None, max_length=255)
     year: Optional[int] = None
     time: Optional[int] = Field(None, ge=0)
     imdb: Optional[float] = Field(None, ge=0, le=10)

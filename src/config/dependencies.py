@@ -3,8 +3,13 @@ import os
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi_mail import ConnectionConfig
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.settings import Settings, DevelopmentSettings, BaseAppSettings
+from database import get_db
+from database.models.accounts import UserModel, UserGroupEnum
+from exceptions.security import BaseSecurityError
 from notifications.emails import EmailSender
 from notifications.interfaces import EmailSenderInterface
 from security.interfaces import JWTManagerInterface
@@ -44,6 +49,50 @@ async def get_token(
             headers={"Authorization": "Bearer"},
         )
     return credentials.credentials
+
+
+def get_current_user_id(
+    token: str = Depends(get_token),
+    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager)
+) -> int:
+    try:
+        decoded_token = jwt_manager.decode_access_token(token=token)
+        user_id = decoded_token.get("user_id")
+    except BaseSecurityError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user_id
+
+
+async def get_current_user(
+    user_id: int = Depends(get_current_user_id),
+    session: AsyncSession = Depends(get_db)
+) -> UserModel:
+    query = select(UserModel).where(UserModel.id == user_id)
+    result = await session.execute(query)
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user
+
+
+class RoleChecker:
+    def __init__(self, allowed_groups: list[UserGroupEnum]):
+        self.allowed_groups = allowed_groups
+
+    def __call__(self, user: UserModel = Depends(get_current_user)):
+        if user.group.name not in self.allowed_groups:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="The user does not have privileges to access this resource."
+            )
 
 
 def get_email_sender(

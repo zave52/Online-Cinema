@@ -53,13 +53,16 @@ class MovieBaseSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class MovieDetailSchema(MovieBaseSchema):
+class MovieBaseExtendedSchema(MovieBaseSchema):
     id: int
     uuid: UUID
     certification: CertificationSchema
     genres: List[GenreSchema]
     stars: List[StarSchema]
     directors: List[DirectorSchema]
+
+
+class MovieDetailSchema(MovieBaseExtendedSchema):
     likes: int
     favorites: int
     rates: float

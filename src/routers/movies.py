@@ -1,10 +1,11 @@
+import asyncio
 from typing import Sequence, Optional
 
 from fastapi import APIRouter, status, Depends, Query, HTTPException
 from sqlalchemy import select, func, or_, desc, asc
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 
 from config.dependencies import get_token, get_jwt_manager
 from database import get_db
@@ -14,12 +15,17 @@ from database.models.movies import (
     MovieModel,
     StarModel,
     DirectorModel,
-    GenreModel, CertificationModel
+    GenreModel,
+    CertificationModel,
+    CommentModel
 )
 from exceptions.security import BaseSecurityError
 from schemas.movies import (
     MovieListResponseSchema,
-    MovieListItemSchema, MovieCreateResponseSchema, MovieCreateRequestSchema
+    MovieListItemSchema,
+    MovieCreateResponseSchema,
+    MovieCreateRequestSchema,
+    MovieDetailSchema
 )
 from security.interfaces import JWTManagerInterface
 
@@ -107,6 +113,86 @@ async def get_movies(
         total_pages=total_pages,
         total_items=total_items
     )
+
+
+@router.get(
+    "/movies/{movie_id}/",
+    response_model=MovieDetailSchema,
+    status_code=status.HTTP_200_OK
+)
+async def get_movie_by_id(
+    movie_id: int,
+    db: AsyncSession = Depends(get_db)
+) -> MovieDetailSchema:
+    movie_stmt = (
+        select(MovieModel)
+        .options(
+            joinedload(MovieModel.certification),
+            joinedload(MovieModel.genres),
+            joinedload(MovieModel.stars),
+            joinedload(MovieModel.directors),
+        )
+        .where(MovieModel.id == movie_id)
+    )
+    result = await db.execute(movie_stmt)
+    movie = result.scalars().first()
+
+    if not movie:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Movie with the given id was not found."
+        )
+
+    comments_stmt = (
+        select(CommentModel)
+        .where(CommentModel.movie_id == movie_id)
+        .order_by(desc("created_at"))
+        .limit(10)
+    )
+    likes_stmt = (
+        select(func.count())
+        .select_from(
+            select(MovieModel.likes).where(MovieModel.id == movie_id).subquery()
+        )
+    )
+    favorites_stmt = (
+        select(func.count())
+        .select_from(
+            select(MovieModel.favorites).where(
+                MovieModel.id == movie_id
+            ).subquery()
+        )
+    )
+    avg_rating_stmt = (
+        select(func.avg(MovieModel.rates)).where(MovieModel.id == movie_id)
+    )
+
+    (
+        comments_result,
+        likes_result,
+        favorites_result,
+        avg_rating_result
+    ) = await asyncio.gather(
+        db.execute(comments_stmt),
+        db.execute(likes_stmt),
+        db.execute(favorites_stmt),
+        db.execute(avg_rating_stmt),
+    )
+
+    recent_comments = comments_result.scalars().all()
+    likes_count = likes_result.scalar_one()
+    favorites_count = favorites_result.scalar_one()
+    avg_rating = avg_rating_result.scalar_one() or 0.0
+
+    movie_dict = {
+        **movie.__dict__,
+        "comments": recent_comments,
+        "likes": likes_count,
+        "favorites": favorites_count,
+        "average_rating": avg_rating
+    }
+
+    return MovieDetailSchema.model_validate(movie_dict)
 
 
 @router.post(

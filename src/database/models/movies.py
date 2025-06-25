@@ -311,6 +311,12 @@ class RateMovieModel(Base):
     id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
+    rate: Mapped[int] = mapped_column(
+        Integer,
+        check="rate >= 1 AND rate <= 10",
+        nullable=False
+    )
+
     movie_id: Mapped[int] = mapped_column(
         ForeignKey("movies.id", ondelete="CASCADE"),
         nullable=False

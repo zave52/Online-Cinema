@@ -134,3 +134,7 @@ class MovieUpdateSchema(BaseModel):
     directors: Optional[List[str]] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class MessageResponseSchema(BaseModel):
+    message: str

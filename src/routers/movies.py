@@ -210,7 +210,7 @@ async def get_movie_by_id(
 )
 async def create_movie(
     data: MovieCreateRequestSchema,
-    authorization: None = Depends(moderator_and_admin),
+    authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
 ) -> MovieCreateResponseSchema:
     existing_stmt = (
@@ -326,7 +326,7 @@ async def create_movie(
 async def update_movie(
     movie_id: int,
     data: MovieUpdateSchema,
-    authorization: None = Depends(moderator_and_admin),
+    authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
     movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
@@ -444,7 +444,7 @@ async def update_movie(
 )
 async def delete_movie(
     movie_id: int,
-    authorization: None = Depends(moderator_and_admin),
+    authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
 ) -> None:
     movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
@@ -474,7 +474,7 @@ async def delete_movie(
 async def get_genres(
     page: int = Query(1, ge=1),
     per_page: int = Query(10, ge=1, le=100),
-    authorization: None = Depends(moderator_and_admin),
+    authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
 ) -> GenreListSchema:
     stmt = select(GenreModel)
@@ -513,7 +513,7 @@ async def get_genres(
 )
 async def get_genre_by_id(
     genre_id: int,
-    authorization: None = Depends(moderator_and_admin),
+    authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
 ) -> GenreSchema:
     stmt = select(GenreModel).where(GenreModel.id == genre_id)
@@ -567,7 +567,7 @@ async def create_genre(
 async def update_genre(
     genre_id: int,
     data: NameSchema,
-    authorization: None = Depends(moderator_and_admin),
+    authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
 ) -> GenreSchema:
     stmt = select(GenreModel).where(GenreModel.id == genre_id)

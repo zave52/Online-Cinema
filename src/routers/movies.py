@@ -504,6 +504,30 @@ async def get_genres(
     )
 
 
+@router.get(
+    "/genres/{genre_id}/",
+    response_model=GenreSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["admin", "moderator", "genres"]
+)
+async def get_genre_by_id(
+    genre_id: int,
+    authorization: None = Depends(moderator_and_admin),
+    db: AsyncSession = Depends(get_db)
+) -> GenreSchema:
+    stmt = select(GenreModel).where(GenreModel.id == genre_id)
+    result = await db.execute(stmt)
+    genre = result.scalars().first()
+
+    if not genre:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Genre with the given id was not found."
+        )
+
+    return GenreSchema.model_validate(genre)
+
+
 @router.post(
     "/genres/",
     response_model=GenreSchema,

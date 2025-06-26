@@ -474,7 +474,7 @@ async def delete_movie(
     "/movies/{movie_id}/likes/",
     response_model=MessageResponseSchema,
     status_code=status.HTTP_200_OK,
-    tags=["like", "movies"]
+    tags=["likes", "movies"]
 )
 async def like_movie(
     movie_id: int,
@@ -508,7 +508,49 @@ async def like_movie(
     db.add(new_like)
     await db.commit()
 
-    return MessageResponseSchema(message="You successfully liked movie.")
+    return MessageResponseSchema(message="You successfully liked this movie.")
+
+
+@router.delete(
+    "/movies/{movie_id}/likes/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["likes", "movies"]
+)
+async def unlike_movie(
+    movie_id: int,
+    user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> None:
+    movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
+    result = await db.execute(movie_stmt)
+    movie = result.scalars().first()
+
+    if not movie:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Movie with the given id was not found."
+        )
+
+    like_stmt = (
+        select(LikeModel)
+        .where(
+            LikeModel.user_id == user.id,
+            LikeModel.movie_id == movie_id
+        )
+    )
+    result = await db.execute(like_stmt)
+    like = result.scalars().first()
+
+    if not like:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="You haven't liked this movie yet."
+        )
+
+    await db.delete(like)
+    await db.commit()
+
+    return
 
 
 @router.get(

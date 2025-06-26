@@ -615,7 +615,7 @@ async def delete_genre(
             detail="Genre with the given id was not found."
         )
 
-    movies_check_stmt = select(func.cound(MovieModel.id)).where(
+    movies_check_stmt = select(func.count(MovieModel.id)).where(
         MovieModel.genres.any(GenreModel.id == genre_id)
     )
     result = await db.execute(movies_check_stmt)

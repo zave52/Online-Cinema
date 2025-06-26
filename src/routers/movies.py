@@ -29,7 +29,11 @@ from schemas.movies import (
     MessageResponseSchema,
     NameSchema,
     GenreSchema,
-    GenreListSchema, StarListSchema, StarSchema
+    GenreListSchema,
+    StarListSchema,
+    StarSchema,
+    DirectorListSchema,
+    DirectorSchema
 )
 
 router = APIRouter()
@@ -796,6 +800,179 @@ async def delete_star(
         )
 
     await db.delete(star)
+    await db.commit()
+
+    return
+
+
+@router.get(
+    "/director/",
+    response_model=DirectorListSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["admin", "moderator", "stars"]
+)
+async def get_directors(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, le=1, ge=100),
+    authorized: None = Depends(moderator_and_admin),
+    db: AsyncSession = Depends(get_db)
+) -> DirectorListSchema:
+    stmt = select(DirectorModel)
+
+    count_stmt = (
+        select(func.count(DirectorModel.id))
+        .select_from(stmt.subquery())
+    )
+    result = await db.execute(count_stmt)
+    total_items = result.scalar_one()
+
+    if not total_items:
+        return DirectorListSchema(directors=[], total_pages=0, total_items=0)
+
+    offset = (page - 1) * per_page
+
+    stmt = stmt.offset(offset).limit(per_page)
+    result = await db.execute(stmt)
+    directors: Sequence[DirectorModel] = result.scalars().all()
+
+    director_list = [
+        DirectorSchema.model_validate(director) for director in directors
+    ]
+
+    total_pages = (total_items + per_page - 1) // per_page
+
+    return DirectorListSchema(
+        directors=director_list,
+        prev_page=f"/cinema/directors/?page={page - 1}&per_page={per_page}" if page > 1 else None,
+        next_page=f"/cinema/directors/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        total_pages=total_pages,
+        total_items=total_items
+    )
+
+
+@router.get(
+    "/directors/{director_id}/",
+    response_model=DirectorSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["admin", "moderator", "directors"]
+)
+async def get_director_by_id(
+    director_id: int,
+    authorized: None = Depends(moderator_and_admin),
+    db: AsyncSession = Depends(get_db)
+) -> DirectorSchema:
+    stmt = select(DirectorModel).where(DirectorModel.id == director_id)
+    result = await db.execute(stmt)
+    director = result.scalars().first()
+
+    if not director:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Director with the given id was not found."
+        )
+
+    return DirectorSchema.model_validate(director)
+
+
+@router.post(
+    "/directors/",
+    response_model=DirectorSchema,
+    status_code=status.HTTP_201_CREATED,
+    tags=["admin", "moderator", "directors"]
+)
+async def create_director(
+    data: NameSchema,
+    authorized: None = Depends(moderator_and_admin),
+    db: AsyncSession = Depends(get_db)
+) -> DirectorSchema:
+    stmt = select(DirectorModel).where(DirectorModel.name == data.name)
+    result = await db.execute(stmt)
+    director = result.scalars().first()
+
+    if director:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"A director with the name '{data.name}' already exists."
+        )
+
+    director = DirectorModel(name=data.name)
+    db.add(director)
+    await db.commit()
+    await db.refresh(director)
+
+    return DirectorSchema.model_validate(director)
+
+
+@router.patch(
+    "/directors/{director_id}/",
+    response_model=DirectorSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["admin", "moderator", "directors"]
+)
+async def update_director(
+    director_id: int,
+    data: NameSchema,
+    authorized: None = Depends(moderator_and_admin),
+    db: AsyncSession = Depends(get_db)
+) -> DirectorSchema:
+    stmt = select(DirectorModel).where(DirectorModel.id == director_id)
+    result = await db.execute(stmt)
+    director = result.scalars().first()
+
+    if not director:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Director with the given id was not found."
+        )
+
+    try:
+        director.name = data.name
+
+        await db.commit()
+        await db.refresh(director)
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid input data."
+        )
+
+    return DirectorSchema.model_validate(director)
+
+
+@router.delete(
+    "/directors/{director_id}/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["admin", "moderator", "directors"]
+)
+async def delete_director(
+    director_id: int,
+    authorized: None = Depends(moderator_and_admin),
+    db: AsyncSession = Depends(get_db)
+) -> None:
+    stmt = select(DirectorModel).where(DirectorModel.id == director_id)
+    result = await db.execute(stmt)
+    director = result.scalars().first()
+
+    if not director:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Director with the given id was not found"
+        )
+
+    movies_check_stmt = select(func.count(MovieModel.id)).where(
+        MovieModel.genres.any(DirectorModel.id == director_id)
+    )
+    result = await db.execute(movies_check_stmt)
+    movies_count = result.scalar_one()
+
+    if movies_count > 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot delete director: {movies_count} movies are associated with it"
+        )
+
+    await db.delete(director)
     await db.commit()
 
     return

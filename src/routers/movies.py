@@ -7,9 +7,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, joinedload
 
-from config.dependencies import RoleChecker
+from config.dependencies import RoleChecker, get_current_user
 from database import get_db
-from database.models.accounts import UserGroupEnum
+from database.models.accounts import UserGroupEnum, UserModel
 
 from database.models.movies import (
     MovieModel,
@@ -17,7 +17,8 @@ from database.models.movies import (
     DirectorModel,
     GenreModel,
     CertificationModel,
-    CommentModel
+    CommentModel,
+    LikeModel
 )
 from schemas.movies import (
     MovieListResponseSchema,
@@ -467,6 +468,47 @@ async def delete_movie(
     await db.commit()
 
     return
+
+
+@router.post(
+    "/movies/{movie_id}/likes/",
+    response_model=MessageResponseSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["like", "movies"]
+)
+async def like_movie(
+    movie_id: int,
+    user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> MessageResponseSchema:
+    movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
+    result = await db.execute(movie_stmt)
+    movie = result.scalars().first()
+
+    if not movie:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Movie with the given id was not found."
+        )
+
+    like_stmt = (
+        select(LikeModel)
+        .where(
+            LikeModel.movie_id == movie_id,
+            LikeModel.user_id == user.id
+        )
+    )
+    result = await db.execute(like_stmt)
+    like = result.scalars().first()
+
+    if like:
+        return MessageResponseSchema(message="You already like this movie.")
+
+    new_like = LikeModel(user_id=user.id, movie_id=movie_id)
+    db.add(new_like)
+    await db.commit()
+
+    return MessageResponseSchema(message="You successfully liked movie.")
 
 
 @router.get(

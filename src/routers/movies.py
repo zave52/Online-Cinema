@@ -593,3 +593,41 @@ async def update_genre(
         )
 
     return GenreSchema.model_validate(genre)
+
+
+@router.delete(
+    "/genres/{genre_id}/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["admin", "moderator", "genres"]
+)
+async def delete_genre(
+    genre_id: int,
+    authorized: None = Depends(moderator_and_admin),
+    db: AsyncSession = Depends(get_db)
+) -> None:
+    stmt = select(GenreModel).where(GenreModel.id == genre_id)
+    result = await db.execute(stmt)
+    genre = result.scalars().first()
+
+    if not genre:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Genre with the given id was not found."
+        )
+
+    movies_check_stmt = select(func.cound(MovieModel.id)).where(
+        MovieModel.genres.any(GenreModel.id == genre_id)
+    )
+    result = await db.execute(movies_check_stmt)
+    movies_count = result.scalar_one()
+
+    if movies_count > 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot delete genre: {movies_count} movies are associated with it"
+        )
+
+    await db.delete(genre)
+    await db.commit()
+
+    return

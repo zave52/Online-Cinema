@@ -29,7 +29,7 @@ from schemas.movies import (
     MessageResponseSchema,
     NameSchema,
     GenreSchema,
-    GenreListSchema
+    GenreListSchema, StarListSchema, StarSchema
 )
 
 router = APIRouter()
@@ -628,6 +628,174 @@ async def delete_genre(
         )
 
     await db.delete(genre)
+    await db.commit()
+
+    return
+
+
+@router.get(
+    "/stars/",
+    response_model=StarListSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["admin", "moderator", "stars"]
+)
+async def get_stars(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, le=1, ge=100),
+    authorized: None = Depends(moderator_and_admin),
+    db: AsyncSession = Depends(get_db)
+) -> StarListSchema:
+    stmt = select(StarModel)
+
+    count_stmt = select(func.count(StarModel.id)).select_from(stmt.subquery())
+    result = await db.execute(count_stmt)
+    total_items = result.scalar_one()
+
+    if not total_items:
+        return StarListSchema(stars=[], total_pages=0, total_items=0)
+
+    offset = (page - 1) * per_page
+
+    stmt = stmt.offset(offset).limit(per_page)
+    result = await db.execute(stmt)
+    stars: Sequence[StarModel] = result.scalars().all()
+
+    star_list = [StarSchema.model_validate(star) for star in stars]
+
+    total_pages = (total_items + per_page - 1) // per_page
+
+    return StarListSchema(
+        stars=star_list,
+        prev_page=f"/cinema/stars/?page={page - 1}&per_page={per_page}" if page > 1 else None,
+        next_page=f"/cinema/stars/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        total_pages=total_pages,
+        total_items=total_items
+    )
+
+
+@router.get(
+    "/stars/{star_id}/",
+    response_model=StarSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["admin", "moderator", "stars"]
+)
+async def get_star_by_id(
+    star_id: int,
+    authorized: None = Depends(moderator_and_admin),
+    db: AsyncSession = Depends(get_db)
+) -> StarSchema:
+    stmt = select(StarModel).where(StarModel.id == star_id)
+    result = await db.execute(stmt)
+    star = result.scalars().first()
+
+    if not star:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Star with the given id was not found."
+        )
+
+    return StarSchema.model_validate(star)
+
+
+@router.post(
+    "/stars/",
+    response_model=StarSchema,
+    status_code=status.HTTP_201_CREATED,
+    tags=["admin", "moderator", "stars"]
+)
+async def create_star(
+    data: NameSchema,
+    authorized: None = Depends(moderator_and_admin),
+    db: AsyncSession = Depends(get_db)
+) -> StarSchema:
+    stmt = select(StarModel).where(StarModel.name == data.name)
+    result = await db.execute(stmt)
+    star = result.scalars().first()
+
+    if star:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"A star with the name '{data.name}' already exists."
+        )
+
+    star = StarModel(name=data.name)
+    db.add(star)
+    await db.commit()
+    await db.refresh(star)
+
+    return StarSchema.model_validate(star)
+
+
+@router.patch(
+    "/stars/{star_id}/",
+    response_model=StarSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["admin", "moderator", "stars"]
+)
+async def update_star(
+    star_id: int,
+    data: NameSchema,
+    authorized: None = Depends(moderator_and_admin),
+    db: AsyncSession = Depends(get_db)
+) -> StarSchema:
+    stmt = select(StarModel).where(StarModel.id == star_id)
+    result = await db.execute(stmt)
+    star = result.scalars().first()
+
+    if not star:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Star with the given id was not found."
+        )
+
+    try:
+        star.name = data.name
+
+        await db.commit()
+        await db.refresh(star)
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid input data."
+        )
+
+    return StarSchema.model_validate(star)
+
+
+@router.delete(
+    "/stars/{star_id}/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["admin", "moderator", "stars"]
+)
+async def delete_star(
+    star_id: int,
+    authorized: None = Depends(moderator_and_admin),
+    db: AsyncSession = Depends(get_db)
+) -> None:
+    stmt = select(StarModel).where(StarModel.id == star_id)
+    result = await db.execute(stmt)
+    star = result.scalars().first()
+
+    if not star:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Star with the given id was not found."
+        )
+
+    movies_check_stmt = select(func.count(MovieModel.id)).where(
+        MovieModel.stars.any(StarModel.id == star_id)
+    )
+    result = await db.execute(movies_check_stmt)
+    movies_count = result.scalar_one()
+
+    if movies_count > 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot delete star: {movies_count} movies are associated with it"
+        )
+
+    await db.delete(star)
     await db.commit()
 
     return

@@ -28,7 +28,7 @@ from schemas.movies import (
     MovieUpdateSchema,
     MessageResponseSchema,
     NameSchema,
-    GenreSchema
+    GenreSchema, GenreListSchema
 )
 
 router = APIRouter()
@@ -464,11 +464,51 @@ async def delete_movie(
     return
 
 
+@router.get(
+    "/genres/",
+    response_model=GenreListSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["admin", "moderator", "genres"]
+)
+async def get_genres(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, ge=1, le=100),
+    authorization: None = Depends(moderator_and_admin),
+    db: AsyncSession = Depends(get_db)
+) -> GenreListSchema:
+    stmt = select(GenreModel)
+
+    count_stmt = select(func.count(GenreModel.id)).select_from(stmt.subquery())
+    result = await db.execute(count_stmt)
+    total_items = result.scalar_one()
+
+    if not total_items:
+        return GenreListSchema(genres=[], total_pages=0, total_items=0)
+
+    offset = (page - 1) * per_page
+
+    stmt = stmt.offset(offset).limit(per_page)
+    result = await db.execute(stmt)
+    genres: Sequence[GenreModel] = result.scalars().all()
+
+    genre_list = [GenreSchema.model_validate(genre) for genre in genres]
+
+    total_pages = (total_items + per_page - 1) // per_page
+
+    return GenreListSchema(
+        genres=genre_list,
+        prev_page=f"/cinema/genres/?page={page - 1}&per_page={per_page}" if page > 1 else None,
+        next_page=f"/cinema/genres/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        total_pages=total_pages,
+        total_items=total_items
+    )
+
+
 @router.post(
     "/genres/",
     response_model=GenreSchema,
     status_code=status.HTTP_201_CREATED,
-    tags=["admin", "moderator"]
+    tags=["admin", "moderator", "genres"]
 )
 async def create_genre(
     data: NameSchema,

@@ -19,7 +19,8 @@ from database.models.movies import (
     CertificationModel,
     CommentModel,
     LikeModel,
-    FavoriteMovieModel
+    FavoriteMovieModel,
+    RateMovieModel
 )
 from schemas.movies import (
     MovieListResponseSchema,
@@ -36,7 +37,8 @@ from schemas.movies import (
     StarSchema,
     DirectorListSchema,
     DirectorSchema,
-    GenreWithMovieCountSchema
+    GenreWithMovieCountSchema,
+    RateMovieSchema
 )
 
 router = APIRouter()
@@ -768,6 +770,61 @@ async def remove_movie_from_favorites(
     await db.commit()
 
     return
+
+
+@router.post(
+    "/movies/{movie_id}/rates/",
+    response_model=MessageResponseSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["rates", "movies"]
+)
+async def rate_movie(
+    movie_id: int,
+    data: RateMovieSchema,
+    user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> MessageResponseSchema:
+    movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
+    result = await db.execute(movie_stmt)
+    movie = result.scalars().first()
+
+    if not movie:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Movie with the given id was not found."
+        )
+
+    rate_stmt = (
+        select(RateMovieModel)
+        .where(
+            RateMovieModel.movie_id == movie_id,
+            RateMovieModel.user_id == user.id
+        )
+    )
+    result = await db.execute(rate_stmt)
+    existing_rate: RateMovieModel = result.scalars().first()
+
+    if existing_rate:
+        previous_rate = existing_rate.rate
+        existing_rate.rate = data.rate
+        await db.commit()
+
+        return MessageResponseSchema(
+            message=f"You changed your rating for the movie "
+                    f"from {previous_rate} to {existing_rate.rate}."
+        )
+
+    new_rate = RateMovieModel(
+        rate=data.rate,
+        movie_id=movie_id,
+        user_id=user.id
+    )
+    db.add(new_rate)
+    await db.commit()
+
+    return MessageResponseSchema(
+        message=f"You gave the movie a rating of {new_rate.rate}."
+    )
 
 
 @router.get(

@@ -662,6 +662,48 @@ async def add_movie_to_favorites(
     )
 
 
+@router.delete(
+    "/movies/{movie_id}/favorites/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["favorites", "movies"]
+)
+async def remove_movie_from_favorites(
+    movie_id: int,
+    user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> None:
+    movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
+    result = await db.execute(movie_stmt)
+    movie = result.scalars().first()
+
+    if not movie:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Movie with the given id was not found."
+        )
+
+    favorite_stmt = (
+        select(FavoriteMovieModel)
+        .where(
+            FavoriteMovieModel.movie_id == movie_id,
+            FavoriteMovieModel.user_id == user.id
+        )
+    )
+    result = await db.execute(favorite_stmt)
+    favorite = result.scalars().first()
+
+    if not favorite:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="This movie is not in your favorites."
+        )
+
+    await db.delete(favorite)
+    await db.commit()
+
+    return
+
+
 @router.get(
     "/genres/",
     response_model=GenreListSchema,

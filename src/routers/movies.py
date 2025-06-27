@@ -18,7 +18,8 @@ from database.models.movies import (
     GenreModel,
     CertificationModel,
     CommentModel,
-    LikeModel, FavoriteMovieModel
+    LikeModel,
+    FavoriteMovieModel
 )
 from schemas.movies import (
     MovieListResponseSchema,
@@ -34,7 +35,7 @@ from schemas.movies import (
     StarListSchema,
     StarSchema,
     DirectorListSchema,
-    DirectorSchema
+    DirectorSchema, GenreWithMovieCountSchema
 )
 
 router = APIRouter()
@@ -780,9 +781,22 @@ async def get_genres(
     authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
 ) -> GenreListSchema:
-    stmt = select(GenreModel)
+    subquery = (
+        select(
+            GenreModel.id,
+            func.count(MovieModel.id).label("movie_count")
+        )
+        .join(MovieModel.genres)
+        .group_by(GenreModel.id)
+        .subquery()
+    )
 
-    count_stmt = select(func.count(GenreModel.id)).select_from(stmt.subquery())
+    stmt = (
+        select(GenreModel, subquery.c.movie_count)
+        .outerjoin(subquery, GenreModel.id == subquery.c.id)
+    )
+
+    count_stmt = select(func.count(GenreModel.id))
     result = await db.execute(count_stmt)
     total_items = result.scalar_one()
 
@@ -791,11 +805,18 @@ async def get_genres(
 
     offset = (page - 1) * per_page
 
-    stmt = stmt.offset(offset).limit(per_page)
+    stmt = stmt.offset(offset).limit(per_page).order_by(GenreModel.name)
     result = await db.execute(stmt)
-    genres: Sequence[GenreModel] = result.scalars().all()
+    genres_with_counts: Sequence[GenreModel] = result.all()
 
-    genre_list = [GenreSchema.model_validate(genre) for genre in genres]
+    genre_list = [
+        GenreWithMovieCountSchema(
+            id=genre.id,
+            name=genre.name,
+            movie_count=count or 0
+        )
+        for genre, count in genres_with_counts
+    ]
 
     total_pages = (total_items + per_page - 1) // per_page
 

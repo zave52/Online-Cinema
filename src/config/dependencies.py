@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.settings import BaseAppSettings, get_settings
 from database import get_db
 from database.models.accounts import UserModel, UserGroupEnum
+from database.models.shopping_cart import CartModel
 from exceptions.security import BaseSecurityError
 from notifications.emails import EmailSender
 from notifications.interfaces import EmailSenderInterface
@@ -113,3 +114,20 @@ def get_s3_storage(
         endpoint_url=settings.S3_STORAGE_ENDPOINT,
         bucket_name=settings.S3_BUCKET_NAME
     )
+
+
+async def get_or_create_cart(
+    user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db)
+) -> CartModel:
+    cart_stmt = select(CartModel).where(CartModel.user_id == user_id)
+    result = await db.execute(cart_stmt)
+    cart = result.scalars().first()
+
+    if not cart:
+        cart = CartModel(user_id=user_id, items=[])
+        db.add(cart)
+        await db.commit()
+        await db.refresh(cart)
+
+    return cart

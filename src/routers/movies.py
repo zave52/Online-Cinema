@@ -38,7 +38,9 @@ from schemas.movies import (
     DirectorListSchema,
     DirectorSchema,
     GenreWithMovieCountSchema,
-    RateMovieSchema
+    RateMovieSchema,
+    CommentSchema,
+    CommentMovieRequestSchema
 )
 
 router = APIRouter()
@@ -472,6 +474,41 @@ async def delete_movie(
     await db.commit()
 
     return
+
+
+@router.post(
+    "/movies/{movie_id}/comments/",
+    response_model=CommentSchema,
+    status_code=status.HTTP_201_CREATED,
+    tags=["comments", "movies"]
+)
+async def comment_movie(
+    movie_id: int,
+    data: CommentMovieRequestSchema,
+    user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> CommentSchema:
+    movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
+    result = await db.execute(movie_stmt)
+    movie = result.scalars().first()
+
+    if not movie:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Movie with the given id was not found."
+        )
+
+    comment = CommentModel(
+        content=data.content,
+        movie_id=movie_id,
+        user_id=user.id
+    )
+
+    db.add(comment)
+    await db.commit()
+    await db.refresh(comment)
+
+    return CommentSchema.model_validate(comment)
 
 
 @router.get(

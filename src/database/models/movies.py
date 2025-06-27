@@ -13,7 +13,8 @@ from sqlalchemy import (
     Table,
     Column,
     UUID,
-    DateTime, CheckConstraint
+    DateTime,
+    CheckConstraint
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 

@@ -20,6 +20,10 @@ class GenreSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class GenreWithMovieCountSchema(GenreSchema):
+    movie_count: int
+
+
 class GenreListSchema(BaseListSchema):
     genres: List[GenreSchema]
 

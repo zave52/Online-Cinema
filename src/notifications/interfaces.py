@@ -42,3 +42,13 @@ class EmailSenderInterface(ABC):
         email: EmailStr
     ) -> None:
         pass
+
+    @abstractmethod
+    async def send_comment_reply_notification_email(
+        self,
+        email: EmailStr,
+        comment_id: str,
+        reply_text: str,
+        reply_author: str
+    ) -> None:
+        pass

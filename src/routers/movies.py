@@ -35,7 +35,8 @@ from schemas.movies import (
     StarListSchema,
     StarSchema,
     DirectorListSchema,
-    DirectorSchema, GenreWithMovieCountSchema
+    DirectorSchema,
+    GenreWithMovieCountSchema
 )
 
 router = APIRouter()
@@ -807,7 +808,7 @@ async def get_genres(
 
     stmt = stmt.offset(offset).limit(per_page).order_by(GenreModel.name)
     result = await db.execute(stmt)
-    genres_with_counts: Sequence[GenreModel] = result.all()
+    genres_with_counts: Sequence[GenreModel, int] = result.all()
 
     genre_list = [
         GenreWithMovieCountSchema(
@@ -831,7 +832,7 @@ async def get_genres(
 
 @router.get(
     "/genres/{genre_id}/",
-    response_model=GenreSchema,
+    response_model=GenreWithMovieCountSchema,
     status_code=status.HTTP_200_OK,
     tags=["admin", "moderator", "genres"]
 )
@@ -839,10 +840,10 @@ async def get_genre_by_id(
     genre_id: int,
     authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
-) -> GenreSchema:
+) -> GenreWithMovieCountSchema:
     stmt = select(GenreModel).where(GenreModel.id == genre_id)
     result = await db.execute(stmt)
-    genre = result.scalars().first()
+    genre: GenreModel = result.scalars().first()
 
     if not genre:
         raise HTTPException(
@@ -850,7 +851,18 @@ async def get_genre_by_id(
             detail="Genre with the given id was not found."
         )
 
-    return GenreSchema.model_validate(genre)
+    movie_count_stmt = (
+        select(func.count(MovieModel.id))
+        .where(MovieModel.genres.any(GenreModel.id == genre_id))
+    )
+    result = await db.execute(movie_count_stmt)
+    movie_count = result.scalar_one()
+
+    return GenreWithMovieCountSchema(
+        id=genre_id,
+        name=genre.name,
+        movie_count=movie_count
+    )
 
 
 @router.post(

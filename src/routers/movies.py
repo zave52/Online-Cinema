@@ -1,13 +1,20 @@
 import asyncio
 from typing import Sequence, Optional
 
-from fastapi import APIRouter, status, Depends, Query, HTTPException
+from fastapi import (
+    APIRouter,
+    status,
+    Depends,
+    Query,
+    HTTPException,
+    BackgroundTasks
+)
 from sqlalchemy import select, func, or_, desc, asc
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, joinedload
 
-from config.dependencies import RoleChecker, get_current_user
+from config.dependencies import RoleChecker, get_current_user, get_email_sender
 from database import get_db
 from database.models.accounts import UserGroupEnum, UserModel
 
@@ -22,6 +29,7 @@ from database.models.movies import (
     FavoriteMovieModel,
     RateMovieModel
 )
+from notifications.interfaces import EmailSenderInterface
 from schemas.movies import (
     MovieListResponseSchema,
     MovieListItemSchema,
@@ -509,6 +517,70 @@ async def comment_movie(
     await db.refresh(comment)
 
     return CommentSchema.model_validate(comment)
+
+
+@router.post(
+    "/movies/{movie_id}/comments/{comment_id}/replies/",
+    response_model=CommentSchema,
+    status_code=status.HTTP_201_CREATED,
+    tags=["comments", "movies"]
+)
+async def reply_to_comment(
+    movie_id: int,
+    comment_id: int,
+    background_tasks: BackgroundTasks,
+    data: CommentMovieRequestSchema,
+    user: UserModel = Depends(get_current_user),
+    email_sender: EmailSenderInterface = Depends(get_email_sender),
+    db: AsyncSession = Depends(get_db)
+) -> CommentSchema:
+    movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
+    result = await db.execute(movie_stmt)
+    movie = result.scalars().first()
+
+    if not movie:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Movie with the given id was not found."
+        )
+
+    parent_comment_stmt = (
+        select(CommentModel)
+        .options(joinedload(CommentModel.user))
+        .where(
+            CommentModel.id == comment_id,
+            CommentModel.movie_id == movie_id
+        )
+    )
+    result = await db.execute(parent_comment_stmt)
+    parent_comment = result.scalars().first()
+
+    if not parent_comment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Comment with the given id was not found for this movie."
+        )
+
+    reply = CommentModel(
+        content=data.content,
+        movie_id=movie_id,
+        user_id=user.id,
+        parent_id=comment_id
+    )
+
+    db.add(reply)
+    await db.commit()
+    await db.refresh(reply)
+
+    background_tasks.add_task(
+        email_sender.send_comment_reply_notification_email,
+        parent_comment.user.email,
+        parent_comment.id,
+        reply.content,
+        user.email
+    )
+
+    return CommentSchema.model_validate(reply)
 
 
 @router.delete(

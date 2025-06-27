@@ -114,7 +114,7 @@ class MovieListItemSchema(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    @field_validator("genres", model="before")
+    @field_validator("genres", mode="before")
     @classmethod
     def genres_as_list_of_names(cls, v: Any) -> List[str]:
         if not v:

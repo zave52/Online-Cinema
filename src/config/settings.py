@@ -85,3 +85,10 @@ class CelerySettings(BaseSettings):
                 "schedule": crontab(minute="0", hour="0"),
             },
         }
+
+
+def get_settings() -> BaseAppSettings:
+    environment = os.getenv("ENVIRONMENT", "developing")
+    if environment == "production":
+        return Settings()
+    return DevelopmentSettings()

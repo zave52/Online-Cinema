@@ -1,12 +1,10 @@
-import os
-
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi_mail import ConnectionConfig
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.settings import Settings, DevelopmentSettings, BaseAppSettings
+from config.settings import BaseAppSettings, get_settings
 from database import get_db
 from database.models.accounts import UserModel, UserGroupEnum
 from exceptions.security import BaseSecurityError
@@ -18,13 +16,6 @@ from storages.interfaces import S3StorageInterface
 from storages.s3 import S3Storage
 
 bearer_scheme = HTTPBearer()
-
-
-def get_settings() -> BaseAppSettings:
-    environment = os.getenv("ENVIRONMENT", "developing")
-    if environment == "production":
-        return Settings()
-    return DevelopmentSettings()
 
 
 def get_jwt_manager(

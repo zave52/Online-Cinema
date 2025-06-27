@@ -511,6 +511,56 @@ async def comment_movie(
     return CommentSchema.model_validate(comment)
 
 
+@router.delete(
+    "/movies/{movie_id}/comments/{comment_id}/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["comments", "movies"]
+)
+async def delete_comment(
+    movie_id: int,
+    comment_id: int,
+    user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> None:
+    movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
+    result = await db.execute(movie_stmt)
+    movie = result.scalars().first()
+
+    if not movie:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Movie with the given id was not found."
+        )
+
+    comment_stmt = (
+        select(CommentModel)
+        .where(
+            CommentModel.id == comment_id,
+            CommentModel.movie_id == movie_id
+        )
+    )
+    result = await db.execute(comment_stmt)
+    comment: CommentModel = result.scalars().first()
+
+    if not comment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Comment with the given id was not found for this movie."
+        )
+
+    if comment.user_id != user.id and user.group.name not in (
+            UserGroupEnum.ADMIN, UserGroupEnum.MODERATOR):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not allowed to delete this comment."
+        )
+
+    await db.delete(comment)
+    await db.commit()
+
+    return
+
+
 @router.get(
     "/movies/likes/",
     response_model=MovieListResponseSchema,

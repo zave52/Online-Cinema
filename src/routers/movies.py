@@ -827,6 +827,48 @@ async def rate_movie(
     )
 
 
+@router.delete(
+    "/movies/{movie_id}/rates/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["rates", "movies"]
+)
+async def delete_rate(
+    movie_id: int,
+    user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> None:
+    movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
+    result = await db.execute(movie_stmt)
+    movie = result.scalars().first()
+
+    if not movie:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Movie with the given id was not found."
+        )
+
+    rate_stmt = (
+        select(RateMovieModel)
+        .where(
+            RateMovieModel.movie_id == movie_id,
+            RateMovieModel.user_id == user.id
+        )
+    )
+    result = await db.execute(rate_stmt)
+    rate: RateMovieModel = result.scalars().first()
+
+    if not rate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="You haven't rated this movie yet."
+        )
+
+    await db.delete(rate)
+    await db.commit()
+
+    return
+
+
 @router.get(
     "/genres/",
     response_model=GenreListSchema,

@@ -13,7 +13,7 @@ from sqlalchemy import (
     Table,
     Column,
     UUID,
-    DateTime
+    DateTime, CheckConstraint
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -327,11 +327,7 @@ class RateMovieModel(Base):
     id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
-    rate: Mapped[int] = mapped_column(
-        Integer,
-        check="rate >= 1 AND rate <= 10",
-        nullable=False
-    )
+    rate: Mapped[int] = mapped_column(Integer, nullable=False)
 
     movie_id: Mapped[int] = mapped_column(
         ForeignKey("movies.id", ondelete="CASCADE"),
@@ -351,7 +347,10 @@ class RateMovieModel(Base):
         back_populates="rate_movies"
     )
 
-    __table_args__ = (UniqueConstraint("movie_id", "user_id"),)
+    __table_args__ = (
+        UniqueConstraint("movie_id", "user_id"),
+        CheckConstraint("rate >= 1 AND rate <= 10", name="rate_check"),
+    )
 
     def __repr__(self) -> str:
         return f"<RateMovieModel(id={self.id}, movie_id={self.movie_id}, user_id={self.user_id})>"

@@ -18,7 +18,7 @@ from database.models.movies import (
     GenreModel,
     CertificationModel,
     CommentModel,
-    LikeModel
+    LikeModel, FavoriteMovieModel
 )
 from schemas.movies import (
     MovieListResponseSchema,
@@ -615,6 +615,51 @@ async def unlike_movie(
     await db.commit()
 
     return
+
+
+@router.post(
+    "/movies/{movie_id}/favorites/",
+    response_model=MessageResponseSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["favorites", "movies"]
+)
+async def add_movie_to_favorites(
+    movie_id: int,
+    user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> MessageResponseSchema:
+    movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
+    result = await db.execute(movie_stmt)
+    movie = result.scalars().first()
+
+    if not movie:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Movie with the given id was not found."
+        )
+
+    favorite_stmt = (
+        select(FavoriteMovieModel)
+        .where(
+            FavoriteMovieModel.movie_id == movie_id,
+            FavoriteMovieModel.user_id == user.id
+        )
+    )
+    result = await db.execute(favorite_stmt)
+    existing_favorite = result.scalars().first()
+
+    if existing_favorite:
+        return MessageResponseSchema(
+            message="You have already added this movie to favorites."
+        )
+
+    new_favorite = FavoriteMovieModel(movie_id=movie_id, user_id=user.id)
+    db.add(new_favorite)
+    await db.commit()
+
+    return MessageResponseSchema(
+        message="You successfully added this movie to favorites."
+    )
 
 
 @router.get(

@@ -91,9 +91,9 @@ class EmailSender(FastMail, EmailSenderInterface):
     async def send_comment_reply_notification_email(
         self,
         email: EmailStr,
-        comment_id: str,
+        comment_id: int,
         reply_text: str,
-        reply_author: str
+        reply_author: EmailStr
     ) -> None:
         message = MessageSchema(
             recipients=[email],

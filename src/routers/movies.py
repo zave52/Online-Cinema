@@ -808,7 +808,7 @@ async def get_genres(
 
     stmt = stmt.offset(offset).limit(per_page).order_by(GenreModel.name)
     result = await db.execute(stmt)
-    genres_with_counts: Sequence[GenreModel, int] = result.all()
+    genres_with_counts = result.all()
 
     genre_list = [
         GenreWithMovieCountSchema(

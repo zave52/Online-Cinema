@@ -161,3 +161,7 @@ class MovieUpdateSchema(BaseModel):
 
 class MessageResponseSchema(BaseModel):
     message: str
+
+
+class RateMovieSchema(BaseModel):
+    rate: int = Field(..., ge=1, le=10)

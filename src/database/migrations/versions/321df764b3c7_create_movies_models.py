@@ -1,8 +1,8 @@
 """create movies models
 
-Revision ID: 5b912806d350
+Revision ID: 321df764b3c7
 Revises: c58d1ef76f1f
-Create Date: 2025-06-23 23:16:21.879016
+Create Date: 2025-06-27 14:55:15.153379
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '5b912806d350'
+revision: str = '321df764b3c7'
 down_revision: Union[str, Sequence[str], None] = 'c58d1ef76f1f'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -58,6 +58,12 @@ def upgrade() -> None:
     sa.Column('description', sa.Text(), nullable=False),
     sa.Column('price', sa.DECIMAL(precision=10, scale=2), nullable=False),
     sa.Column('certification_id', sa.Integer(), nullable=False),
+    sa.CheckConstraint('gross IS NULL OR gross >= 0', name='check_gross_positive'),
+    sa.CheckConstraint('imdb >= 0 AND imdb <= 10', name='check_imdb_range'),
+    sa.CheckConstraint('meta_score IS NULL OR (meta_score >= 0 AND meta_score <= 100)', name='check_meta_score_range'),
+    sa.CheckConstraint('price >= 0', name='check_price_positive'),
+    sa.CheckConstraint('time >= 0', name='check_time_positive'),
+    sa.CheckConstraint('votes >= 0', name='check_votes_positive'),
     sa.ForeignKeyConstraint(['certification_id'], ['certifications.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('name', 'year', 'time'),
@@ -66,9 +72,12 @@ def upgrade() -> None:
     op.create_table('comments',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('content', sa.Text(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('parent_id', sa.Integer(), nullable=True),
     sa.Column('movie_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['movie_id'], ['movies.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['parent_id'], ['comments.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
@@ -113,8 +122,10 @@ def upgrade() -> None:
     )
     op.create_table('rates',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('rate', sa.Integer(), nullable=False),
     sa.Column('movie_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.CheckConstraint('rate >= 1 AND rate <= 10', name='rate_check'),
     sa.ForeignKeyConstraint(['movie_id'], ['movies.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),

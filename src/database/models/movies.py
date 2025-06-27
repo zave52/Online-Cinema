@@ -210,7 +210,21 @@ class MovieModel(Base):
         back_populates="movie"
     )
 
-    __table_args__ = (UniqueConstraint("name", "year", "time"),)
+    __table_args__ = (
+        UniqueConstraint("name", "year", "time"),
+        CheckConstraint("time >= 0", name="check_time_positive"),
+        CheckConstraint("imdb >= 0 AND imdb <= 10", name="check_imdb_range"),
+        CheckConstraint("votes >= 0", name="check_votes_positive"),
+        CheckConstraint(
+            "meta_score IS NULL OR (meta_score >= 0 AND meta_score <= 100)",
+            name="check_meta_score_range"
+        ),
+        CheckConstraint(
+            "gross IS NULL OR gross >= 0",
+            name="check_gross_positive"
+        ),
+        CheckConstraint("price >= 0", name="check_price_positive"),
+    )
 
     def __repr__(self) -> str:
         return f"<MovieModel(id={self.id}, name={self.name}, year={self.year}, time={self.time})>"

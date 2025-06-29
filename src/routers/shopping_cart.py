@@ -1,5 +1,5 @@
 from fastapi import APIRouter, status, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.dependencies import (
@@ -209,3 +209,25 @@ async def get_shopping_cart_movies_by_id(
         total_items=len(movie_items),
         movies=movie_items
     )
+
+
+@router.delete(
+    "/cart/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["cart"]
+)
+async def clear_shopping_cart(
+    user: UserModel = Depends(get_current_user),
+    cart: CartModel = Depends(get_or_create_cart),
+    db: AsyncSession = Depends(get_db)
+) -> None:
+    stmt = select(CartItemModel).where(CartItemModel.cart_id == cart.id)
+    result = await db.execute(stmt)
+    if not result.scalars().first():
+        return
+
+    stmt = delete(CartItemModel).where(CartItemModel.cart_id == cart.id)
+    await db.execute(stmt)
+    await db.commit()
+
+    return

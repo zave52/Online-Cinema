@@ -2,7 +2,14 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional, List
 
-from sqlalchemy import Integer, ForeignKey, DateTime, Enum as SQLEnum, DECIMAL
+from sqlalchemy import (
+    Integer,
+    ForeignKey,
+    DateTime,
+    Enum as SQLEnum,
+    DECIMAL,
+    UniqueConstraint
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.models.base import Base
@@ -94,6 +101,8 @@ class OrderItemModel(Base):
         "PaymentItemModel",
         back_populates="order_item"
     )
+
+    __table_args__ = (UniqueConstraint("order_id", "movie_id"),)
 
     def __repr__(self) -> str:
         return (f"<OrderItemModel(id={self.id}, "

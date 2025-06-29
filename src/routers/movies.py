@@ -462,14 +462,17 @@ async def update_movie(
 
 @router.delete(
     "/movies/{movie_id}/",
-    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        status.HTTP_204_NO_CONTENT: {},
+        status.HTTP_200_OK: {"model": MessageResponseSchema}
+    },
     tags=["admin", "moderator"]
 )
 async def delete_movie(
     movie_id: int,
     authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
-) -> None:
+) -> None | MessageResponseSchema:
     movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
     result = await db.execute(movie_stmt)
     movie = result.scalars().first()
@@ -494,8 +497,20 @@ async def delete_movie(
             detail=f"Cannot delete movie: It has been purchased by {purchaser_count} users"
         )
 
+    cart_count_stmt = (
+        select(func.count(UserModel.id))
+        .where(UserModel.cart.any(MovieModel.id == movie_id))
+    )
+    result = await db.execute(cart_count_stmt)
+    cart_count = result.scalar_one()
+
     await db.delete(movie)
     await db.commit()
+
+    if cart_count > 0:
+        return MessageResponseSchema(
+            message=f"Movie deleted successfully. Note: It was in {cart_count} users' carts and has been removed."
+        )
 
     return
 

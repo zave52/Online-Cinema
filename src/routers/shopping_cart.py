@@ -9,7 +9,7 @@ from database.models.movies import MovieModel
 from database.models.shopping_cart import CartModel, CartItemModel
 from schemas.shopping_cart import (
     MessageResponseSchema,
-    ShoppingCartAddMovieSchema
+    ShoppingCartAddMovieSchema, ShoppingCartGetMoviesSchema
 )
 
 router = APIRouter()
@@ -108,3 +108,44 @@ async def delete_movie_from_cart(
     await db.commit()
 
     return
+
+
+@router.get(
+    "/cart/",
+    response_model=ShoppingCartGetMoviesSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["cart"]
+)
+async def get_shopping_cart_movies(
+    user: UserModel = Depends(get_current_user),
+    cart: CartModel = Depends(get_or_create_cart),
+    db: AsyncSession = Depends(get_db)
+) -> ShoppingCartGetMoviesSchema:
+    stmt = (
+        select(CartItemModel, MovieModel)
+        .join(
+            MovieModel,
+            CartItemModel.movie_id == MovieModel.id
+        )
+        .where(
+            CartItemModel.cart_id == cart.id
+        )
+    )
+    result = await db.execute(stmt)
+    items_with_movies = result.all()
+
+    movie_items = []
+    for cart_item, movie in items_with_movies:
+        movie_dict = {
+            "cart_item_id": cart_item.id,
+            "name": movie.name,
+            "year": movie.year,
+            "price": movie.price,
+            "genres": movie.genres
+        }
+        movie_items.append(movie_dict)
+
+    return ShoppingCartGetMoviesSchema(
+        total_items=len(movie_items),
+        movies=movie_items
+    )

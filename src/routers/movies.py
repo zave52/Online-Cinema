@@ -16,7 +16,11 @@ from sqlalchemy.orm import selectinload, joinedload
 
 from config.dependencies import RoleChecker, get_current_user, get_email_sender
 from database import get_db
-from database.models.accounts import UserGroupEnum, UserModel
+from database.models.accounts import (
+    UserGroupEnum,
+    UserModel,
+    purchased_movies_association
+)
 
 from database.models.movies import (
     MovieModel,
@@ -476,7 +480,19 @@ async def delete_movie(
             detail="Movie with the given id was not found."
         )
 
-    # TODO: Prevent the deletion of a movie if at least one user has purchased it.
+    purchaser_count_stmt = (
+        select(func.count())
+        .select_from(purchased_movies_association)
+        .where(purchased_movies_association.c.movie_id == movie_id))
+
+    result = await db.execute(purchaser_count_stmt)
+    purchaser_count = result.scalar_one()
+
+    if purchaser_count > 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot delete movie: It has been purchased by {purchaser_count} users"
+        )
 
     await db.delete(movie)
     await db.commit()

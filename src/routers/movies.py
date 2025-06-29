@@ -16,7 +16,11 @@ from sqlalchemy.orm import selectinload, joinedload
 
 from config.dependencies import RoleChecker, get_current_user, get_email_sender
 from database import get_db
-from database.models.accounts import UserGroupEnum, UserModel
+from database.models.accounts import (
+    UserGroupEnum,
+    UserModel,
+    purchased_movies_association
+)
 
 from database.models.movies import (
     MovieModel,
@@ -458,14 +462,17 @@ async def update_movie(
 
 @router.delete(
     "/movies/{movie_id}/",
-    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        status.HTTP_204_NO_CONTENT: {},
+        status.HTTP_200_OK: {"model": MessageResponseSchema}
+    },
     tags=["admin", "moderator"]
 )
 async def delete_movie(
     movie_id: int,
     authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
-) -> None:
+) -> None | MessageResponseSchema:
     movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
     result = await db.execute(movie_stmt)
     movie = result.scalars().first()
@@ -476,12 +483,101 @@ async def delete_movie(
             detail="Movie with the given id was not found."
         )
 
-    # TODO: Prevent the deletion of a movie if at least one user has purchased it.
+    purchaser_count_stmt = (
+        select(func.count())
+        .select_from(purchased_movies_association)
+        .where(purchased_movies_association.c.movie_id == movie_id))
+
+    result = await db.execute(purchaser_count_stmt)
+    purchaser_count = result.scalar_one()
+
+    if purchaser_count > 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot delete movie: It has been purchased by {purchaser_count} users"
+        )
+
+    cart_count_stmt = (
+        select(func.count(UserModel.id))
+        .where(UserModel.cart.any(MovieModel.id == movie_id))
+    )
+    result = await db.execute(cart_count_stmt)
+    cart_count = result.scalar_one()
 
     await db.delete(movie)
     await db.commit()
 
+    if cart_count > 0:
+        return MessageResponseSchema(
+            message=f"Movie deleted successfully. Note: It was in {cart_count} users' carts and has been removed."
+        )
+
     return
+
+
+@router.get(
+    "/movies/purchased/",
+    response_model=MovieListResponseSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["movies"]
+)
+async def get_purchased_movies(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, ge=1, le=100),
+    sort_by: Optional[str] = Query(None),
+    user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> MovieListResponseSchema:
+    count_stmt = (
+        select(func.count(MovieModel.id))
+        .join(purchased_movies_association, MovieModel.id == purchased_movies_association.c.movie_id)
+        .where(purchased_movies_association.c.user_id == user.id)
+    )
+    result = await db.execute(count_stmt)
+    total_items = result.scalar_one()
+
+    if not total_items:
+        return MovieListResponseSchema(movies=[], total_pages=0, total_items=0)
+
+    stmt = (
+        select(MovieModel)
+        .options(
+            selectinload(MovieModel.genres),
+            selectinload(MovieModel.stars),
+            selectinload(MovieModel.directors),
+            selectinload(MovieModel.certification)
+        )
+        .join(purchased_movies_association, MovieModel.id == purchased_movies_association.c.movie_id)
+        .where(purchased_movies_association.c.user_id == user.id)
+    )
+
+    if sort_by:
+        sort_field = sort_by.strip("-")
+        allowed_sort_fields = ("year", "price", "imdb", "name", "time")
+        if sort_field in allowed_sort_fields:
+            column = getattr(MovieModel, sort_field)
+            if sort_by.startswith("-"):
+                stmt = stmt.order_by(desc(column))
+            else:
+                stmt = stmt.order_by(asc(column))
+
+    offset = (page - 1) * per_page
+
+    stmt = stmt.offset(offset).limit(per_page)
+    result = await db.execute(stmt)
+    movies: Sequence[MovieModel] = result.scalars().all()
+
+    movie_list = [MovieListItemSchema.model_validate(movie) for movie in movies]
+
+    total_pages = (total_items + per_page - 1) // per_page
+
+    return MovieListResponseSchema(
+        movies=movie_list,
+        prev_page=f"/cinema/movies/purchased/?page={page - 1}&per_page={per_page}" if page > 1 else None,
+        next_page=f"/cinema/movies/purchased/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        total_pages=total_pages,
+        total_items=total_items
+    )
 
 
 @router.post(

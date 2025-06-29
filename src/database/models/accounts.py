@@ -11,7 +11,9 @@ from sqlalchemy import (
     DateTime,
     func,
     ForeignKey,
-    UniqueConstraint
+    UniqueConstraint,
+    Table,
+    Column
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
@@ -21,6 +23,23 @@ from database.validators.accounts import (
     validate_password_strength
 )
 from security.utils import verify_password, hash_password, generate_secure_token
+
+purchased_movies_association = Table(
+    "purchased_movies",
+    Base.metadata,
+    Column(
+        "movie_id",
+        Integer,
+        ForeignKey("movies.id", ondelete="CASCADE"),
+        primary_key=True
+    ),
+    Column(
+        "user_id",
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True
+    )
+)
 
 
 class UserGroupEnum(Enum):
@@ -126,6 +145,12 @@ class UserModel(Base):
         "RateMovieModel",
         back_populates="user",
         cascade="all, delete-orphan"
+    )
+    purchased: Mapped[List["MovieModel"]] = relationship(
+        "MovieModel",
+        backref="purchasers",
+        cascade="all, delete-orphan",
+        secondary=purchased_movies_association
     )
 
     def __repr__(self) -> str:

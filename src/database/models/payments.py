@@ -35,7 +35,7 @@ class PaymentModel(Base):
         nullable=False,
         default=datetime.now(timezone.utc)
     )
-    external_payment_id: Optional[Mapped[int]] = mapped_column(
+    external_payment_id: Mapped[Optional[int]] = mapped_column(
         Integer,
         nullable=True
     )

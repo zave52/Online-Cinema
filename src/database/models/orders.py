@@ -39,7 +39,7 @@ class OrderModel(Base):
         nullable=False,
         default=datetime.now(timezone.utc)
     )
-    total_amount: Optional[Mapped[float]] = mapped_column(
+    total_amount: Mapped[Optional[float]] = mapped_column(
         DECIMAL(10, 2),
         nullable=True
     )

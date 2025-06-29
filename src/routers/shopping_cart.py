@@ -158,3 +158,54 @@ async def get_shopping_cart_movies(
         total_items=len(movie_items),
         movies=movie_items
     )
+
+
+@router.get(
+    "/cart/{cart_id}/",
+    response_model=ShoppingCartGetMoviesSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["cart", "moderator", "admin"]
+)
+async def get_shopping_cart_movies_by_id(
+    cart_id: int,
+    authorized: None = Depends(moderator_and_admin),
+    db: AsyncSession = Depends(get_db)
+) -> ShoppingCartGetMoviesSchema:
+    cart_stmt = select(CartModel).where(CartModel.id == cart_id)
+    result = await db.execute(cart_stmt)
+    cart = result.scalars().first()
+
+    if not cart:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Shopping cart with the given id was not found."
+        )
+
+    items_stmt = (
+        select(CartItemModel, MovieModel)
+        .join(
+            MovieModel,
+            CartItemModel.movie_id == MovieModel.id
+        )
+        .where(
+            CartItemModel.cart_id == cart.id
+        )
+    )
+    result = await db.execute(items_stmt)
+    items_with_movies = result.all()
+
+    movie_items = []
+    for cart_item, movie in items_with_movies:
+        movie_dict = {
+            "cart_item_id": cart_item.id,
+            "name": movie.name,
+            "year": movie.year,
+            "price": movie.price,
+            "genres": movie.genres
+        }
+        movie_items.append(movie_dict)
+
+    return ShoppingCartGetMoviesSchema(
+        total_items=len(movie_items),
+        movies=movie_items
+    )

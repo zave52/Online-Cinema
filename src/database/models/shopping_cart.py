@@ -25,7 +25,7 @@ class CartModel(Base):
 
     user: Mapped[UserModel] = relationship(
         UserModel,
-        backref="cart"
+        back_populates="cart"
     )
     items: Mapped[List["CartItemModel"]] = relationship(
         "CartItemModel",
@@ -65,7 +65,7 @@ class CartItemModel(Base):
     )
     movie: Mapped[MovieModel] = relationship(
         MovieModel,
-        backref="cart_items"
+        back_populates="cart_items"
     )
 
     __table_args__ = (UniqueConstraint("cart_id", "movie_id"),)

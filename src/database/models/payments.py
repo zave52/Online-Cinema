@@ -50,11 +50,11 @@ class PaymentModel(Base):
 
     user: Mapped["UserModel"] = relationship(
         "UserModel",
-        backref="payments"
+        back_populates="payments"
     )
     order: Mapped["OrderModel"] = relationship(
         "OrderModel",
-        backref="payments"
+        back_populates="payments"
     )
     items: Mapped[List["PaymentItemModel"]] = relationship(
         "PaymentItemModel",
@@ -94,7 +94,7 @@ class PaymentItemModel(Base):
     )
     order_item: Mapped["OrderItemModel"] = relationship(
         "OrderItemModel",
-        backref="payment_items"
+        back_populates="payment_items"
     )
 
     def __repr__(self) -> str:

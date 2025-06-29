@@ -2,17 +2,26 @@ from fastapi import APIRouter, status, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.dependencies import get_current_user, get_or_create_cart
+from config.dependencies import (
+    get_current_user,
+    get_or_create_cart,
+    RoleChecker
+)
 from database import get_db
-from database.models.accounts import UserModel
+from database.models.accounts import UserModel, UserGroupEnum
 from database.models.movies import MovieModel
 from database.models.shopping_cart import CartModel, CartItemModel
 from schemas.shopping_cart import (
     MessageResponseSchema,
-    ShoppingCartAddMovieSchema, ShoppingCartGetMoviesSchema
+    ShoppingCartAddMovieSchema,
+    ShoppingCartGetMoviesSchema
 )
 
 router = APIRouter()
+
+moderator_and_admin = RoleChecker(
+    [UserGroupEnum.MODERATOR, UserGroupEnum.ADMIN]
+)
 
 
 @router.post(

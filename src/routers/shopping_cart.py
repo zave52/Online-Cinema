@@ -231,3 +231,18 @@ async def clear_shopping_cart(
     await db.commit()
 
     return
+
+
+@router.post(
+    "/cart/checkout/",
+    response_model=...,
+    status_code=status.HTTP_200_OK,
+    tags=["cart", "payment"]
+)
+async def checkout_cart_items(
+    user: UserModel = Depends(get_current_user),
+    cart: CartModel = Depends(get_or_create_cart),
+    db: AsyncSession = Depends(get_db)
+) -> ...:
+    pass
+    # TODO: Implement checkout_cart_items endpoint

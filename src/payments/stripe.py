@@ -5,7 +5,7 @@ from decimal import Decimal
 from payments.interfaces import PaymentServiceInterface
 from database.models.orders import OrderModel
 from database.models.payments import PaymentModel, PaymentStatusEnum
-from exceptions.payment import PaymentError, WebhookError
+from exceptions.payments import PaymentError, WebhookError
 
 
 class StripePaymentService(PaymentServiceInterface):

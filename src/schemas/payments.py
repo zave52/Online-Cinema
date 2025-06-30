@@ -56,7 +56,13 @@ class RefundPaymentSchema(BaseModel):
     reason: Optional[str] = None
 
 
-class CheckoutSessionSchema(BaseModel):
+class CheckoutSessionRequestSchema(BaseModel):
+    order_id: int
+    success_url: str
+    cancel_url: str
+
+
+class CheckoutSessionResponseSchema(BaseModel):
     id: str
     url: str
     amount_total: Optional[float]

@@ -15,7 +15,11 @@ from config.dependencies import (
 from database import get_db
 from database.models.accounts import UserGroupEnum, UserModel
 from database.models.orders import OrderModel, OrderStatusEnum, OrderItemModel
-from database.models.payments import PaymentItemModel, PaymentModel
+from database.models.payments import (
+    PaymentItemModel,
+    PaymentModel,
+    PaymentStatusEnum
+)
 from exceptions.payments import PaymentError, WebhookError
 from notifications.interfaces import EmailSenderInterface
 from payments.interfaces import PaymentServiceInterface
@@ -367,3 +371,68 @@ async def handle_webhook(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Webhook processing failed: {str(e)}"
         )
+
+
+@router.get(
+    "/admin/payments/",
+    response_model=PaymentListSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["payments", "admin", "moderator"]
+)
+async def get_all_payments(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, ge=1, le=100),
+    user_id: Optional[int] = Query(None),
+    status_filter: Optional[PaymentStatusEnum] = Query(None),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    authorized: None = Depends(moderator_and_admin),
+    db: AsyncSession = Depends(get_db)
+) -> PaymentListSchema:
+    stmt = (
+        select(PaymentModel)
+        .options(
+            selectinload(PaymentModel.items)
+            .selectinload(PaymentItemModel.order_item),
+            selectinload(PaymentModel.user)
+        )
+    )
+
+    if user_id:
+        stmt = stmt.where(PaymentModel.user_id == user_id)
+    if status_filter:
+        stmt = stmt.where(PaymentModel.status == status_filter)
+    if date_from:
+        stmt = stmt.where(PaymentModel.created_at >= date_from)
+    if date_to:
+        stmt = stmt.where(PaymentModel.created_at <= date_to)
+
+    count_stmt = (
+        select(func.count(PaymentModel.id))
+        .select_from(stmt.subquery())
+    )
+    result = await db.execute(count_stmt)
+    total_items = result.scalar_one()
+
+    if not total_items:
+        return PaymentListSchema(payments=[], total_pages=0, total_items=0)
+
+    stmt = stmt.order_by(desc(PaymentModel.created_at))
+    offset = (page - 1) * per_page
+
+    stmt = stmt.offset(offset).limit(per_page)
+    result = await db.execute(stmt)
+    payments: Sequence[PaymentModel] = result.scalars().all()
+
+    payment_list = [
+        PaymentSchema.model_validate(payment) for payment in payments
+    ]
+    total_pages = (total_items + per_page - 1) // per_page
+
+    return PaymentListSchema(
+        payments=payment_list,
+        prev_page=f"/ecommerce/payments/?page={page - 1}&per_page={per_page}" if page > 1 else None,
+        next_page=f"/ecommerce/payments/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        total_pages=total_pages,
+        total_items=total_items
+    )

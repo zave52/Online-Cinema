@@ -1,0 +1,39 @@
+<html lang="">
+<head>
+  <title>Payment Confirmation</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: Arial, sans-serif;">
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 20px; max-width: 480px; margin: 40px auto; background-color: #ffffff; color: #333333;">
+  <h2 style="color: #4285F4; text-align: center; margin: 0 0 20px; font-size: 24px; font-weight: bold;">
+    Payment Confirmed!
+  </h2>
+  <p style="margin: 10px 0; line-height: 1.6; font-size: 16px;">
+    Thank you for your payment. We have successfully received your payment for order:
+    <strong id="order_id" style="color: #4285F4;">{{ order_id }}</strong>
+  </p>
+  <p style="margin: 10px 0; line-height: 1.6; font-size: 16px;">
+    Amount Paid: <strong style="color: #4285F4;">${{ amount }}</strong>
+  </p>
+  <p style="margin: 10px 0; line-height: 1.6; font-size: 16px;">
+    Your order has been confirmed and is now being processed. You can access your purchased content in your account dashboard.
+  </p>
+  <p style="margin: 20px 0; text-align: center;">
+    <a href="{{ login_link }}" id="link" style="display: inline-block; background-color: #4285F4; color: #ffffff;
+            text-decoration: none; font-size: 16px; padding: 10px 20px; border-radius: 4px;">
+      View Order Details
+    </a>
+  </p>
+  <p style="margin: 10px 0; line-height: 1.6; font-size: 16px; color: #666666;">
+    If you have any questions about your order, please contact our customer support team.
+  </p>
+  <p style="margin: 20px 0 10px; line-height: 1.6; font-size: 16px;">
+    Regards,
+  </p>
+  <p style="margin: 0; font-style: italic; font-size: 16px; color: #4285F4;">
+    zave
+  </p>
+</div>
+</body>
+</html>
+

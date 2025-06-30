@@ -1,5 +1,7 @@
-from fastapi import APIRouter, status, Depends, HTTPException
-from sqlalchemy import select
+from typing import Optional, Sequence
+
+from fastapi import APIRouter, status, Depends, HTTPException, Query
+from sqlalchemy import select, func, asc, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from starlette.background import BackgroundTasks
@@ -13,7 +15,7 @@ from config.dependencies import (
 from database import get_db
 from database.models.accounts import UserGroupEnum, UserModel
 from database.models.orders import OrderModel, OrderStatusEnum, OrderItemModel
-from database.models.payments import PaymentItemModel
+from database.models.payments import PaymentItemModel, PaymentModel
 from exceptions.payments import PaymentError
 from notifications.interfaces import EmailSenderInterface
 from payments.interfaces import PaymentServiceInterface
@@ -21,7 +23,9 @@ from schemas.payments import (
     PaymentIntentResponseSchema,
     CreatePaymentIntentSchema,
     MessageResponseSchema,
-    ProcessPaymentSchema
+    ProcessPaymentSchema,
+    PaymentListSchema,
+    PaymentSchema
 )
 
 router = APIRouter()
@@ -183,4 +187,68 @@ async def process_payment(
 
     return MessageResponseSchema(
         message=f"Payment processed successfully. Payment ID: {payment.id}"
+    )
+
+
+@router.get(
+    "/payments/",
+    response_model=PaymentListSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["payments"]
+)
+async def get_user_payments(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, ge=1, le=100),
+    sort_by: Optional[str] = Query(None),
+    user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> PaymentListSchema:
+    count_stmt = (
+        select(func.count(PaymentModel.id))
+        .where(PaymentModel.user_id == user.id)
+    )
+    result = await db.execute(count_stmt)
+    total_items = result.scalar_one()
+
+    if not total_items:
+        return PaymentListSchema(payments=[], total_items=0, total_pages=0)
+
+    stmt = (
+        select(PaymentModel)
+        .options(
+            selectinload(PaymentModel.items)
+            .selectinload(PaymentItemModel.order_item)
+        )
+        .where(PaymentModel.user_id == user.id)
+    )
+
+    if sort_by:
+        sort_field = sort_by.strip("-")
+        allowed_sort_fields = ("created_at", "amount", "status")
+        if sort_field in allowed_sort_fields:
+            column = getattr(PaymentModel, sort_field)
+            if sort_by.startswith("-"):
+                stmt = stmt.order_by(desc(column))
+            else:
+                stmt = stmt.order_by(asc(column))
+    else:
+        stmt = stmt.order_by(desc(PaymentModel.created_at))
+
+    offset = (page - 1) * per_page
+
+    stmt = stmt.offset(offset).limit(per_page)
+    result = await db.execute(stmt)
+    payments = Sequence[PaymentModel] = result.scalars().all()
+
+    payment_list = [
+        PaymentSchema.model_validate(payment) for payment in payments
+    ]
+    total_pages = (total_items + per_page - 1) // per_page
+
+    return PaymentListSchema(
+        payments=payment_list,
+        prev_page=f"/ecommerce/payments/?page={page - 1}&per_page={per_page}" if page > 1 else None,
+        next_page=f"/ecommerce/payments/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        total_pages=total_pages,
+        total_items=total_items
     )

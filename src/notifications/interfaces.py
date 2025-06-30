@@ -52,3 +52,12 @@ class EmailSenderInterface(ABC):
         reply_author: EmailStr
     ) -> None:
         pass
+
+    @abstractmethod
+    async def send_refund_confirmation_email(
+        self,
+        email: EmailStr,
+        order_id: int,
+        amount: float
+    ) -> None:
+        pass

@@ -232,3 +232,48 @@ async def get_order_by_id(
         )
 
     return OrderSchema.model_validate(order)
+
+
+@router.delete(
+    "/orders/{order_id}/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["orders"]
+)
+async def cancel_order(
+    order_id: int,
+    user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> None:
+    stmt = (
+        select(OrderModel)
+        .where(
+            OrderModel.id == order_id,
+            OrderModel.user_id == user.id
+        )
+    )
+    result = await db.execute(stmt)
+    order: OrderModel = result.scalars().first()
+
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found."
+        )
+
+    if order.status == OrderStatusEnum.PAID:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Paid orders can only be canceled via refund request."
+        )
+
+    if order.status == OrderStatusEnum.CANCELED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Order is already canceled."
+        )
+
+    order.status = OrderStatusEnum.CANCELED
+    await db.commit()
+    await db.refresh(order)
+
+    return

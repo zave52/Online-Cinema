@@ -5,7 +5,8 @@ from fastapi import (
     status,
     Depends,
     HTTPException,
-    Query
+    Query,
+    BackgroundTasks
 )
 from mypy.applytype import Sequence
 from sqlalchemy import select, func, desc, asc
@@ -15,17 +16,25 @@ from sqlalchemy.orm import joinedload, selectinload
 from config.dependencies import (
     get_current_user,
     RoleChecker,
-    get_or_create_cart
+    get_or_create_cart,
+    get_payment_service,
+    get_email_sender
 )
 from database import get_db
 from database.models.accounts import UserModel, UserGroupEnum
 from database.models.movies import MovieModel
+from database.models.payments import PaymentModel, PaymentStatusEnum
 from database.models.shopping_cart import CartModel, CartItemModel
 from database.models.orders import OrderModel, OrderItemModel, OrderStatusEnum
+from exceptions.payments import PaymentError
+from notifications.interfaces import EmailSenderInterface
+from payments.interfaces import PaymentServiceInterface
 from schemas.orders import (
     OrderSchema,
     CreateOrderSchema,
-    OrderListSchema
+    OrderListSchema,
+    RefundRequestSchema,
+    MessageResponseSchema
 )
 
 router = APIRouter()
@@ -277,3 +286,87 @@ async def cancel_order(
     await db.refresh(order)
 
     return
+
+
+@router.post(
+    "/orders/{order_id}/refund/",
+    response_model=MessageResponseSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["orders"]
+)
+async def refund_order(
+    order_id: int,
+    data: RefundRequestSchema,
+    background_tasks: BackgroundTasks,
+    user: UserModel = Depends(get_current_user),
+    payment_service: PaymentServiceInterface = Depends(get_payment_service),
+    email_sender: EmailSenderInterface = Depends(get_email_sender),
+    db: AsyncSession = Depends(get_db)
+) -> MessageResponseSchema:
+    order_stmt = (
+        select(OrderModel)
+        .options(selectinload(OrderModel.payments))
+        .where(
+            OrderModel.id == order_id,
+            OrderModel.user_id == user.id
+        )
+    )
+    result = await db.execute(order_stmt)
+    order = result.scalars().first()
+
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Order not found."
+        )
+
+    if order.status != OrderStatusEnum.PAID:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only paid orders can be refund."
+        )
+
+    payment_stmt = (
+        select(PaymentModel)
+        .where(
+            PaymentModel.order_id == order_id,
+            PaymentModel.status == PaymentStatusEnum.SUCCESSFUL
+        )
+    )
+    result = await db.execute(payment_stmt)
+    payments: Sequence[PaymentModel] = result.scalars().all()
+
+    if not payments:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Payment not found for this order."
+        )
+
+    try:
+        refund_data = await payment_service.process_refund(
+            payment=payments,
+            amount=data.amount,
+            reason=data.reason
+        )
+        for payment in payments:
+            payment.status = PaymentStatusEnum.REFUNDED
+
+        order.status = OrderStatusEnum.CANCELED
+
+        await db.commit()
+    except PaymentError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to process refund: {str(e)}"
+        )
+    else:
+        background_tasks.add_task(
+            email_sender.send_refund_confirmation_email,
+            user.email,
+            order_id,
+            refund_data.get("amount", data.amount)
+        )
+
+    return MessageResponseSchema(
+        message=f"Refund processed successfully. Refund ID: {refund_data.get('id')}"
+    )

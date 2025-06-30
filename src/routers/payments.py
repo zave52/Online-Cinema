@@ -1,6 +1,6 @@
 from typing import Optional, Sequence
 
-from fastapi import APIRouter, status, Depends, HTTPException, Query
+from fastapi import APIRouter, status, Depends, HTTPException, Query, Request
 from sqlalchemy import select, func, asc, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -16,7 +16,7 @@ from database import get_db
 from database.models.accounts import UserGroupEnum, UserModel
 from database.models.orders import OrderModel, OrderStatusEnum, OrderItemModel
 from database.models.payments import PaymentItemModel, PaymentModel
-from exceptions.payments import PaymentError
+from exceptions.payments import PaymentError, WebhookError
 from notifications.interfaces import EmailSenderInterface
 from payments.interfaces import PaymentServiceInterface
 from schemas.payments import (
@@ -345,3 +345,25 @@ async def create_checkout_session(
         url=session_data["url"],
         amount_total=session_data["amount_total"]
     )
+
+
+@router.post(
+    "/payments/webhook/",
+    status_code=status.HTTP_200_OK,
+    tags=["payments"]
+)
+async def handle_webhook(
+    request: Request,
+    payment_service: PaymentServiceInterface = Depends(get_payment_service)
+) -> dict:
+    payload = await request.body()
+    signature = request.headers.get("stripe-signature", "")
+
+    try:
+        result = await payment_service.handle_webhook(payload, signature)
+        return result
+    except WebhookError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Webhook processing failed: {str(e)}"
+        )

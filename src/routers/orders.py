@@ -1,12 +1,16 @@
+from typing import Optional
+
 from fastapi import (
     APIRouter,
     status,
     Depends,
-    HTTPException
+    HTTPException,
+    Query
 )
-from sqlalchemy import select
+from mypy.applytype import Sequence
+from sqlalchemy import select, func, desc, asc
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from config.dependencies import (
     get_current_user,
@@ -21,6 +25,7 @@ from database.models.orders import OrderModel, OrderItemModel, OrderStatusEnum
 from schemas.orders import (
     OrderSchema,
     CreateOrderSchema,
+    OrderListSchema
 )
 
 router = APIRouter()
@@ -134,3 +139,63 @@ async def create_order(
 
     return OrderSchema.model_validate(order)
 
+
+@router.get(
+    "/orders/",
+    response_model=OrderListSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["orders"]
+)
+async def get_user_orders(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, ge=1, le=100),
+    sort_by: Optional[str] = Query(None),
+    user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> OrderListSchema:
+    count_stmt = (
+        select(func.count(OrderModel.id))
+        .where(OrderModel.user_id == user.id)
+    )
+    result = await db.execute(count_stmt)
+    total_items = result.scalar_one()
+
+    if not total_items:
+        return OrderListSchema(orders=[], total_items=0, total_pages=0)
+
+    order_stmt = (
+        select(OrderModel)
+        .options(
+            selectinload(OrderModel.items).selectinload(OrderItemModel.movie)
+        )
+        .where(OrderModel.user_id == user.id)
+    )
+
+    if sort_by:
+        sorf_field = sort_by.strip("-")
+        allowed_sort_fields = ("created_at", "total_amount", "status")
+        if sorf_field in allowed_sort_fields:
+            column = getattr(OrderModel, sorf_field)
+            if sort_by.startswith("-"):
+                order_stmt = order_stmt.order_by(desc(column))
+            else:
+                order_stmt = order_stmt.order_by(asc(column))
+    else:
+        order_stmt = order_stmt.order_by(desc(OrderModel.created_at))
+
+    offset = (page - 1) * per_page
+
+    order_stmt = order_stmt.offset(offset).limit(per_page)
+    result = await db.execute(order_stmt)
+    orders: Sequence[OrderModel] = result.scalars().all()
+
+    order_list = [OrderSchema.model_validate(order) for order in orders]
+    total_pages = (total_items + per_page - 1) // per_page
+
+    return OrderListSchema(
+        orders=order_list,
+        prev_page=f"/ecommerce/orders/?page={page - 1}&per_page={per_page}" if page > 1 else None,
+        next_page=f"/ecommerce/orders/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        total_pages=total_pages,
+        total_items=total_items
+    )

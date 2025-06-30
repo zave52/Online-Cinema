@@ -40,10 +40,6 @@ class CreateOrderSchema(BaseModel):
     cart_item_ids: List[int]
 
 
-class CancelOrderSchema(BaseModel):
-    reason: Optional[str] = None
-
-
 class RefundRequestSchema(BaseModel):
     reason: str
     amount: Optional[float] = None

@@ -370,3 +370,63 @@ async def refund_order(
     return MessageResponseSchema(
         message=f"Refund processed successfully. Refund ID: {refund_data.get('id')}"
     )
+
+
+@router.get(
+    "/admin/orders/",
+    response_model=OrderListSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["orders", "moderator", "admin"]
+)
+async def get_all_orders(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, ge=1, le=100),
+    user_id: Optional[int] = Query(None),
+    status_filter: Optional[OrderStatusEnum] = Query(None),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    authorized: None = Depends(moderator_and_admin),
+    db: AsyncSession = Depends(get_db)
+) -> OrderListSchema:
+    stmt = (
+        select(OrderModel)
+        .options(
+            selectinload(OrderModel.items)
+            .selectinload(OrderItemModel.movie),
+            selectinload(OrderModel.user)
+        )
+    )
+
+    if user_id:
+        stmt = stmt.where(OrderModel.user_id == user_id)
+    if status_filter:
+        stmt = stmt.where(OrderModel.status == status_filter)
+    if date_from:
+        stmt = stmt.where(OrderModel.created_at >= date_from)
+    if date_to:
+        stmt = stmt.where(OrderModel.created_at <= date_from)
+
+    count_stmt = select(func.count(OrderModel.id)).select_from(stmt.subquery())
+    result = await db.execute(count_stmt)
+    total_items = result.scalar_one()
+
+    if not total_items:
+        return OrderListSchema(orders=[], total_items=0, total_pages=0)
+
+    stmt = stmt.order_by(desc(OrderModel.created_at))
+    offset = (page - 1) * per_page
+
+    stmt = stmt.offset(offset).limit(per_page)
+    result = await db.execute(stmt)
+    orders: Sequence[OrderModel] = result.scalars().all()
+
+    order_list = [OrderSchema.model_validate(order) for order in orders]
+    total_pages = (total_items + per_page - 1) // per_page
+
+    return OrderListSchema(
+        orders=order_list,
+        prev_page=f"/ecommerce/admin/orders/?page={page - 1}&per_page={per_page}" if page > 1 else None,
+        next_page=f"/ecommerce/admin/orders/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        total_pages=total_pages,
+        total_items=total_items
+    )

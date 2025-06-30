@@ -199,3 +199,36 @@ async def get_user_orders(
         total_pages=total_pages,
         total_items=total_items
     )
+
+
+@router.get(
+    "/orders/{order_id}/",
+    response_model=OrderSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["orders"]
+)
+async def get_order_by_id(
+    order_id: int,
+    user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> OrderSchema:
+    stmt = (
+        select(OrderModel)
+        .options(
+            selectinload(OrderModel.items).selectinload(OrderItemModel.movie)
+        )
+        .where(
+            OrderModel.id == order_id,
+            OrderModel.user_id == user.id
+        )
+    )
+    result = await db.execute(stmt)
+    order = result.scalars().first()
+
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found."
+        )
+
+    return OrderSchema.model_validate(order)

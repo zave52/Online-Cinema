@@ -124,3 +124,21 @@ class EmailSender(FastMail, EmailSenderInterface):
             message=message,
             template_name="refund_confirmation_email.html"
         )
+
+    async def send_payment_confirmation_email(
+        self,
+        email: EmailStr,
+        order_id: int,
+        amount: float
+    ) -> None:
+        message = MessageSchema(
+            recipients=[email],
+            subject="Payment Confirmation",
+            subtype=MessageType.html,
+            template_body=[order_id, amount]
+        )
+
+        await self.send_message(
+            message=message,
+            template_name="payment_confirmation.html"
+        )

@@ -252,3 +252,37 @@ async def get_user_payments(
         total_pages=total_pages,
         total_items=total_items
     )
+
+
+@router.get(
+    "/payments/{payment_id}/",
+    response_model=PaymentSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["payments"]
+)
+async def get_payment_by_id(
+    payment_id: int,
+    user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> PaymentSchema:
+    stmt = (
+        select(PaymentModel)
+        .options(
+            selectinload(PaymentModel.items)
+            .selectinload(PaymentItemModel.order_item)
+        )
+        .where(
+            PaymentModel.id == payment_id,
+            PaymentModel.user_id == user.id
+        )
+    )
+    result = await db.execute(stmt)
+    payment = result.scalars().first()
+
+    if not payment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Payment not found."
+        )
+
+    return PaymentSchema.model_validate(payment)

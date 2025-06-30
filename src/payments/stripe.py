@@ -1,6 +1,5 @@
 import stripe
 from typing import Dict, Any, Optional, List
-from decimal import Decimal
 
 from payments.interfaces import PaymentServiceInterface
 from database.models.orders import OrderModel
@@ -17,7 +16,7 @@ class StripePaymentService(PaymentServiceInterface):
     async def create_payment_intent(
         self,
         order: OrderModel,
-        amount: Decimal,
+        amount: float,
         currency: str = "usd"
     ) -> Dict[str, Any]:
         try:
@@ -51,7 +50,7 @@ class StripePaymentService(PaymentServiceInterface):
                 payment = PaymentModel(
                     user_id=user_id,
                     order_id=order.id,
-                    amount=Decimal(intent.amount) / 100,
+                    amount=intent.amount / 100,
                     status=PaymentStatusEnum.SUCCESSFUL,
                     external_payment_id=None
                 )
@@ -78,7 +77,7 @@ class StripePaymentService(PaymentServiceInterface):
     async def process_refund(
         self,
         payment: PaymentModel,
-        amount: Optional[Decimal] = None,
+        amount: Optional[float] = None,
         reason: Optional[str] = None
     ) -> Dict[str, Any]:
         try:
@@ -97,7 +96,7 @@ class StripePaymentService(PaymentServiceInterface):
 
             return {
                 "id": refund.id,
-                "amount": Decimal(refund.amount) / 100,
+                "amount": refund.amount / 100,
                 "status": refund.status,
                 "reason": refund.reason
             }

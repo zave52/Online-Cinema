@@ -25,7 +25,9 @@ from schemas.payments import (
     MessageResponseSchema,
     ProcessPaymentSchema,
     PaymentListSchema,
-    PaymentSchema
+    PaymentSchema,
+    CheckoutSessionRequestSchema,
+    CheckoutSessionResponseSchema
 )
 
 router = APIRouter()
@@ -286,3 +288,60 @@ async def get_payment_by_id(
         )
 
     return PaymentSchema.model_validate(payment)
+
+
+@router.post(
+    "/payments/checkout-session/",
+    response_model=CheckoutSessionResponseSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["payments"]
+)
+async def create_checkout_session(
+    data: CheckoutSessionRequestSchema,
+    user: UserModel = Depends(get_current_user),
+    payment_service: PaymentServiceInterface = Depends(get_payment_service),
+    db: AsyncSession = Depends(get_db)
+) -> CheckoutSessionResponseSchema:
+    stmt = (
+        select(OrderModel)
+        .options(
+            selectinload(OrderModel.items)
+            .selectinload(OrderItemModel.movie)
+        )
+        .where(
+            OrderModel.id == data.order_id,
+            OrderModel.user_id == user.id
+        )
+    )
+    result = await db.execute(stmt)
+    order = result.scalars().first()
+
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found."
+        )
+
+    if order.status != OrderStatusEnum.PENDING:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Order is not in pending status."
+        )
+
+    try:
+        session_data = await payment_service.create_checkout_session(
+            order=order,
+            success_url=data.success_url,
+            cancel_url=data.cancel_url
+        )
+    except PaymentError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to create checkout session: {str(e)}"
+        )
+
+    return CheckoutSessionResponseSchema(
+        id=session_data["id"],
+        url=session_data["url"],
+        amount_total=session_data["amount_total"]
+    )

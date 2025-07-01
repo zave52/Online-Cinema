@@ -155,10 +155,11 @@ async def process_payment(
     expected_amount = sum(item.price_at_order for item in order.items)
     actual_amount = intent_data["amount"]
 
-    if expected_amount != actual_amount:
+    if float(expected_amount) != float(actual_amount):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Payment amount does not match order total."
+            detail=f"Payment amount does not match order total. "
+                   f"Expected: {expected_amount}, Actual: {actual_amount}"
         )
 
     try:
@@ -169,6 +170,7 @@ async def process_payment(
         )
 
         db.add(payment)
+        await db.commit()
         await db.refresh(payment)
 
         for order_item in order.items:
@@ -181,6 +183,7 @@ async def process_payment(
 
         order.status = OrderStatusEnum.PAID
 
+        await db.refresh(user, attribute_names=["purchased"])
         for order_item in order.items:
             user.purchased.append(order_item.movie)
 

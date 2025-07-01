@@ -240,7 +240,24 @@ async def get_order_by_id(
             detail="Order not found."
         )
 
-    return OrderSchema.model_validate(order)
+    order_data = {
+        "id": order.id,
+        "user_id": order.user_id,
+        "status": order.status,
+        "created_at": order.created_at,
+        "total_amount": order.total_amount,
+        "items": [
+            {
+                "id": item.id,
+                "movie_id": item.movie_id,
+                "price_at_order": item.price_at_order,
+                "movie_name": item.movie.name
+            }
+            for item in order.items
+        ]
+    }
+
+    return OrderSchema.model_validate(order_data)
 
 
 @router.delete(

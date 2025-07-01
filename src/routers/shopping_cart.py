@@ -134,6 +134,7 @@ async def get_shopping_cart_movies(
 ) -> ShoppingCartGetMoviesSchema:
     stmt = (
         select(CartItemModel, MovieModel)
+        .options(selectinload(MovieModel.genres))
         .join(
             MovieModel,
             CartItemModel.movie_id == MovieModel.id

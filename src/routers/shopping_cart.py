@@ -186,6 +186,7 @@ async def get_shopping_cart_movies_by_id(
 
     items_stmt = (
         select(CartItemModel, MovieModel)
+        .options(selectinload(MovieModel.genres))
         .join(
             MovieModel,
             CartItemModel.movie_id == MovieModel.id

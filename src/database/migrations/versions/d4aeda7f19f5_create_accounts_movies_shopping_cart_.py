@@ -1,8 +1,8 @@
 """create accounts, movies, shopping_cart, orders, payments models
 
-Revision ID: e9af1d59fdc4
+Revision ID: d4aeda7f19f5
 Revises: 
-Create Date: 2025-06-29 20:14:12.142526
+Create Date: 2025-07-01 16:05:44.639031
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'e9af1d59fdc4'
+revision: str = 'd4aeda7f19f5'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -239,7 +239,7 @@ def upgrade() -> None:
     sa.Column('status', sa.Enum('SUCCESSFUL', 'CANCELED', 'REFUNDED', name='paymentstatusenum'), nullable=False),
     sa.Column('amount', sa.DECIMAL(precision=10, scale=2), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
-    sa.Column('external_payment_id', sa.Integer(), nullable=True),
+    sa.Column('external_payment_id', sa.String(length=255), nullable=True),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('order_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['order_id'], ['orders.id'], ondelete='CASCADE'),

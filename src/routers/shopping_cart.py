@@ -1,6 +1,7 @@
 from fastapi import APIRouter, status, Depends, HTTPException
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from config.dependencies import (
     get_current_user,
@@ -238,7 +239,7 @@ async def clear_shopping_cart(
     "/cart/checkout/",
     response_model=MessageResponseSchema,
     status_code=status.HTTP_200_OK,
-    tags=["cart", "payment"]
+    tags=["cart", "payments"]
 )
 async def checkout_cart_items(
     user: UserModel = Depends(get_current_user),

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 from decimal import Decimal
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from database.models.orders import OrderStatusEnum
 
@@ -12,8 +12,7 @@ class OrderItemSchema(BaseModel):
     movie_name: str
     price_at_order: Decimal
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class OrderSchema(BaseModel):
@@ -24,8 +23,7 @@ class OrderSchema(BaseModel):
     total_amount: Optional[Decimal]
     items: List[OrderItemSchema]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class OrderListSchema(BaseModel):

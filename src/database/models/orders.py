@@ -57,8 +57,8 @@ class OrderModel(Base):
         "OrderItemModel",
         back_populates="order"
     )
-    payments: Mapped[List["OrderModel"]] = relationship(
-        "OrderModel",
+    payments: Mapped[List["PaymentModel"]] = relationship(
+        "PaymentModel",
         back_populates="order"
     )
 

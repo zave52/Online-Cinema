@@ -1,4 +1,5 @@
-from typing import List, Any, Optional
+from decimal import Decimal
+from typing import List, Optional
 from uuid import UUID
 from datetime import datetime
 
@@ -83,7 +84,7 @@ class MovieBaseSchema(BaseModel):
     meta_score: float = Field(..., ge=0, le=100)
     gross: float = Field(..., ge=0)
     description: str
-    price: float = Field(..., max_digits=10, decimal_places=2)
+    price: Decimal = Field(..., max_digits=10, decimal_places=2)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -113,13 +114,6 @@ class MovieListItemSchema(BaseModel):
     description: str
 
     model_config = ConfigDict(from_attributes=True)
-
-    @field_validator("genres", mode="before")
-    @classmethod
-    def genres_as_list_of_names(cls, v: Any) -> List[str]:
-        if not v:
-            return []
-        return [genre.name for genre in v]
 
 
 class MovieListResponseSchema(BaseListSchema):
@@ -156,7 +150,7 @@ class MovieUpdateSchema(BaseModel):
     meta_score: Optional[float] = Field(None, ge=0, le=100)
     gross: Optional[float] = Field(None, ge=0)
     description: Optional[str] = None
-    price: Optional[float] = Field(None, max_digits=10, decimal_places=2)
+    price: Optional[Decimal] = Field(None, max_digits=10, decimal_places=2)
     certification: Optional[str] = None
     genres: Optional[List[str]] = None
     stars: Optional[List[str]] = None

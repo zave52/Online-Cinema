@@ -52,7 +52,7 @@ class StripePaymentService(PaymentServiceInterface):
                     order_id=order.id,
                     amount=intent.amount / 100,
                     status=PaymentStatusEnum.SUCCESSFUL,
-                    external_payment_id=None
+                    external_payment_id=payment_intent_id
                 )
                 return payment
             else:

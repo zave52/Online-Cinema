@@ -146,6 +146,205 @@ async def get_movies(
 
 
 @router.get(
+    "/movies/purchased/",
+    response_model=MovieListResponseSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["movies"]
+)
+async def get_purchased_movies(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, ge=1, le=100),
+    sort_by: Optional[str] = Query(None),
+    user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> MovieListResponseSchema:
+    count_stmt = (
+        select(func.count(MovieModel.id))
+        .join(
+            purchased_movies_association,
+            MovieModel.id == purchased_movies_association.c.movie_id
+        )
+        .where(purchased_movies_association.c.user_id == user.id)
+    )
+    result = await db.execute(count_stmt)
+    total_items = result.scalar_one()
+
+    if not total_items:
+        return MovieListResponseSchema(movies=[], total_pages=0, total_items=0)
+
+    stmt = (
+        select(MovieModel)
+        .options(
+            selectinload(MovieModel.genres),
+            selectinload(MovieModel.stars),
+            selectinload(MovieModel.directors),
+            selectinload(MovieModel.certification)
+        )
+        .join(
+            purchased_movies_association,
+            MovieModel.id == purchased_movies_association.c.movie_id
+        )
+        .where(purchased_movies_association.c.user_id == user.id)
+    )
+
+    if sort_by:
+        sort_field = sort_by.strip("-")
+        allowed_sort_fields = ("year", "price", "imdb", "name", "time")
+        if sort_field in allowed_sort_fields:
+            column = getattr(MovieModel, sort_field)
+            if sort_by.startswith("-"):
+                stmt = stmt.order_by(desc(column))
+            else:
+                stmt = stmt.order_by(asc(column))
+
+    offset = (page - 1) * per_page
+
+    stmt = stmt.offset(offset).limit(per_page)
+    result = await db.execute(stmt)
+    movies: Sequence[MovieModel] = result.scalars().all()
+
+    movie_list = [MovieListItemSchema.model_validate(movie) for movie in movies]
+
+    total_pages = (total_items + per_page - 1) // per_page
+
+    return MovieListResponseSchema(
+        movies=movie_list,
+        prev_page=f"/cinema/movies/purchased/?page={page - 1}&per_page={per_page}" if page > 1 else None,
+        next_page=f"/cinema/movies/purchased/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        total_pages=total_pages,
+        total_items=total_items
+    )
+
+
+@router.get(
+    "/movies/likes/",
+    response_model=MovieListResponseSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["likes", "movies"]
+)
+async def get_liked_movies(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, ge=1, le=100),
+    sort_by: Optional[str] = Query(None),
+    user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> MovieListResponseSchema:
+    count_stmt = (
+        select(func.count(MovieModel.id))
+        .where(
+            MovieModel.likes.any(LikeModel.user_id == user.id)
+        )
+    )
+    result = await db.execute(count_stmt)
+    total_items = result.scalar_one()
+
+    if not total_items:
+        return MovieListResponseSchema(movies=[], total_pages=0, total_items=0)
+
+    stmt = (
+        select(MovieModel)
+        .options(
+            selectinload(MovieModel.genres)
+        )
+        .where(
+            MovieModel.likes.any(LikeModel.user_id == user.id)
+        )
+    )
+
+    if sort_by:
+        sort_field = sort_by.strip("-")
+        allowed_sort_fields = ("year", "price", "imdb", "name", "time")
+        if sort_field in allowed_sort_fields:
+            column = getattr(MovieModel, sort_field)
+            if sort_by.startswith("-"):
+                stmt = stmt.order_by(desc(column))
+            else:
+                stmt = stmt.order_by(asc(column))
+
+    offset = (page - 1) * per_page
+
+    stmt = stmt.offset(offset).limit(per_page)
+    result = await db.execute(stmt)
+    movies: Sequence[MovieModel] = result.scalars().all()
+
+    movie_list = [MovieListItemSchema.model_validate(movie) for movie in movies]
+
+    total_pages = (total_items + per_page - 1) // per_page
+
+    return MovieListResponseSchema(
+        movies=movie_list,
+        prev_page=f"/cinema/movies/likes/?page={page - 1}&per_page={per_page}" if page > 1 else None,
+        next_page=f"/cinema/movies/likes/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        total_pages=total_pages,
+        total_items=total_items
+    )
+
+
+@router.get(
+    "/movies/favorites/",
+    response_model=MovieListResponseSchema,
+    status_code=status.HTTP_200_OK,
+    tags=["favorites", "movies"]
+)
+async def get_favorite_movies(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, ge=1, le=100),
+    sort_by: Optional[str] = Query(None),
+    user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> MovieListResponseSchema:
+    count_stmt = (
+        select(func.count(MovieModel.id))
+        .where(
+            MovieModel.favorites.any(FavoriteMovieModel.user_id == user.id)
+        )
+    )
+    result = await db.execute(count_stmt)
+    total_items = result.scalar_one()
+
+    if not total_items:
+        return MovieListResponseSchema(movies=[], total_pages=0, total_items=0)
+
+    stmt = (
+        select(MovieModel)
+        .options(
+            selectinload(MovieModel.genres)
+        )
+        .where(
+            MovieModel.favorites.any(FavoriteMovieModel.user_id == user.id)
+        )
+    )
+
+    if sort_by:
+        sort_field = sort_by.strip("-")
+        allowed_sort_fields = ("year", "price", "imdb", "name", "time")
+        if sort_field in allowed_sort_fields:
+            column = getattr(MovieModel, sort_field)
+            if sort_by.startswith("-"):
+                stmt = stmt.order_by(desc(column))
+            else:
+                stmt = stmt.order_by(asc(column))
+
+    offset = (page - 1) * per_page
+
+    stmt = stmt.offset(offset).limit(per_page)
+    result = await db.execute(stmt)
+    movies: Sequence[MovieModel] = result.scalars().all()
+
+    movie_list = [MovieListItemSchema.model_validate(movie) for movie in movies]
+
+    total_pages = (total_items + per_page - 1) // per_page
+
+    return MovieListResponseSchema(
+        movies=movie_list,
+        prev_page=f"/cinema/movies/favorites/?page={page - 1}&per_page={per_page}" if page > 1 else None,
+        next_page=f"/cinema/movies/favorites/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        total_pages=total_pages,
+        total_items=total_items
+    )
+
+
+@router.get(
     "/movies/{movie_id}/",
     response_model=MovieDetailSchema,
     status_code=status.HTTP_200_OK
@@ -515,71 +714,6 @@ async def delete_movie(
     return
 
 
-@router.get(
-    "/movies/purchased/",
-    response_model=MovieListResponseSchema,
-    status_code=status.HTTP_200_OK,
-    tags=["movies"]
-)
-async def get_purchased_movies(
-    page: int = Query(1, ge=1),
-    per_page: int = Query(10, ge=1, le=100),
-    sort_by: Optional[str] = Query(None),
-    user: UserModel = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-) -> MovieListResponseSchema:
-    count_stmt = (
-        select(func.count(MovieModel.id))
-        .join(purchased_movies_association, MovieModel.id == purchased_movies_association.c.movie_id)
-        .where(purchased_movies_association.c.user_id == user.id)
-    )
-    result = await db.execute(count_stmt)
-    total_items = result.scalar_one()
-
-    if not total_items:
-        return MovieListResponseSchema(movies=[], total_pages=0, total_items=0)
-
-    stmt = (
-        select(MovieModel)
-        .options(
-            selectinload(MovieModel.genres),
-            selectinload(MovieModel.stars),
-            selectinload(MovieModel.directors),
-            selectinload(MovieModel.certification)
-        )
-        .join(purchased_movies_association, MovieModel.id == purchased_movies_association.c.movie_id)
-        .where(purchased_movies_association.c.user_id == user.id)
-    )
-
-    if sort_by:
-        sort_field = sort_by.strip("-")
-        allowed_sort_fields = ("year", "price", "imdb", "name", "time")
-        if sort_field in allowed_sort_fields:
-            column = getattr(MovieModel, sort_field)
-            if sort_by.startswith("-"):
-                stmt = stmt.order_by(desc(column))
-            else:
-                stmt = stmt.order_by(asc(column))
-
-    offset = (page - 1) * per_page
-
-    stmt = stmt.offset(offset).limit(per_page)
-    result = await db.execute(stmt)
-    movies: Sequence[MovieModel] = result.scalars().all()
-
-    movie_list = [MovieListItemSchema.model_validate(movie) for movie in movies]
-
-    total_pages = (total_items + per_page - 1) // per_page
-
-    return MovieListResponseSchema(
-        movies=movie_list,
-        prev_page=f"/cinema/movies/purchased/?page={page - 1}&per_page={per_page}" if page > 1 else None,
-        next_page=f"/cinema/movies/purchased/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
-        total_pages=total_pages,
-        total_items=total_items
-    )
-
-
 @router.post(
     "/movies/{movie_id}/comments/",
     response_model=CommentSchema,
@@ -729,70 +863,6 @@ async def delete_comment(
     return
 
 
-@router.get(
-    "/movies/likes/",
-    response_model=MovieListResponseSchema,
-    status_code=status.HTTP_200_OK,
-    tags=["likes", "movies"]
-)
-async def get_liked_movies(
-    page: int = Query(1, ge=1),
-    per_page: int = Query(10, ge=1, le=100),
-    sort_by: Optional[str] = Query(None),
-    user: UserModel = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-) -> MovieListResponseSchema:
-    count_stmt = (
-        select(func.count(MovieModel.id))
-        .where(
-            MovieModel.likes.any(LikeModel.user_id == user.id)
-        )
-    )
-    result = await db.execute(count_stmt)
-    total_items = result.scalar_one()
-
-    if not total_items:
-        return MovieListResponseSchema(movies=[], total_pages=0, total_items=0)
-
-    stmt = (
-        select(MovieModel)
-        .options(
-            selectinload(MovieModel.genres)
-        )
-        .where(
-            MovieModel.likes.any(LikeModel.user_id == user.id)
-        )
-    )
-
-    if sort_by:
-        sort_field = sort_by.strip("-")
-        allowed_sort_fields = ("year", "price", "imdb", "name", "time")
-        if sort_field in allowed_sort_fields:
-            column = getattr(MovieModel, sort_field)
-            if sort_by.startswith("-"):
-                stmt = stmt.order_by(desc(column))
-            else:
-                stmt = stmt.order_by(asc(column))
-
-    offset = (page - 1) * per_page
-
-    stmt = stmt.offset(offset).limit(per_page)
-    result = await db.execute(stmt)
-    movies: Sequence[MovieModel] = result.scalars().all()
-
-    movie_list = [MovieListItemSchema.model_validate(movie) for movie in movies]
-
-    total_pages = (total_items + per_page - 1) // per_page
-
-    return MovieListResponseSchema(
-        movies=movie_list,
-        prev_page=f"/cinema/movies/likes/?page={page - 1}&per_page={per_page}" if page > 1 else None,
-        next_page=f"/cinema/movies/likes/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
-        total_pages=total_pages,
-        total_items=total_items
-    )
-
-
 @router.post(
     "/movies/{movie_id}/likes/",
     response_model=MessageResponseSchema,
@@ -874,70 +944,6 @@ async def unlike_movie(
     await db.commit()
 
     return
-
-
-@router.get(
-    "/movies/favorites/",
-    response_model=MovieListResponseSchema,
-    status_code=status.HTTP_200_OK,
-    tags=["favorites", "movies"]
-)
-async def get_favorite_movies(
-    page: int = Query(1, ge=1),
-    per_page: int = Query(10, ge=1, le=100),
-    sort_by: Optional[str] = Query(None),
-    user: UserModel = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-) -> MovieListResponseSchema:
-    count_stmt = (
-        select(func.count(MovieModel.id))
-        .where(
-            MovieModel.favorites.any(FavoriteMovieModel.user_id == user.id)
-        )
-    )
-    result = await db.execute(count_stmt)
-    total_items = result.scalar_one()
-
-    if not total_items:
-        return MovieListResponseSchema(movies=[], total_pages=0, total_items=0)
-
-    stmt = (
-        select(MovieModel)
-        .options(
-            selectinload(MovieModel.genres)
-        )
-        .where(
-            MovieModel.favorites.any(FavoriteMovieModel.user_id == user.id)
-        )
-    )
-
-    if sort_by:
-        sort_field = sort_by.strip("-")
-        allowed_sort_fields = ("year", "price", "imdb", "name", "time")
-        if sort_field in allowed_sort_fields:
-            column = getattr(MovieModel, sort_field)
-            if sort_by.startswith("-"):
-                stmt = stmt.order_by(desc(column))
-            else:
-                stmt = stmt.order_by(asc(column))
-
-    offset = (page - 1) * per_page
-
-    stmt = stmt.offset(offset).limit(per_page)
-    result = await db.execute(stmt)
-    movies: Sequence[MovieModel] = result.scalars().all()
-
-    movie_list = [MovieListItemSchema.model_validate(movie) for movie in movies]
-
-    total_pages = (total_items + per_page - 1) // per_page
-
-    return MovieListResponseSchema(
-        movies=movie_list,
-        prev_page=f"/cinema/movies/favorites/?page={page - 1}&per_page={per_page}" if page > 1 else None,
-        next_page=f"/cinema/movies/favorites/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
-        total_pages=total_pages,
-        total_items=total_items
-    )
 
 
 @router.post(

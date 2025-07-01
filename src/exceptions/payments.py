@@ -11,4 +11,4 @@ class PaymentValidationError(Exception):
 
 
 class PaymentProcessingError(Exception):
-    pass 
+    pass

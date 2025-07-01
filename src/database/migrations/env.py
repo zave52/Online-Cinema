@@ -6,7 +6,14 @@ from sqlalchemy import pool
 from alembic import context
 
 from database.models.base import Base
-from database.models import accounts, profiles, movies, shopping_cart
+from database.models import (
+    accounts,
+    profiles,
+    movies,
+    shopping_cart,
+    orders,
+    payments
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

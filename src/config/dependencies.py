@@ -11,6 +11,8 @@ from database.models.shopping_cart import CartModel
 from exceptions.security import BaseSecurityError
 from notifications.emails import EmailSender
 from notifications.interfaces import EmailSenderInterface
+from payments.interfaces import PaymentServiceInterface
+from payments.stripe import StripePaymentService
 from security.interfaces import JWTManagerInterface
 from security.manager import JWTManager
 from storages.interfaces import S3StorageInterface
@@ -131,3 +133,12 @@ async def get_or_create_cart(
         await db.refresh(cart)
 
     return cart
+
+
+def get_payment_service(
+    settings: BaseAppSettings = Depends(get_settings)
+) -> PaymentServiceInterface:
+    return StripePaymentService(
+        secret_key=settings.STRIPE_SECRET_KEY,
+        publishable_key=settings.STRIPE_PUBLISHABLE_KEY
+    )

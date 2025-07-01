@@ -209,6 +209,14 @@ class MovieModel(Base):
         "RateMovieModel",
         back_populates="movie"
     )
+    cart_items: Mapped[List["CartItemModel"]] = relationship(
+        "CartItemModel",
+        back_populates="movie"
+    )
+    order_items: Mapped[List["OrderItemModel"]] = relationship(
+        "OrderItemModel",
+        back_populates="movie"
+    )
 
     __table_args__ = (
         UniqueConstraint("name", "year", "time"),

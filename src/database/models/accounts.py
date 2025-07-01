@@ -149,8 +149,23 @@ class UserModel(Base):
     purchased: Mapped[List["MovieModel"]] = relationship(
         "MovieModel",
         backref="purchasers",
-        cascade="all, delete-orphan",
+        cascade="all, delete",
         secondary=purchased_movies_association
+    )
+    cart: Mapped["CartModel"] = relationship(
+        "CartModel",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    orders: Mapped[List["OrderModel"]] = relationship(
+        "OrderModel",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    payments: Mapped[List["PaymentModel"]] = relationship(
+        "PaymentModel",
+        back_populates="user",
+        cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:

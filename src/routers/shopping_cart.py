@@ -11,6 +11,7 @@ from database import get_db
 from database.models.accounts import UserModel, UserGroupEnum
 from database.models.movies import MovieModel
 from database.models.shopping_cart import CartModel, CartItemModel
+from database.models.orders import OrderModel, OrderItemModel, OrderStatusEnum
 from schemas.shopping_cart import (
     MessageResponseSchema,
     ShoppingCartAddMovieSchema,
@@ -235,7 +236,7 @@ async def clear_shopping_cart(
 
 @router.post(
     "/cart/checkout/",
-    response_model=...,
+    response_model=MessageResponseSchema,
     status_code=status.HTTP_200_OK,
     tags=["cart", "payment"]
 )
@@ -243,6 +244,70 @@ async def checkout_cart_items(
     user: UserModel = Depends(get_current_user),
     cart: CartModel = Depends(get_or_create_cart),
     db: AsyncSession = Depends(get_db)
-) -> ...:
-    pass
-    # TODO: Implement checkout_cart_items endpoint
+) -> MessageResponseSchema:
+    stmt = (
+        select(CartItemModel, MovieModel)
+        .join(MovieModel, CartItemModel.movie_id == MovieModel.id)
+        .where(CartItemModel.cart_id == cart.id)
+    )
+    result = await db.execute(stmt)
+    items_with_movies = result.all()
+
+    if not items_with_movies:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cart is empty. Cannot proceed with checkout."
+        )
+
+    purchased_movies = []
+    available_items = []
+
+    for cart_item, movie in items_with_movies:
+        purchase_check_stmt = (
+            select(MovieModel)
+            .join(UserModel.purchased)
+            .where(
+                MovieModel.id == movie.id,
+                UserModel.id == user.id
+            )
+        )
+        result = await db.execute(purchase_check_stmt)
+        if result.scalars().first():
+            purchased_movies.append(movie.name)
+        else:
+            available_items.append((cart_item, movie))
+
+    if purchased_movies:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Movies already purchased: {', '.join(purchased_movies)}"
+        )
+
+    total_amount = sum(movie.price for _, movie in available_items)
+
+    order = OrderModel(
+        user_id=user.id,
+        status=OrderStatusEnum.PENDING,
+        total_amount=total_amount
+    )
+    db.add(order)
+    await db.flush()
+
+    for cart_item, movie in available_items:
+        order_item = OrderItemModel(
+            order_id=order.id,
+            movie_id=movie.id,
+            price_at_order=movie.price
+        )
+        db.add(order_item)
+
+    for cart_item, _ in available_items:
+        await db.delete(cart_item)
+
+    await db.commit()
+
+    return MessageResponseSchema(
+        message=f"Checkout completed successfully. Order ID: {order.id}. "
+                f"Total amount: ${total_amount}. "
+                f"Please proceed to payment."
+    )

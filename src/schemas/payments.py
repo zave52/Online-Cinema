@@ -32,8 +32,8 @@ class PaymentListSchema(BaseModel):
     payments: List[PaymentSchema]
     total_pages: int
     total_items: int
-    prev_page: Optional[str]
-    next_page: Optional[str]
+    prev_page: Optional[str] = None
+    next_page: Optional[str] = None
 
 
 class CreatePaymentIntentSchema(BaseModel):

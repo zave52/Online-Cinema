@@ -1,9 +1,9 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Any
 from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, model_validator
 
-from database.models.orders import OrderStatusEnum
+from database.models.orders import OrderStatusEnum, OrderItemModel
 
 
 class OrderItemSchema(BaseModel):
@@ -17,11 +17,11 @@ class OrderItemSchema(BaseModel):
         populate_by_name=True,
     )
 
-    @model_validator(mode='after')
-    def extract_movie_name(self) -> 'OrderItemSchema':
-        if hasattr(self, "_source") and hasattr(self._source, "movie") and self._source.movie:
-            self.movie_name = self._source.movie.name
-        return self
+    @model_validator(mode="before")
+    def extract_movie_name(cls, data: Any) -> Any:
+        if isinstance(data, OrderItemModel):
+            data.movie_name = data.movie.name
+        return data
 
 
 class OrderSchema(BaseModel):

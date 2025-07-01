@@ -181,10 +181,10 @@ async def get_user_orders(
     )
 
     if sort_by:
-        sorf_field = sort_by.strip("-")
+        sort_field = sort_by.strip("-")
         allowed_sort_fields = ("created_at", "total_amount", "status")
-        if sorf_field in allowed_sort_fields:
-            column = getattr(OrderModel, sorf_field)
+        if sort_field in allowed_sort_fields:
+            column = getattr(OrderModel, sort_field)
             if sort_by.startswith("-"):
                 order_stmt = order_stmt.order_by(desc(column))
             else:

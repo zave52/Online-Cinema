@@ -32,8 +32,8 @@ class OrderListSchema(BaseModel):
     orders: List[OrderSchema]
     total_pages: int
     total_items: int
-    prev_page: Optional[str]
-    next_page: Optional[str]
+    prev_page: Optional[str] = None
+    next_page: Optional[str] = None
 
 
 class CreateOrderSchema(BaseModel):

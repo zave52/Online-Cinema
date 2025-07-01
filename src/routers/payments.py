@@ -145,6 +145,12 @@ async def process_payment(
             detail="Order not found."
         )
 
+    if order.status == OrderStatusEnum.PAID:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This order has already been paid for."
+        )
+
     expected_amount = sum(item.price_at_order for item in order.items)
     actual_amount = intent_data["amount"]
 

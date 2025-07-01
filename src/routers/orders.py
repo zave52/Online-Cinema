@@ -351,9 +351,9 @@ async def refund_order(
         )
     )
     result = await db.execute(payment_stmt)
-    payments: Sequence[PaymentModel] = result.scalars().all()
+    payment: PaymentModel = result.scalars().first()
 
-    if not payments:
+    if not payment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Payment not found for this order."
@@ -361,13 +361,12 @@ async def refund_order(
 
     try:
         refund_data = await payment_service.process_refund(
-            payment=payments,
+            payment=payment,
             amount=data.amount,
             reason=data.reason
         )
-        for payment in payments:
-            payment.status = PaymentStatusEnum.REFUNDED
 
+        payment.status = PaymentStatusEnum.REFUNDED
         order.status = OrderStatusEnum.CANCELED
 
         await db.commit()

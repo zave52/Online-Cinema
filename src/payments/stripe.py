@@ -253,15 +253,6 @@ class StripePaymentService(PaymentServiceInterface):
             payment.external_payment_id = hash(external_payment_id) % (2 ** 31)
         return payment
 
-    async def get_payment_history(
-        self,
-        user_id: int,
-        limit: int = 50,
-        offset: int = 0
-    ) -> List[PaymentModel]:
-        # TODO: implement this
-        pass
-
     async def verify_webhook_signature(
         self,
         payload: bytes,

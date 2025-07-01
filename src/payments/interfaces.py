@@ -86,15 +86,6 @@ class PaymentServiceInterface(ABC):
         pass
 
     @abstractmethod
-    async def get_payment_history(
-        self,
-        user_id: int,
-        limit: int = 50,
-        offset: int = 0
-    ) -> List[PaymentModel]:
-        pass
-
-    @abstractmethod
     async def verify_webhook_signature(
         self,
         payload: bytes,

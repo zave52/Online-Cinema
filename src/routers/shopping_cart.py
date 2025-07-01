@@ -153,7 +153,7 @@ async def get_shopping_cart_movies(
             "name": movie.name,
             "year": movie.year,
             "price": movie.price,
-            "genres": movie.genres
+            "genres": [genre.name for genre in movie.genres]
         }
         movie_items.append(movie_dict)
 
@@ -204,7 +204,7 @@ async def get_shopping_cart_movies_by_id(
             "name": movie.name,
             "year": movie.year,
             "price": movie.price,
-            "genres": movie.genres
+            "genres": [genre.name for genre in movie.genres]
         }
         movie_items.append(movie_dict)
 

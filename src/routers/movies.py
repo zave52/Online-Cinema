@@ -1331,7 +1331,7 @@ async def delete_genre(
 )
 async def get_stars(
     page: int = Query(1, ge=1),
-    per_page: int = Query(10, le=1, ge=100),
+    per_page: int = Query(10, ge=1, le=100),
     authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
 ) -> StarListSchema:
@@ -1499,7 +1499,7 @@ async def delete_star(
 )
 async def get_directors(
     page: int = Query(1, ge=1),
-    per_page: int = Query(10, le=1, ge=100),
+    per_page: int = Query(10, ge=1, le=100),
     authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
 ) -> DirectorListSchema:

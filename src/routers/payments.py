@@ -52,9 +52,10 @@ async def create_payment_intent(
     user: UserModel = Depends(get_current_user),
     payment_service: PaymentServiceInterface = Depends(get_payment_service),
     db: AsyncSession = Depends(get_db)
-):
+) -> PaymentIntentResponseSchema:
     stmt = (
         select(OrderModel)
+        .options(selectinload(OrderModel.items))
         .where(
             OrderModel.id == data.order_id,
             OrderModel.user_id == user.id
@@ -250,7 +251,7 @@ async def get_user_payments(
 
     stmt = stmt.offset(offset).limit(per_page)
     result = await db.execute(stmt)
-    payments = Sequence[PaymentModel] = result.scalars().all()
+    payments: Sequence[PaymentModel] = result.scalars().all()
 
     payment_list = [
         PaymentSchema.model_validate(payment) for payment in payments

@@ -2,7 +2,14 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional, List
 
-from sqlalchemy import Integer, Enum as SQLEnum, DECIMAL, DateTime, ForeignKey
+from sqlalchemy import (
+    Integer,
+    Enum as SQLEnum,
+    DECIMAL,
+    DateTime,
+    ForeignKey,
+    String
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.models.base import Base
@@ -36,7 +43,7 @@ class PaymentModel(Base):
         default=datetime.now(timezone.utc)
     )
     external_payment_id: Mapped[Optional[int]] = mapped_column(
-        Integer,
+        String(255),
         nullable=True
     )
     user_id: Mapped[int] = mapped_column(

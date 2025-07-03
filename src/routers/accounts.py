@@ -136,7 +136,7 @@ async def resend_activation_token(
 
     stmt = (
         delete(ActivationTokenModel)
-        .where(ActivationTokenModel.id == user.id)
+        .where(ActivationTokenModel.user_id == user.id)
     )
 
     try:

@@ -155,7 +155,7 @@ async def process_payment(
     expected_amount = sum(item.price_at_order for item in order.items)
     actual_amount = intent_data["amount"]
 
-    if float(expected_amount) != float(actual_amount):
+    if expected_amount != actual_amount:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Payment amount does not match order total. "

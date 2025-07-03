@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import List
 
 from pydantic import BaseModel, ConfigDict
@@ -15,7 +16,7 @@ class ShoppingCartMovieItemSchema(BaseModel):
     cart_item_id: int
     name: str
     year: int
-    price: float
+    price: Decimal
     genres: List[str]
 
     model_config = ConfigDict(from_attributes=True)

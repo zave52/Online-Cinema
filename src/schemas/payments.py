@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
 
@@ -8,7 +9,7 @@ from database.models.payments import PaymentStatusEnum
 class PaymentItemSchema(BaseModel):
     id: int
     order_item_id: int
-    price_at_payment: float
+    price_at_payment: Decimal
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -18,7 +19,7 @@ class PaymentSchema(BaseModel):
     user_id: int
     order_id: int
     status: PaymentStatusEnum
-    amount: float
+    amount: Decimal
     created_at: datetime
     items: List[PaymentItemSchema]
     external_payment_id: Optional[int]
@@ -41,7 +42,7 @@ class CreatePaymentIntentSchema(BaseModel):
 class PaymentIntentResponseSchema(BaseModel):
     id: str
     client_secret: str
-    amount: float
+    amount: Decimal
     currency: str
 
 
@@ -50,7 +51,7 @@ class ProcessPaymentSchema(BaseModel):
 
 
 class RefundPaymentSchema(BaseModel):
-    amount: Optional[float] = None
+    amount: Optional[Decimal] = None
     reason: Optional[str] = None
 
 
@@ -63,7 +64,7 @@ class CheckoutSessionRequestSchema(BaseModel):
 class CheckoutSessionResponseSchema(BaseModel):
     id: str
     url: str
-    amount_total: Optional[float]
+    amount_total: Optional[Decimal]
 
 
 class MessageResponseSchema(BaseModel):

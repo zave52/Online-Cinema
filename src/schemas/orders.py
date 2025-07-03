@@ -49,7 +49,7 @@ class CreateOrderSchema(BaseModel):
 
 class RefundRequestSchema(BaseModel):
     reason: str
-    amount: Optional[float] = None
+    amount: Optional[Decimal] = None
 
 
 class MessageResponseSchema(BaseModel):

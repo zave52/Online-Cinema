@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Optional, List
 from uuid import UUID as PY_UUID, uuid4
@@ -281,7 +281,7 @@ class CommentModel(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow()
+        default=datetime.now(timezone.utc)
     )
     parent_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("comments.id", ondelete="CASCADE"),

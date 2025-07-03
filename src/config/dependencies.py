@@ -56,7 +56,7 @@ async def get_current_user_id(
     except TokenExpiredError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token has expired, please log in again",
+            detail="Token has expired",
             headers={"WWW-Authenticate": "Bearer"},
         )
     except BaseSecurityError:

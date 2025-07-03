@@ -203,8 +203,8 @@ async def get_user_orders(
 
     return OrderListSchema(
         orders=order_list,
-        prev_page=f"/ecommerce/orders/?page={page - 1}&per_page={per_page}" if page > 1 else None,
-        next_page=f"/ecommerce/orders/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        prev_page=f"/ecommerce/orders/?page={page - 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page > 1 else None,
+        next_page=f"/ecommerce/orders/?page={page + 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page < total_pages else None,
         total_pages=total_pages,
         total_items=total_items
     )
@@ -420,7 +420,7 @@ async def get_all_orders(
     if date_from:
         stmt = stmt.where(OrderModel.created_at >= date_from)
     if date_to:
-        stmt = stmt.where(OrderModel.created_at <= date_from)
+        stmt = stmt.where(OrderModel.created_at <= date_to)
 
     count_stmt = select(func.count(OrderModel.id)).select_from(stmt.subquery())
     result = await db.execute(count_stmt)
@@ -441,8 +441,8 @@ async def get_all_orders(
 
     return OrderListSchema(
         orders=order_list,
-        prev_page=f"/ecommerce/admin/orders/?page={page - 1}&per_page={per_page}" if page > 1 else None,
-        next_page=f"/ecommerce/admin/orders/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        prev_page=f"/ecommerce/admin/orders/?page={page - 1}&per_page={per_page}{f'&user_id={user_id}' if user_id else ''}{f'&status_filter={status_filter}' if status_filter else ''}{f'&date_from={date_from}' if date_from else ''}{f'&date_to={date_to}' if date_to else ''}" if page > 1 else None,
+        next_page=f"/ecommerce/admin/orders/?page={page + 1}&per_page={per_page}{f'&user_id={user_id}' if user_id else ''}{f'&status_filter={status_filter}' if status_filter else ''}{f'&date_from={date_from}' if date_from else ''}{f'&date_to={date_to}' if date_to else ''}" if page < total_pages else None,
         total_pages=total_pages,
         total_items=total_items
     )

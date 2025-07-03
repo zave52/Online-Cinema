@@ -138,8 +138,8 @@ async def get_movies(
 
     return MovieListResponseSchema(
         movies=movie_list,
-        prev_page=f"/cinema/movies/?page={page - 1}&per_page={per_page}" if page > 1 else None,
-        next_page=f"/cinema/movies/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        prev_page=f"/cinema/movies/?page={page - 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}{f'&search={search}' if search else ''}{f'&year_from={year_from}' if year_from else ''}{f'&year_to={year_to}' if year_to else ''}{f'&imdb_min={imdb_min}' if imdb_min else ''}{f'&genre={genre}' if genre else ''}" if page > 1 else None,
+        next_page=f"/cinema/movies/?page={page + 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}{f'&search={search}' if search else ''}{f'&year_from={year_from}' if year_from else ''}{f'&year_to={year_to}' if year_to else ''}{f'&imdb_min={imdb_min}' if imdb_min else ''}{f'&genre={genre}' if genre else ''}" if page < total_pages else None,
         total_pages=total_pages,
         total_items=total_items
     )
@@ -209,8 +209,8 @@ async def get_purchased_movies(
 
     return MovieListResponseSchema(
         movies=movie_list,
-        prev_page=f"/cinema/movies/purchased/?page={page - 1}&per_page={per_page}" if page > 1 else None,
-        next_page=f"/cinema/movies/purchased/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        prev_page=f"/cinema/movies/purchased/?page={page - 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page > 1 else None,
+        next_page=f"/cinema/movies/purchased/?page={page + 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page < total_pages else None,
         total_pages=total_pages,
         total_items=total_items
     )
@@ -273,8 +273,8 @@ async def get_liked_movies(
 
     return MovieListResponseSchema(
         movies=movie_list,
-        prev_page=f"/cinema/movies/likes/?page={page - 1}&per_page={per_page}" if page > 1 else None,
-        next_page=f"/cinema/movies/likes/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        prev_page=f"/cinema/movies/likes/?page={page - 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page > 1 else None,
+        next_page=f"/cinema/movies/likes/?page={page + 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page < total_pages else None,
         total_pages=total_pages,
         total_items=total_items
     )
@@ -337,8 +337,8 @@ async def get_favorite_movies(
 
     return MovieListResponseSchema(
         movies=movie_list,
-        prev_page=f"/cinema/movies/favorites/?page={page - 1}&per_page={per_page}" if page > 1 else None,
-        next_page=f"/cinema/movies/favorites/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        prev_page=f"/cinema/movies/favorites/?page={page - 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page > 1 else None,
+        next_page=f"/cinema/movies/favorites/?page={page + 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page < total_pages else None,
         total_pages=total_pages,
         total_items=total_items
     )

@@ -20,7 +20,7 @@ def async_task(*args: Any, **kwargs: Any):
 
         @celery_app.task(*args, **kwargs)
         @wraps(func)
-        def _decorated(*args, **kwargs):
+        def _decorated(*args, **kwargs) -> Any:
             return sync_call(*args, **kwargs)
 
         return _decorated

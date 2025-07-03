@@ -9,7 +9,7 @@ from config.settings import BaseAppSettings, get_settings
 from database import get_db
 from database.models.accounts import UserModel, UserGroupEnum
 from database.models.shopping_cart import CartModel
-from exceptions.security import BaseSecurityError
+from exceptions.security import BaseSecurityError, TokenExpiredError
 from notifications.emails import EmailSender
 from notifications.interfaces import EmailSenderInterface
 from payments.interfaces import PaymentServiceInterface
@@ -41,7 +41,7 @@ async def get_token(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
-            headers={"Authorization": "Bearer"},
+            headers={"WWW-Authenticate": "Bearer"},
         )
     return credentials.credentials
 
@@ -53,6 +53,12 @@ async def get_current_user_id(
     try:
         decoded_token = jwt_manager.decode_access_token(token=token)
         user_id = decoded_token.get("user_id")
+    except TokenExpiredError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired, please log in again",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     except BaseSecurityError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

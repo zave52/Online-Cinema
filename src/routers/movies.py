@@ -671,7 +671,7 @@ async def delete_movie(
     movie_id: int,
     authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
-) -> None | MessageResponseSchema:
+) -> MessageResponseSchema | None:
     movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
     result = await db.execute(movie_stmt)
     movie = result.scalars().first()
@@ -710,8 +710,6 @@ async def delete_movie(
         return MessageResponseSchema(
             message=f"Movie deleted successfully. Note: It was in {cart_count} users' carts and has been removed."
         )
-
-    return
 
 
 @router.post(

@@ -87,7 +87,7 @@ class EmailSender(FastMail, EmailSenderInterface):
 
         await self.send_message(
             message=message,
-            template_name="password_change_successfully"
+            template_name="password_change_successfully.html"
         )
 
     async def send_comment_reply_notification_email(

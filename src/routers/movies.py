@@ -711,6 +711,8 @@ async def delete_movie(
             message=f"Movie deleted successfully. Note: It was in {cart_count} users' carts and has been removed."
         )
 
+    return None
+
 
 @router.post(
     "/movies/{movie_id}/comments/",

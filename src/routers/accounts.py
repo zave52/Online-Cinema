@@ -315,7 +315,7 @@ async def reset_password(
         login_link = f"{settings.BASE_URL}/login/"
 
         background_tasks.add_task(
-            email_sender.send_activation_complete_email,
+            email_sender.send_password_reset_complete_email,
             user.email,
             login_link
         )

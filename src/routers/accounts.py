@@ -146,7 +146,7 @@ async def resend_activation_token(
         db.add(new_activation_token)
         await db.commit()
         await db.refresh(new_activation_token)
-    except SQLAlchemyError as e:
+    except SQLAlchemyError:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -305,7 +305,7 @@ async def reset_password(
         user.password = data.password
         await db.delete(token_record)
         await db.commit()
-    except SQLAlchemyError as e:
+    except SQLAlchemyError:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -378,7 +378,7 @@ async def change_password(
 
         await db.commit()
         await db.refresh(user)
-    except SQLAlchemyError as e:
+    except SQLAlchemyError:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -431,7 +431,7 @@ async def login_user(
         db.add(refresh_token)
         await db.flush()
         await db.commit()
-    except SQLAlchemyError as e:
+    except SQLAlchemyError:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

@@ -107,7 +107,7 @@ async def create_profile(
         user_id=cast(int, user.id),
         first_name=profile_data.first_name,
         last_name=profile_data.last_name,
-        gender=cast(GenderEnum, profile_data.gender),
+        gender=cast(GenderEnum, profile_data.gender.upper()),
         date_of_birth=profile_data.date_of_birth,
         info=profile_data.info,
         avatar=avatar_key
@@ -123,7 +123,7 @@ async def create_profile(
         user_id=new_profile.user_id,
         first_name=new_profile.first_name,
         last_name=new_profile.last_name,
-        gender=cast(str, new_profile.gender),
+        gender=str(new_profile.gender),
         date_of_birth=new_profile.date_of_birth,
         info=new_profile.info,
         avatar=cast(HttpUrl, avatar_url)

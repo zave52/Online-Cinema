@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 import stripe
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 
 from payments.interfaces import PaymentServiceInterface
 from database.models.orders import OrderModel

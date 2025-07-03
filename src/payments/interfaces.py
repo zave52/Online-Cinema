@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from decimal import Decimal
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 
 from database.models.orders import OrderModel
 from database.models.payments import PaymentModel, PaymentStatusEnum

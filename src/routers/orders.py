@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Optional, Sequence
 
 from fastapi import (
@@ -124,7 +125,7 @@ async def create_order(
     order = OrderModel(
         user_id=user.id,
         status=OrderStatusEnum.PENDING,
-        total_amount=total_amount
+        total_amount=Decimal(total_amount)
     )
     db.add(order)
     await db.flush()

@@ -52,7 +52,7 @@ class StripePaymentService(PaymentServiceInterface):
                 payment = PaymentModel(
                     user_id=user_id,
                     order_id=order.id,
-                    amount=intent.amount / 100,
+                    amount=Decimal(intent.amount) / Decimal(100),
                     status=PaymentStatusEnum.SUCCESSFUL,
                     external_payment_id=payment_intent_id
                 )

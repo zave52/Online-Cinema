@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Optional, Sequence
 
 from fastapi import APIRouter, status, Depends, HTTPException, Query, Request
@@ -85,7 +86,7 @@ async def create_payment_intent(
     try:
         intend_data = await payment_service.create_payment_intent(
             order=order,
-            amount=order.total_amount
+            amount=Decimal(order.total_amount)
         )
     except PaymentError as e:
         raise HTTPException(

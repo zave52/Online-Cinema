@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from fastapi import APIRouter, status, Depends, HTTPException
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -291,7 +293,7 @@ async def checkout_cart_items(
     order = OrderModel(
         user_id=user.id,
         status=OrderStatusEnum.PENDING,
-        total_amount=total_amount
+        total_amount=Decimal(total_amount)
     )
     db.add(order)
     await db.flush()

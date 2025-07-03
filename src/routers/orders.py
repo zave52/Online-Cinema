@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Sequence
 
 from fastapi import (
     APIRouter,
@@ -8,7 +8,6 @@ from fastapi import (
     Query,
     BackgroundTasks
 )
-from mypy.applytype import Sequence
 from sqlalchemy import select, func, desc, asc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload

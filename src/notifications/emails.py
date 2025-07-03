@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from pydantic import EmailStr
 from fastapi_mail import FastMail, MessageSchema, MessageType, ConnectionConfig
 
@@ -111,7 +113,7 @@ class EmailSender(FastMail, EmailSenderInterface):
         self,
         email: EmailStr,
         order_id: int,
-        amount: float
+        amount: Decimal
     ) -> None:
         message = MessageSchema(
             recipients=[email],
@@ -129,7 +131,7 @@ class EmailSender(FastMail, EmailSenderInterface):
         self,
         email: EmailStr,
         order_id: int,
-        amount: float
+        amount: Decimal
     ) -> None:
         message = MessageSchema(
             recipients=[email],

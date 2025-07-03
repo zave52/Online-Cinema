@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from decimal import Decimal
 
 from pydantic import EmailStr
 
@@ -58,7 +59,7 @@ class EmailSenderInterface(ABC):
         self,
         email: EmailStr,
         order_id: int,
-        amount: float
+        amount: Decimal
     ) -> None:
         pass
 
@@ -67,6 +68,6 @@ class EmailSenderInterface(ABC):
         self,
         email: EmailStr,
         order_id: int,
-        amount: float
+        amount: Decimal
     ) -> None:
         pass

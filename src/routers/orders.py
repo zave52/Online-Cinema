@@ -404,6 +404,26 @@ async def get_all_orders(
     authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
 ) -> OrderListSchema:
+    filters = []
+
+    if user_id:
+        filters.append(OrderModel.user_id == user_id)
+    if status_filter:
+        filters.append(OrderModel.status == status_filter)
+    if date_from:
+        filters.append(OrderModel.created_at >= date_from)
+    if date_to:
+        filters.append(OrderModel.created_at <= date_to)
+
+    count_stmt = select(func.count(OrderModel.id.distinct())).where(
+        *filters
+    )
+    result = await db.execute(count_stmt)
+    total_items = result.scalar_one()
+
+    if not total_items:
+        return OrderListSchema(orders=[], total_items=0, total_pages=0)
+
     stmt = (
         select(OrderModel)
         .options(
@@ -421,13 +441,6 @@ async def get_all_orders(
         stmt = stmt.where(OrderModel.created_at >= date_from)
     if date_to:
         stmt = stmt.where(OrderModel.created_at <= date_to)
-
-    count_stmt = select(func.count(OrderModel.id)).select_from(stmt.subquery())
-    result = await db.execute(count_stmt)
-    total_items = result.scalar_one()
-
-    if not total_items:
-        return OrderListSchema(orders=[], total_items=0, total_pages=0)
 
     stmt = stmt.order_by(desc(OrderModel.created_at))
     offset = (page - 1) * per_page

@@ -22,7 +22,7 @@ class PaymentSchema(BaseModel):
     amount: Decimal
     created_at: datetime
     items: List[PaymentItemSchema]
-    external_payment_id: Optional[int]
+    external_payment_id: Optional[str]
 
     model_config = ConfigDict(from_attributes=True)
 

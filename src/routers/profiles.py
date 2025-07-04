@@ -376,7 +376,7 @@ async def patch_profile(
         profile.last_name = profile_data.last_name
 
     if profile_data.gender is not None:
-        profile.gender = cast(GenderEnum, profile_data.gender)
+        profile.gender = cast(GenderEnum, profile_data.gender.upper())
 
     if profile_data.date_of_birth is not None:
         profile.date_of_birth = profile_data.date_of_birth
@@ -411,7 +411,7 @@ async def patch_profile(
         user_id=profile.user_id,
         first_name=profile.first_name,
         last_name=profile.last_name,
-        gender=cast(str, profile.gender),
+        gender=str(profile.gender),
         date_of_birth=profile.date_of_birth,
         info=profile.info,
         avatar=cast(HttpUrl, avatar_url)

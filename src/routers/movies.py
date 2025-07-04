@@ -393,7 +393,7 @@ async def get_movie_by_id(
     comments_stmt = (
         select(CommentModel)
         .where(CommentModel.movie_id == movie_id)
-        .order_by(desc("created_at"))
+        .order_by(desc(CommentModel.created_at))
         .limit(10)
     )
     likes_stmt = (

@@ -1514,7 +1514,7 @@ async def delete_star(
     "/director/",
     response_model=DirectorListSchema,
     status_code=status.HTTP_200_OK,
-    tags=["admin", "moderator", "stars"]
+    tags=["admin", "moderator", "directors"]
 )
 async def get_directors(
     page: int = Query(1, ge=1),

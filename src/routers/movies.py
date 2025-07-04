@@ -1600,7 +1600,7 @@ async def create_director(
             detail=f"A director with the name '{data.name}' already exists."
         )
 
-    director = DirectorModel(name=data.name)
+    director = DirectorModel(name=data.name.title())
     db.add(director)
     await db.commit()
     await db.refresh(director)
@@ -1631,7 +1631,7 @@ async def update_director(
         )
 
     try:
-        director.name = data.name
+        director.name = data.name.title()
 
         await db.commit()
         await db.refresh(director)

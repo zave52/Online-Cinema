@@ -1259,7 +1259,7 @@ async def create_genre(
             detail=f"A genre with the name '{data.name}' already exists."
         )
 
-    genre = GenreModel(name=data.name)
+    genre = GenreModel(name=data.name.title())
     db.add(genre)
     await db.commit()
     await db.refresh(genre)
@@ -1290,7 +1290,7 @@ async def update_genre(
         )
 
     try:
-        genre.name = data.name
+        genre.name = data.name.title()
 
         await db.commit()
         await db.refresh(genre)

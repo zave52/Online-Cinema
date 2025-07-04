@@ -1525,7 +1525,7 @@ async def get_directors(
     stmt = select(DirectorModel)
 
     count_stmt = (
-        select(func.count(DirectorModel.id))
+        select(func.count(DirectorModel.id.distinct()))
         .select_from(stmt.subquery())
     )
     result = await db.execute(count_stmt)
@@ -1666,7 +1666,7 @@ async def delete_director(
         )
 
     movies_check_stmt = select(func.count(MovieModel.id)).where(
-        MovieModel.genres.any(DirectorModel.id == director_id)
+        MovieModel.directors.any(DirectorModel.id == director_id)
     )
     result = await db.execute(movies_check_stmt)
     movies_count = result.scalar_one()

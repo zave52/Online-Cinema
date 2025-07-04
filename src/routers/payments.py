@@ -400,6 +400,8 @@ async def get_all_payments(
     authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
 ) -> PaymentListSchema:
+    filters = []
+
     stmt = (
         select(PaymentModel)
         .options(
@@ -410,17 +412,25 @@ async def get_all_payments(
     )
 
     if user_id:
-        stmt = stmt.where(PaymentModel.user_id == user_id)
+        fltr = PaymentModel.user_id == user_id
+        stmt = stmt.where(fltr)
+        filters.append(fltr)
     if status_filter:
-        stmt = stmt.where(PaymentModel.status == status_filter)
+        fltr = PaymentModel.status == status_filter
+        stmt = stmt.where(fltr)
+        filters.append(fltr)
     if date_from:
-        stmt = stmt.where(PaymentModel.created_at >= date_from)
+        fltr = PaymentModel.created_at >= date_from
+        stmt = stmt.where(fltr)
+        filters.append(fltr)
     if date_to:
-        stmt = stmt.where(PaymentModel.created_at <= date_to)
+        fltr = PaymentModel.created_at <= date_to
+        stmt = stmt.where(fltr)
+        filters.append(fltr)
 
     count_stmt = (
-        select(func.count(PaymentModel.id))
-        .select_from(stmt.subquery())
+        select(func.count(PaymentModel.id.distinct()))
+        .where(*filters)
     )
     result = await db.execute(count_stmt)
     total_items = result.scalar_one()

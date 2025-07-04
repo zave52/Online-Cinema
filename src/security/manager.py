@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 from typing import Optional
 
 from jose import jwt, ExpiredSignatureError, JWTError
@@ -16,8 +16,8 @@ class JWTManager(JWTManagerInterface):
         refresh_expires_delta: int,
         algorithm: str
     ) -> None:
-        self.access_expires_delta: timedelta = timedelta(access_expires_delta)
-        self.refresh_expires_delta: timedelta = timedelta(refresh_expires_delta)
+        self.access_expires_delta: timedelta = timedelta(minutes=access_expires_delta)
+        self.refresh_expires_delta: timedelta = timedelta(minutes=refresh_expires_delta)
         self._access_secret_key = access_secret_key
         self._refresh_secret_key = refresh_secret_key
         self._algorithm = algorithm
@@ -26,7 +26,7 @@ class JWTManager(JWTManagerInterface):
         self, data: dict, secret_key: str, expires_delta: timedelta
     ) -> str:
         to_encode = data.copy()
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
         to_encode.update({"exp": expire})
 
         return jwt.encode(to_encode, key=secret_key, algorithm=self._algorithm)

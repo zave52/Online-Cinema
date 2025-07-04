@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Optional, List
 from uuid import UUID as PY_UUID, uuid4
 
@@ -168,7 +169,7 @@ class MovieModel(Base):
     meta_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     gross: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     description: Mapped[str] = mapped_column(Text, nullable=False)
-    price: Mapped[float] = mapped_column(DECIMAL(10, 2), nullable=False)
+    price: Mapped[Decimal] = mapped_column(DECIMAL(10, 2), nullable=False)
     certification_id: Mapped[int] = mapped_column(
         ForeignKey("certifications.id", ondelete="CASCADE"),
         nullable=False
@@ -280,7 +281,7 @@ class CommentModel(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow()
+        default=datetime.now(timezone.utc)
     )
     parent_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("comments.id", ondelete="CASCADE"),

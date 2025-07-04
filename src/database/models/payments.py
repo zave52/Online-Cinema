@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from decimal import Decimal
 from enum import Enum
 from typing import Optional, List
 
@@ -33,7 +34,7 @@ class PaymentModel(Base):
         SQLEnum(PaymentStatusEnum),
         nullable=False
     )
-    amount: Mapped[float] = mapped_column(
+    amount: Mapped[Decimal] = mapped_column(
         DECIMAL(10, 2),
         nullable=False
     )
@@ -82,7 +83,7 @@ class PaymentItemModel(Base):
         primary_key=True,
         autoincrement=True
     )
-    price_at_payment: Mapped[float] = mapped_column(
+    price_at_payment: Mapped[Decimal] = mapped_column(
         DECIMAL(10, 2),
         nullable=False
     )

@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Optional, Sequence
 
 from fastapi import APIRouter, status, Depends, HTTPException, Query, Request
@@ -85,7 +86,7 @@ async def create_payment_intent(
     try:
         intend_data = await payment_service.create_payment_intent(
             order=order,
-            amount=order.total_amount
+            amount=Decimal(order.total_amount)
         )
     except PaymentError as e:
         raise HTTPException(
@@ -152,10 +153,10 @@ async def process_payment(
             detail="This order has already been paid for."
         )
 
-    expected_amount = sum(item.price_at_order for item in order.items)
-    actual_amount = intent_data["amount"]
+    expected_amount = sum(Decimal(item.price_at_order) for item in order.items)
+    actual_amount = Decimal(intent_data["amount"]).quantize(Decimal('0.01'))
 
-    if float(expected_amount) != float(actual_amount):
+    if expected_amount != actual_amount:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Payment amount does not match order total. "
@@ -263,8 +264,8 @@ async def get_user_payments(
 
     return PaymentListSchema(
         payments=payment_list,
-        prev_page=f"/ecommerce/payments/?page={page - 1}&per_page={per_page}" if page > 1 else None,
-        next_page=f"/ecommerce/payments/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        prev_page=f"/ecommerce/payments/?page={page - 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page > 1 else None,
+        next_page=f"/ecommerce/payments/?page={page + 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page < total_pages else None,
         total_pages=total_pages,
         total_items=total_items
     )
@@ -399,6 +400,8 @@ async def get_all_payments(
     authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
 ) -> PaymentListSchema:
+    filters = []
+
     stmt = (
         select(PaymentModel)
         .options(
@@ -409,17 +412,25 @@ async def get_all_payments(
     )
 
     if user_id:
-        stmt = stmt.where(PaymentModel.user_id == user_id)
+        fltr = PaymentModel.user_id == user_id
+        stmt = stmt.where(fltr)
+        filters.append(fltr)
     if status_filter:
-        stmt = stmt.where(PaymentModel.status == status_filter)
+        fltr = PaymentModel.status == status_filter
+        stmt = stmt.where(fltr)
+        filters.append(fltr)
     if date_from:
-        stmt = stmt.where(PaymentModel.created_at >= date_from)
+        fltr = PaymentModel.created_at >= date_from
+        stmt = stmt.where(fltr)
+        filters.append(fltr)
     if date_to:
-        stmt = stmt.where(PaymentModel.created_at <= date_to)
+        fltr = PaymentModel.created_at <= date_to
+        stmt = stmt.where(fltr)
+        filters.append(fltr)
 
     count_stmt = (
-        select(func.count(PaymentModel.id))
-        .select_from(stmt.subquery())
+        select(func.count(PaymentModel.id.distinct()))
+        .where(*filters)
     )
     result = await db.execute(count_stmt)
     total_items = result.scalar_one()
@@ -441,8 +452,8 @@ async def get_all_payments(
 
     return PaymentListSchema(
         payments=payment_list,
-        prev_page=f"/ecommerce/payments/?page={page - 1}&per_page={per_page}" if page > 1 else None,
-        next_page=f"/ecommerce/payments/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        prev_page=f"/ecommerce/admin/orders/?page={page - 1}&per_page={per_page}{f'&user_id={user_id}' if user_id else ''}{f'&status_filter={status_filter}' if status_filter else ''}{f'&date_from={date_from}' if date_from else ''}{f'&date_to={date_to}' if date_to else ''}" if page > 1 else None,
+        next_page=f"/ecommerce/admin/orders/?page={page + 1}&per_page={per_page}{f'&user_id={user_id}' if user_id else ''}{f'&status_filter={status_filter}' if status_filter else ''}{f'&date_from={date_from}' if date_from else ''}{f'&date_to={date_to}' if date_to else ''}" if page < total_pages else None,
         total_pages=total_pages,
         total_items=total_items
     )

@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from pydantic import EmailStr
 from fastapi_mail import FastMail, MessageSchema, MessageType, ConnectionConfig
 
@@ -17,7 +19,7 @@ class EmailSender(FastMail, EmailSenderInterface):
             recipients=[email],
             subject="Account Activation",
             subtype=MessageType.html,
-            template_body=[activation_link]
+            template_body={"activation_link": activation_link}
         )
 
         await self.send_message(
@@ -34,7 +36,7 @@ class EmailSender(FastMail, EmailSenderInterface):
             recipients=[email],
             subject="Account Activation Successfully",
             subtype=MessageType.html,
-            template_body=[login_link]
+            template_body={"login_link": login_link}
         )
 
         await self.send_message(
@@ -51,7 +53,7 @@ class EmailSender(FastMail, EmailSenderInterface):
             recipients=[email],
             subject="Password Reset Request",
             subtype=MessageType.html,
-            template_body=[password_reset_link]
+            template_body={"password_reset_link": password_reset_link}
         )
 
         await self.send_message(
@@ -68,7 +70,7 @@ class EmailSender(FastMail, EmailSenderInterface):
             recipients=[email],
             subject="Password Reset Complete",
             subtype=MessageType.html,
-            template_body=[login_link]
+            template_body={"login_link": login_link}
         )
 
         await self.send_message(
@@ -85,7 +87,7 @@ class EmailSender(FastMail, EmailSenderInterface):
 
         await self.send_message(
             message=message,
-            template_name="password_change_successfully"
+            template_name="password_change_successfully.html"
         )
 
     async def send_comment_reply_notification_email(
@@ -99,7 +101,11 @@ class EmailSender(FastMail, EmailSenderInterface):
             recipients=[email],
             subject="New Reply to Your Comment",
             subtype=MessageType.html,
-            template_body=[comment_id, reply_text, reply_author]
+            template_body={
+                "comment_id": comment_id,
+                "reply_text": reply_text,
+                "reply_author": reply_author
+            }
         )
 
         await self.send_message(
@@ -111,13 +117,16 @@ class EmailSender(FastMail, EmailSenderInterface):
         self,
         email: EmailStr,
         order_id: int,
-        amount: float
+        amount: Decimal
     ) -> None:
         message = MessageSchema(
             recipients=[email],
             subject="Refund Confirmation",
             subtype=MessageType.html,
-            template_body=[order_id, amount]
+            template_body={
+                "order_id": order_id,
+                "amount": amount
+            }
         )
 
         await self.send_message(
@@ -129,13 +138,16 @@ class EmailSender(FastMail, EmailSenderInterface):
         self,
         email: EmailStr,
         order_id: int,
-        amount: float
+        amount: Decimal
     ) -> None:
         message = MessageSchema(
             recipients=[email],
             subject="Payment Confirmation",
             subtype=MessageType.html,
-            template_body=[order_id, amount]
+            template_body={
+                "order_id": order_id,
+                "amount": amount
+            }
         )
 
         await self.send_message(

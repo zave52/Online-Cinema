@@ -1,6 +1,7 @@
-from typing import List, Any
+from decimal import Decimal
+from typing import List
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict
 
 
 class ShoppingCartAddMovieSchema(BaseModel):
@@ -15,17 +16,10 @@ class ShoppingCartMovieItemSchema(BaseModel):
     cart_item_id: int
     name: str
     year: int
-    price: float
+    price: Decimal
     genres: List[str]
 
     model_config = ConfigDict(from_attributes=True)
-
-    @field_validator("genres")
-    @classmethod
-    def genres_as_list_of_names(cls, value: Any) -> List[str]:
-        if not value:
-            return []
-        return [genre.name for genre in value]
 
 
 class ShoppingCartGetMoviesSchema(BaseModel):

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional, List
+from decimal import Decimal
+from typing import Dict, Any, Optional
 
 from database.models.orders import OrderModel
 from database.models.payments import PaymentModel, PaymentStatusEnum
@@ -10,7 +11,7 @@ class PaymentServiceInterface(ABC):
     async def create_payment_intent(
         self,
         order: OrderModel,
-        amount: float,
+        amount: Decimal,
         currency: str = "usd"
     ) -> Dict[str, Any]:
         pass
@@ -36,7 +37,7 @@ class PaymentServiceInterface(ABC):
     async def process_refund(
         self,
         payment: PaymentModel,
-        amount: Optional[float] = None,
+        amount: Optional[Decimal] = None,
         reason: Optional[str] = None
     ) -> Dict[str, Any]:
         pass

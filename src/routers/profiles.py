@@ -5,7 +5,10 @@ from pydantic import HttpUrl
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.dependencies import get_token, get_jwt_manager, get_s3_storage
+from config.dependencies import (
+    get_s3_storage,
+    get_current_user
+)
 from database.models.accounts import (
     UserModel,
     UserGroupModel,
@@ -13,7 +16,6 @@ from database.models.accounts import (
     GenderEnum
 )
 from database.models.profiles import UserProfileModel
-from exceptions.security import BaseSecurityError
 from exceptions.storages import S3FileUploadError
 from schemas.profiles import (
     ProfileResponseSchema,
@@ -23,7 +25,6 @@ from schemas.profiles import (
     ProfilePatchRequestSchema
 )
 from database import get_db
-from security.interfaces import JWTManagerInterface
 from storages.interfaces import S3StorageInterface
 
 router = APIRouter()
@@ -39,43 +40,14 @@ async def create_profile(
     profile_data: ProfileCreateRequestSchema = Depends(
         ProfileCreateRequestSchema.from_form
     ),
-    token: str = Depends(get_token),
-    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
+    user: UserModel = Depends(get_current_user),
     s3_storage: S3StorageInterface = Depends(get_s3_storage),
     db: AsyncSession = Depends(get_db)
 ) -> ProfileResponseSchema:
-    try:
-        payload = jwt_manager.decode_access_token(token)
-        token_user_id = payload.get("user_id")
-    except BaseSecurityError as e:
+    if user_id != user.id:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
-        )
-
-    if user_id != token_user_id:
-        stmt = (
-            select(UserGroupModel)
-            .join(UserModel)
-            .where(UserModel.id == token_user_id)
-        )
-        result = await db.execute(stmt)
-        user_group: UserGroupModel = result.scalars().first()
-
-        if not user_group or not user_group.name == UserGroupEnum.USER:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You don't have permission to edit this profile."
-            )
-
-    stmt = select(UserModel).where(UserModel.id == user_id)
-    result = await db.execute(stmt)
-    user: UserModel = result.scalars().first()
-
-    if not user or not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found or is not active."
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to edit this profile."
         )
 
     stmt = select(UserProfileModel).where(UserProfileModel.user_id == user_id)
@@ -107,7 +79,7 @@ async def create_profile(
         user_id=cast(int, user.id),
         first_name=profile_data.first_name,
         last_name=profile_data.last_name,
-        gender=cast(GenderEnum, profile_data.gender),
+        gender=cast(GenderEnum, profile_data.gender.upper()),
         date_of_birth=profile_data.date_of_birth,
         info=profile_data.info,
         avatar=avatar_key
@@ -123,7 +95,7 @@ async def create_profile(
         user_id=new_profile.user_id,
         first_name=new_profile.first_name,
         last_name=new_profile.last_name,
-        gender=cast(str, new_profile.gender),
+        gender=str(new_profile.gender),
         date_of_birth=new_profile.date_of_birth,
         info=new_profile.info,
         avatar=cast(HttpUrl, avatar_url)
@@ -137,25 +109,15 @@ async def create_profile(
 )
 async def get_user_profile(
     user_id: int,
-    token: str = Depends(get_token),
-    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
+    current_user: UserModel = Depends(get_current_user),
     s3_storage: S3StorageInterface = Depends(get_s3_storage),
     db: AsyncSession = Depends(get_db)
 ) -> ProfileRetrieveSchema:
-    try:
-        decoded_token = jwt_manager.decode_access_token(token)
-        token_user_id = decoded_token.get("user_id")
-    except BaseSecurityError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
-        )
-
-    if token_user_id != user_id:
+    if current_user.id != user_id:
         stmt = (
             select(UserGroupModel)
             .join(UserModel)
-            .where(UserModel.id == token_user_id)
+            .where(UserModel.id == current_user.id)
         )
         result = await db.execute(stmt)
         user_group: UserGroupModel = result.scalars().first()
@@ -165,16 +127,6 @@ async def get_user_profile(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You don't have permission to view this profile."
             )
-
-    user_stmt = select(UserModel).where(UserModel.id == user_id)
-    user_result = await db.execute(user_stmt)
-    user = user_result.scalars().first()
-
-    if not user or not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found or is not active."
-        )
 
     stmt = (
         select(UserProfileModel)
@@ -215,25 +167,15 @@ async def update_profile(
     profile_data: ProfileUpdateRequestSchema = Depends(
         ProfileUpdateRequestSchema.from_form
     ),
-    token: str = Depends(get_token),
-    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
+    current_user: UserModel = Depends(get_current_user),
     s3_storage: S3StorageInterface = Depends(get_s3_storage),
     db: AsyncSession = Depends(get_db)
 ) -> ProfileResponseSchema:
-    try:
-        decoded_token = jwt_manager.decode_access_token(token)
-        token_user_id = decoded_token.get("user_id")
-    except BaseSecurityError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
-        )
-
-    if user_id != token_user_id:
+    if user_id != current_user.id:
         stmt = (
             select(UserGroupModel)
             .join(UserModel)
-            .where(UserModel.id == token_user_id)
+            .where(UserModel.id == current_user.id)
         )
         result = await db.execute(stmt)
         user_group: UserGroupModel = result.scalars().first()
@@ -243,16 +185,6 @@ async def update_profile(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You don't have permission to update this profile."
             )
-
-    stmt = select(UserModel).where(UserModel.id == user_id)
-    result = await db.execute(stmt)
-    user: UserModel = result.scalars().first()
-
-    if not user or not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found or is not active."
-        )
 
     stmt = (
         select(UserProfileModel)
@@ -269,7 +201,7 @@ async def update_profile(
 
     profile.first_name = profile_data.first_name
     profile.last_name = profile_data.last_name
-    profile.gender = cast(GenderEnum, profile_data.gender)
+    profile.gender = cast(GenderEnum, profile_data.gender.upper())
     profile.date_of_birth = profile_data.date_of_birth
     profile.info = profile_data.info
 
@@ -300,7 +232,7 @@ async def update_profile(
         user_id=profile.user_id,
         first_name=profile.first_name,
         last_name=profile.last_name,
-        gender=cast(str, profile.gender),
+        gender=str(profile.gender),
         date_of_birth=profile.date_of_birth,
         info=profile.info,
         avatar=cast(HttpUrl, avatar_url)
@@ -317,25 +249,15 @@ async def patch_profile(
     profile_data: ProfilePatchRequestSchema = Depends(
         ProfilePatchRequestSchema.from_form
     ),
-    token: str = Depends(get_token),
-    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
+    current_user: UserModel = Depends(get_current_user),
     s3_storage: S3StorageInterface = Depends(get_s3_storage),
     db: AsyncSession = Depends(get_db)
 ) -> ProfileResponseSchema:
-    try:
-        payload = jwt_manager.decode_access_token(token)
-        token_user_id = payload.get("user_id")
-    except BaseSecurityError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
-        )
-
-    if user_id != token_user_id:
+    if user_id != current_user.id:
         stmt = (
             select(UserGroupModel)
             .join(UserModel)
-            .where(UserModel.id == token_user_id)
+            .where(UserModel.id == current_user.id)
         )
         result = await db.execute(stmt)
         user_group: UserGroupModel = result.scalars().first()
@@ -345,16 +267,6 @@ async def patch_profile(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You don't have permission to update this profile."
             )
-
-    stmt = select(UserModel).where(UserModel.id == user_id)
-    result = await db.execute(stmt)
-    user: UserModel = result.scalars().first()
-
-    if not user or not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found or is not active."
-        )
 
     stmt = (
         select(UserProfileModel)
@@ -376,7 +288,7 @@ async def patch_profile(
         profile.last_name = profile_data.last_name
 
     if profile_data.gender is not None:
-        profile.gender = cast(GenderEnum, profile_data.gender)
+        profile.gender = cast(GenderEnum, profile_data.gender.upper())
 
     if profile_data.date_of_birth is not None:
         profile.date_of_birth = profile_data.date_of_birth
@@ -411,7 +323,7 @@ async def patch_profile(
         user_id=profile.user_id,
         first_name=profile.first_name,
         last_name=profile.last_name,
-        gender=cast(str, profile.gender),
+        gender=str(profile.gender),
         date_of_birth=profile.date_of_birth,
         info=profile.info,
         avatar=cast(HttpUrl, avatar_url)

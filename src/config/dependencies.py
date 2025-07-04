@@ -3,12 +3,13 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi_mail import ConnectionConfig
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from config.settings import BaseAppSettings, get_settings
 from database import get_db
 from database.models.accounts import UserModel, UserGroupEnum
 from database.models.shopping_cart import CartModel
-from exceptions.security import BaseSecurityError
+from exceptions.security import BaseSecurityError, TokenExpiredError
 from notifications.emails import EmailSender
 from notifications.interfaces import EmailSenderInterface
 from payments.interfaces import PaymentServiceInterface
@@ -40,18 +41,24 @@ async def get_token(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
-            headers={"Authorization": "Bearer"},
+            headers={"WWW-Authenticate": "Bearer"},
         )
     return credentials.credentials
 
 
-def get_current_user_id(
+async def get_current_user_id(
     token: str = Depends(get_token),
     jwt_manager: JWTManagerInterface = Depends(get_jwt_manager)
 ) -> int:
     try:
         decoded_token = jwt_manager.decode_access_token(token=token)
         user_id = decoded_token.get("user_id")
+    except TokenExpiredError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     except BaseSecurityError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -65,7 +72,11 @@ async def get_current_user(
     user_id: int = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_db)
 ) -> UserModel:
-    query = select(UserModel).where(UserModel.id == user_id)
+    query = (
+        select(UserModel)
+        .options(selectinload(UserModel.group))
+        .where(UserModel.id == user_id)
+    )
     result = await session.execute(query)
     user = result.scalars().first()
     if not user:

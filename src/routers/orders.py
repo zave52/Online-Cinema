@@ -1,4 +1,5 @@
-from typing import Optional
+from decimal import Decimal
+from typing import Optional, Sequence
 
 from fastapi import (
     APIRouter,
@@ -8,7 +9,6 @@ from fastapi import (
     Query,
     BackgroundTasks
 )
-from mypy.applytype import Sequence
 from sqlalchemy import select, func, desc, asc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
@@ -125,7 +125,7 @@ async def create_order(
     order = OrderModel(
         user_id=user.id,
         status=OrderStatusEnum.PENDING,
-        total_amount=total_amount
+        total_amount=Decimal(total_amount)
     )
     db.add(order)
     await db.flush()
@@ -203,8 +203,8 @@ async def get_user_orders(
 
     return OrderListSchema(
         orders=order_list,
-        prev_page=f"/ecommerce/orders/?page={page - 1}&per_page={per_page}" if page > 1 else None,
-        next_page=f"/ecommerce/orders/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        prev_page=f"/ecommerce/orders/?page={page - 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page > 1 else None,
+        next_page=f"/ecommerce/orders/?page={page + 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page < total_pages else None,
         total_pages=total_pages,
         total_items=total_items
     )
@@ -320,6 +320,14 @@ async def refund_order(
     email_sender: EmailSenderInterface = Depends(get_email_sender),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
+    user_stmt = (
+        select(UserModel)
+        .options(selectinload(UserModel.purchased))
+        .where(UserModel.id == user.id)
+    )
+    result = await db.execute(user_stmt)
+    user_with_purchased = result.scalars().first()
+
     order_stmt = (
         select(OrderModel)
         .options(selectinload(OrderModel.payments))
@@ -369,6 +377,19 @@ async def refund_order(
         payment.status = PaymentStatusEnum.REFUNDED
         order.status = OrderStatusEnum.CANCELED
 
+        order_items_stmt = (
+            select(OrderItemModel)
+            .where(OrderItemModel.order_id == order_id)
+        )
+        result = await db.execute(order_items_stmt)
+        order_items = result.scalars().all()
+
+        movie_ids_to_remove = {item.movie_id for item in order_items}
+        user_with_purchased.purchased = [
+            movie for movie in user_with_purchased.purchased
+            if movie.id not in movie_ids_to_remove
+        ]
+
         await db.commit()
     except PaymentError as e:
         raise HTTPException(
@@ -404,6 +425,26 @@ async def get_all_orders(
     authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
 ) -> OrderListSchema:
+    filters = []
+
+    if user_id:
+        filters.append(OrderModel.user_id == user_id)
+    if status_filter:
+        filters.append(OrderModel.status == status_filter)
+    if date_from:
+        filters.append(OrderModel.created_at >= date_from)
+    if date_to:
+        filters.append(OrderModel.created_at <= date_to)
+
+    count_stmt = select(func.count(OrderModel.id.distinct())).where(
+        *filters
+    )
+    result = await db.execute(count_stmt)
+    total_items = result.scalar_one()
+
+    if not total_items:
+        return OrderListSchema(orders=[], total_items=0, total_pages=0)
+
     stmt = (
         select(OrderModel)
         .options(
@@ -420,14 +461,7 @@ async def get_all_orders(
     if date_from:
         stmt = stmt.where(OrderModel.created_at >= date_from)
     if date_to:
-        stmt = stmt.where(OrderModel.created_at <= date_from)
-
-    count_stmt = select(func.count(OrderModel.id)).select_from(stmt.subquery())
-    result = await db.execute(count_stmt)
-    total_items = result.scalar_one()
-
-    if not total_items:
-        return OrderListSchema(orders=[], total_items=0, total_pages=0)
+        stmt = stmt.where(OrderModel.created_at <= date_to)
 
     stmt = stmt.order_by(desc(OrderModel.created_at))
     offset = (page - 1) * per_page
@@ -441,8 +475,8 @@ async def get_all_orders(
 
     return OrderListSchema(
         orders=order_list,
-        prev_page=f"/ecommerce/admin/orders/?page={page - 1}&per_page={per_page}" if page > 1 else None,
-        next_page=f"/ecommerce/admin/orders/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        prev_page=f"/ecommerce/admin/orders/?page={page - 1}&per_page={per_page}{f'&user_id={user_id}' if user_id else ''}{f'&status_filter={status_filter}' if status_filter else ''}{f'&date_from={date_from}' if date_from else ''}{f'&date_to={date_to}' if date_to else ''}" if page > 1 else None,
+        next_page=f"/ecommerce/admin/orders/?page={page + 1}&per_page={per_page}{f'&user_id={user_id}' if user_id else ''}{f'&status_filter={status_filter}' if status_filter else ''}{f'&date_from={date_from}' if date_from else ''}{f'&date_to={date_to}' if date_to else ''}" if page < total_pages else None,
         total_pages=total_pages,
         total_items=total_items
     )

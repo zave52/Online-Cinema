@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from decimal import Decimal
 from enum import Enum
 from typing import Optional, List
 
@@ -39,7 +40,7 @@ class OrderModel(Base):
         nullable=False,
         default=datetime.now(timezone.utc)
     )
-    total_amount: Mapped[Optional[float]] = mapped_column(
+    total_amount: Mapped[Optional[Decimal]] = mapped_column(
         DECIMAL(10, 2),
         nullable=True
     )
@@ -75,7 +76,7 @@ class OrderItemModel(Base):
         primary_key=True,
         autoincrement=True
     )
-    price_at_order: Mapped[float] = mapped_column(
+    price_at_order: Mapped[Decimal] = mapped_column(
         DECIMAL(10, 2),
         nullable=False
     )

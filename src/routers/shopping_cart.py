@@ -1,6 +1,9 @@
+from decimal import Decimal
+
 from fastapi import APIRouter, status, Depends, HTTPException
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from config.dependencies import (
     get_current_user,
@@ -133,6 +136,7 @@ async def get_shopping_cart_movies(
 ) -> ShoppingCartGetMoviesSchema:
     stmt = (
         select(CartItemModel, MovieModel)
+        .options(selectinload(MovieModel.genres))
         .join(
             MovieModel,
             CartItemModel.movie_id == MovieModel.id
@@ -151,7 +155,7 @@ async def get_shopping_cart_movies(
             "name": movie.name,
             "year": movie.year,
             "price": movie.price,
-            "genres": movie.genres
+            "genres": [genre.name for genre in movie.genres]
         }
         movie_items.append(movie_dict)
 
@@ -184,6 +188,7 @@ async def get_shopping_cart_movies_by_id(
 
     items_stmt = (
         select(CartItemModel, MovieModel)
+        .options(selectinload(MovieModel.genres))
         .join(
             MovieModel,
             CartItemModel.movie_id == MovieModel.id
@@ -202,7 +207,7 @@ async def get_shopping_cart_movies_by_id(
             "name": movie.name,
             "year": movie.year,
             "price": movie.price,
-            "genres": movie.genres
+            "genres": [genre.name for genre in movie.genres]
         }
         movie_items.append(movie_dict)
 
@@ -238,7 +243,7 @@ async def clear_shopping_cart(
     "/cart/checkout/",
     response_model=MessageResponseSchema,
     status_code=status.HTTP_200_OK,
-    tags=["cart", "payment"]
+    tags=["cart", "payments"]
 )
 async def checkout_cart_items(
     user: UserModel = Depends(get_current_user),
@@ -288,7 +293,7 @@ async def checkout_cart_items(
     order = OrderModel(
         user_id=user.id,
         status=OrderStatusEnum.PENDING,
-        total_amount=total_amount
+        total_amount=Decimal(total_amount)
     )
     db.add(order)
     await db.flush()

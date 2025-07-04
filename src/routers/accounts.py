@@ -8,7 +8,8 @@ from config.dependencies import (
     get_email_sender,
     get_jwt_manager,
     get_settings,
-    get_token
+    get_token,
+    get_current_user, RoleChecker
 )
 from config.settings import BaseAppSettings
 from database import get_db
@@ -43,6 +44,8 @@ from schemas.accounts import (
 from security.interfaces import JWTManagerInterface
 
 router = APIRouter()
+
+admin_only = RoleChecker([UserGroupEnum.ADMIN])
 
 
 @router.post(
@@ -331,30 +334,10 @@ async def reset_password(
 async def change_password(
     data: PasswordChangeRequestSchema,
     background_tasks: BackgroundTasks,
-    token: str = Depends(get_token),
-    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
+    user: UserModel = Depends(get_current_user),
     email_sender: EmailSenderInterface = Depends(get_email_sender),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
-    try:
-        decoded_token = jwt_manager.decode_access_token(token)
-        user_id = decoded_token.get("user_id")
-    except BaseSecurityError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
-        )
-
-    stmt = select(UserModel).where(UserModel.id == user_id)
-    result = await db.execute(stmt)
-    user: UserModel = result.scalars().first()
-
-    if not user or not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found or inactive."
-        )
-
     if not user.verify_password(data.old_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -372,7 +355,7 @@ async def change_password(
 
         stmt = (
             delete(RefreshTokenModel)
-            .where(RefreshTokenModel.user_id == user_id)
+            .where(RefreshTokenModel.user_id == user.id)
         )
         await db.execute(stmt)
 
@@ -599,33 +582,9 @@ async def verify_access_token(
 async def change_user_group(
     user_id: int,
     data: UserGroupUpdateRequestSchema,
-    token: str = Depends(get_token),
-    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
+    authorized: None = Depends(admin_only),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
-    try:
-        decoded_token = jwt_manager.decode_access_token(token)
-        admin_user_id = decoded_token.get("user_id")
-    except BaseSecurityError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
-        )
-
-    stmt = (
-        select(UserGroupModel)
-        .join(UserModel)
-        .where(UserModel.id == admin_user_id)
-    )
-    result = await db.execute(stmt)
-    admin_group: UserGroupModel = result.scalars().first()
-
-    if not admin_group or admin_group.name != UserGroupEnum.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only administrators can change user groups."
-        )
-
     stmt = select(UserModel).where(UserModel.id == user_id)
     result = await db.execute(stmt)
     target_user: UserModel = result.scalars().first()
@@ -676,35 +635,11 @@ async def change_user_group(
 async def admin_activate_user(
     data: UserManualActivationSchema,
     background_tasks: BackgroundTasks,
-    token: str = Depends(get_token),
-    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
+    authorized: None = Depends(admin_only),
     email_sender: EmailSenderInterface = Depends(get_email_sender),
     settings: BaseAppSettings = Depends(get_settings),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
-    try:
-        decoded_token = jwt_manager.decode_access_token(token)
-        admin_user_id = decoded_token.get("user_id")
-    except BaseSecurityError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
-        )
-
-    stmt = (
-        select(UserGroupModel)
-        .join(UserModel)
-        .where(UserModel.id == admin_user_id)
-    )
-    result = await db.execute(stmt)
-    admin_group: UserGroupModel = result.scalars().first()
-
-    if not admin_group or admin_group.name != UserGroupEnum.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only administrators can manually activate users."
-        )
-
     stmt = select(UserModel).where(UserModel.email == data.email)
     result = await db.execute(stmt)
     target_user: UserModel = result.scalars().first()

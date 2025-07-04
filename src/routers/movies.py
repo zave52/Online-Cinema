@@ -397,21 +397,16 @@ async def get_movie_by_id(
         .limit(10)
     )
     likes_stmt = (
-        select(func.count())
-        .select_from(
-            select(MovieModel.likes).where(MovieModel.id == movie_id).subquery()
-        )
+        select(func.count(LikeModel.id))
+        .where(LikeModel.movie_id == movie_id)
     )
     favorites_stmt = (
-        select(func.count())
-        .select_from(
-            select(MovieModel.favorites).where(
-                MovieModel.id == movie_id
-            ).subquery()
-        )
+        select(func.count(FavoriteMovieModel.id))
+        .where(FavoriteMovieModel.movie_id == movie_id)
     )
     avg_rating_stmt = (
-        select(func.avg(MovieModel.rates)).where(MovieModel.id == movie_id)
+        select(func.avg(RateMovieModel.rate))
+        .where(RateMovieModel.movie_id == movie_id)
     )
 
     (

@@ -320,6 +320,14 @@ async def refund_order(
     email_sender: EmailSenderInterface = Depends(get_email_sender),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
+    user_stmt = (
+        select(UserModel)
+        .options(selectinload(UserModel.purchased))
+        .where(UserModel.id == user.id)
+    )
+    result = await db.execute(user_stmt)
+    user_with_purchased = result.scalars().first()
+
     order_stmt = (
         select(OrderModel)
         .options(selectinload(OrderModel.payments))
@@ -368,6 +376,19 @@ async def refund_order(
 
         payment.status = PaymentStatusEnum.REFUNDED
         order.status = OrderStatusEnum.CANCELED
+
+        order_items_stmt = (
+            select(OrderItemModel)
+            .where(OrderItemModel.order_id == order_id)
+        )
+        result = await db.execute(order_items_stmt)
+        order_items = result.scalars().all()
+
+        movie_ids_to_remove = {item.movie_id for item in order_items}
+        user_with_purchased.purchased = [
+            movie for movie in user_with_purchased.purchased
+            if movie.id not in movie_ids_to_remove
+        ]
 
         await db.commit()
     except PaymentError as e:

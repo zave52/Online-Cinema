@@ -1356,7 +1356,7 @@ async def get_stars(
 ) -> StarListSchema:
     stmt = select(StarModel)
 
-    count_stmt = select(func.count(StarModel.id)).select_from(stmt.subquery())
+    count_stmt = select(func.count(StarModel.id.distinct())).select_from(stmt.subquery())
     result = await db.execute(count_stmt)
     total_items = result.scalar_one()
 
@@ -1427,7 +1427,7 @@ async def create_star(
             detail=f"A star with the name '{data.name}' already exists."
         )
 
-    star = StarModel(name=data.name)
+    star = StarModel(name=data.name.title())
     db.add(star)
     await db.commit()
     await db.refresh(star)
@@ -1458,7 +1458,7 @@ async def update_star(
         )
 
     try:
-        star.name = data.name
+        star.name = data.name.title()
 
         await db.commit()
         await db.refresh(star)

@@ -78,6 +78,41 @@ async def get_movies(
     genre: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db)
 ) -> MovieListResponseSchema:
+    base_filters = []
+
+    if year_from:
+        base_filters.append(MovieModel.year >= year_from)
+    if year_to:
+        base_filters.append(MovieModel.year <= year_to)
+    if imdb_min:
+        base_filters.append(MovieModel.imdb >= imdb_min)
+    if genre:
+        base_filters.append(
+            MovieModel.genres.any(GenreModel.name.ilike(f"%{genre}%"))
+        )
+
+    if search:
+        search_term = f"%{search}%"
+        count_filters = base_filters + [
+            or_(
+                MovieModel.name.ilike(search_term),
+                MovieModel.description.ilike(search_term),
+                MovieModel.stars.any(StarModel.name.ilike(search_term)),
+                MovieModel.directors.any(DirectorModel.name.ilike(search_term))
+            )
+        ]
+        count_stmt = select(func.count(MovieModel.id.distinct())).where(
+            *count_filters
+        )
+    else:
+        count_stmt = select(func.count(MovieModel.id)).where(*base_filters)
+
+    result = await db.execute(count_stmt)
+    total_items = result.scalar_one()
+
+    if not total_items:
+        return MovieListResponseSchema(movies=[], total_pages=0, total_items=0)
+
     stmt = select(MovieModel).options(
         selectinload(MovieModel.genres),
         selectinload(MovieModel.stars),
@@ -97,27 +132,10 @@ async def get_movies(
             )
         )
 
-    if year_from:
-        stmt = stmt.where(MovieModel.year >= year_from)
-    if year_to:
-        stmt = stmt.where(MovieModel.year <= year_to)
-    if imdb_min:
-        stmt = stmt.where(MovieModel.imdb >= imdb_min)
-    if genre:
-        stmt = stmt.where(
-            MovieModel.genres.any(GenreModel.name.ilike(f"%{genre}%"))
-        )
-
-    count_stmt = select(func.count(MovieModel.id)).select_from(stmt.subquery())
-    result = await db.execute(count_stmt)
-    total_items = result.scalar_one()
-
-    if not total_items:
-        return MovieListResponseSchema(movies=[], total_pages=0, total_items=0)
+    stmt = stmt.where(*base_filters)
 
     if sort_by:
         sort_field = sort_by.strip("-")
-
         allowed_sort_fields = ("year", "price", "imdb", "name", "time")
         if sort_field in allowed_sort_fields:
             column = getattr(MovieModel, sort_field)

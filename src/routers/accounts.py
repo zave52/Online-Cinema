@@ -153,7 +153,7 @@ async def resend_activation_token(
             detail="An error occurred during resending activation token."
         )
     else:
-        activation_link = f"{settings.BASE_URL}/activate/"
+        activation_link = f"{settings.BASE_URL}/activate/?email={user.email}&token={new_activation_token.token}"
 
         background_tasks.add_task(
             email_sender.send_activation_email,
@@ -250,7 +250,7 @@ async def request_password_reset_token(
     db.add(reset_token)
     await db.commit()
 
-    password_reset_link = f"{settings.BASE_URL}/password-reset/complete/"
+    password_reset_link = f"{settings.BASE_URL}/password-reset/complete/?token={reset_token.token}"
 
     background_tasks.add_task(
         email_sender.send_password_reset_email,

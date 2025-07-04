@@ -153,8 +153,8 @@ async def process_payment(
             detail="This order has already been paid for."
         )
 
-    expected_amount = sum(item.price_at_order for item in order.items)
-    actual_amount = intent_data["amount"]
+    expected_amount = sum(Decimal(item.price_at_order) for item in order.items)
+    actual_amount = Decimal(intent_data["amount"]).quantize(Decimal('0.01'))
 
     if expected_amount != actual_amount:
         raise HTTPException(

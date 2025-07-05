@@ -46,7 +46,69 @@ moderator_and_admin = RoleChecker(
     "/payments/create-intent/",
     response_model=PaymentIntentResponseSchema,
     status_code=status.HTTP_200_OK,
-    tags=["payments"]
+    summary="Create payment intent",
+    description="Create a payment intent for a pending order. This is the first step in the payment process.",
+    responses={
+        200: {
+            "description": "Payment intent created successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": "pi_1234567890abcdef",
+                        "client_secret": "pi_1234567890abcdef_secret_abcdef1234567890",
+                        "amount": "2997",
+                        "currency": "usd"
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Order is not in pending status or payment service error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Order is not on pending status."
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Order not found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Order not found."
+                    }
+                }
+            }
+        },
+        422: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": [
+                            {
+                                "loc": ["body", "order_id"],
+                                "msg": "field required",
+                                "type": "value_error.missing"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
 )
 async def create_payment_intent(
     data: CreatePaymentIntentSchema,
@@ -54,6 +116,17 @@ async def create_payment_intent(
     payment_service: PaymentServiceInterface = Depends(get_payment_service),
     db: AsyncSession = Depends(get_db)
 ) -> PaymentIntentResponseSchema:
+    """Create a payment intent for a pending order.
+
+    Args:
+        data (CreatePaymentIntentSchema): Payment intent creation data.
+        user (UserModel): The current authenticated user.
+        payment_service (PaymentServiceInterface): Payment service dependency.
+        db (AsyncSession): Database session dependency.
+
+    Returns:
+        PaymentIntentResponseSchema: Payment intent details for client-side processing.
+    """
     stmt = (
         select(OrderModel)
         .options(selectinload(OrderModel.items))
@@ -106,7 +179,66 @@ async def create_payment_intent(
     "/payments/process/",
     response_model=MessageResponseSchema,
     status_code=status.HTTP_200_OK,
-    tags=["payments"]
+    summary="Process payment",
+    description="Process a payment using a payment intent. Updates order status and adds movies to user's purchased list.",
+    responses={
+        200: {
+            "description": "Payment processed successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "Payment processed successfully. Movies have been added to your library."
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Payment processing failed or order already paid",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "This order has already been paid for."
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Order not found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Order not found."
+                    }
+                }
+            }
+        },
+        422: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": [
+                            {
+                                "loc": ["body", "payment_intent_id"],
+                                "msg": "field required",
+                                "type": "value_error.missing"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
 )
 async def process_payment(
     data: ProcessPaymentSchema,
@@ -116,6 +248,19 @@ async def process_payment(
     email_sender: EmailSenderInterface = Depends(get_email_sender),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
+    """Process a payment using a payment intent.
+
+    Args:
+        data (ProcessPaymentSchema): Payment processing data.
+        background_tasks (BackgroundTasks): FastAPI background tasks.
+        user (UserModel): The current authenticated user.
+        payment_service (PaymentServiceInterface): Payment service dependency.
+        email_sender (EmailSenderInterface): Email sender dependency.
+        db (AsyncSession): Database session dependency.
+
+    Returns:
+        MessageResponseSchema: Success message.
+    """
     try:
         intent_data = await payment_service.retrieve_payment_intent(
             data.payment_intent_id
@@ -211,7 +356,62 @@ async def process_payment(
     "/payments/",
     response_model=PaymentListSchema,
     status_code=status.HTTP_200_OK,
-    tags=["payments"]
+    summary="List user payments",
+    description="Get a paginated list of payments for the current user with sorting options.",
+    responses={
+        200: {
+            "description": "List of payments returned successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "payments": [
+                            {
+                                "id": 1,
+                                "user_id": 1,
+                                "order_id": 1,
+                                "payment_intent_id": "pi_1234567890abcdef",
+                                "amount": "29.97",
+                                "currency": "usd",
+                                "status": "succeeded",
+                                "created_at": "2024-01-01T00:00:00Z",
+                                "updated_at": "2024-01-01T00:00:00Z"
+                            }
+                        ],
+                        "total_pages": 1,
+                        "total_items": 1,
+                        "prev_page": None,
+                        "next_page": None
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        422: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": [
+                            {
+                                "loc": ["query", "page"],
+                                "msg": "ensure this value is greater than or equal to 1",
+                                "type": "value_error.number.not_ge"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
 )
 async def get_user_payments(
     page: int = Query(1, ge=1),
@@ -220,6 +420,18 @@ async def get_user_payments(
     user: UserModel = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> PaymentListSchema:
+    """Get a paginated list of payments for the current user.
+
+    Args:
+        page (int): Page number for pagination.
+        per_page (int): Number of payments per page.
+        sort_by (Optional[str]): Field to sort by (e.g., 'created_at', 'amount').
+        user (UserModel): The current authenticated user.
+        db (AsyncSession): Database session dependency.
+
+    Returns:
+        PaymentListSchema: Paginated list of user payments.
+    """
     count_stmt = (
         select(func.count(PaymentModel.id))
         .where(PaymentModel.user_id == user.id)
@@ -275,13 +487,64 @@ async def get_user_payments(
     "/payments/{payment_id}/",
     response_model=PaymentSchema,
     status_code=status.HTTP_200_OK,
-    tags=["payments"]
+    summary="Get payment details",
+    description="Retrieve detailed information about a specific payment by its ID.",
+    responses={
+        200: {
+            "description": "Payment details returned successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "user_id": 1,
+                        "order_id": 1,
+                        "payment_intent_id": "pi_1234567890abcdef",
+                        "amount": "29.97",
+                        "currency": "usd",
+                        "status": "succeeded",
+                        "created_at": "2024-01-01T00:00:00Z",
+                        "updated_at": "2024-01-01T00:00:00Z"
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Payment not found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Payment not found"
+                    }
+                }
+            }
+        }
+    }
 )
 async def get_payment_by_id(
     payment_id: int,
     user: UserModel = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> PaymentSchema:
+    """Retrieve detailed information about a specific payment.
+
+    Args:
+        payment_id (int): The ID of the payment to retrieve.
+        user (UserModel): The current authenticated user.
+        db (AsyncSession): Database session dependency.
+
+    Returns:
+        PaymentSchema: Detailed payment information.
+    """
     stmt = (
         select(PaymentModel)
         .options(
@@ -309,7 +572,67 @@ async def get_payment_by_id(
     "/payments/checkout-session/",
     response_model=CheckoutSessionResponseSchema,
     status_code=status.HTTP_200_OK,
-    tags=["payments"]
+    summary="Create checkout session",
+    description="Create a checkout session for a pending order. Used for redirect-based payment flows.",
+    responses={
+        200: {
+            "description": "Checkout session created successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": "cs_1234567890abcdef",
+                        "url": "https://checkout.stripe.com/pay/cs_1234567890abcdef"
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Order is not in pending status or payment service error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Order is not on pending status."
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Order not found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Order not found."
+                    }
+                }
+            }
+        },
+        422: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": [
+                            {
+                                "loc": ["body", "order_id"],
+                                "msg": "field required",
+                                "type": "value_error.missing"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
 )
 async def create_checkout_session(
     data: CheckoutSessionRequestSchema,
@@ -317,6 +640,17 @@ async def create_checkout_session(
     payment_service: PaymentServiceInterface = Depends(get_payment_service),
     db: AsyncSession = Depends(get_db)
 ) -> CheckoutSessionResponseSchema:
+    """Create a checkout session for a pending order.
+
+    Args:
+        data (CheckoutSessionRequestSchema): Checkout session creation data.
+        user (UserModel): The current authenticated user.
+        payment_service (PaymentServiceInterface): Payment service dependency.
+        db (AsyncSession): Database session dependency.
+
+    Returns:
+        CheckoutSessionResponseSchema: Checkout session details for redirect.
+    """
     stmt = (
         select(OrderModel)
         .options(
@@ -365,12 +699,45 @@ async def create_checkout_session(
 @router.post(
     "/payments/webhook/",
     status_code=status.HTTP_200_OK,
-    tags=["payments"]
+    summary="Handle payment webhook",
+    description="Handle incoming webhooks from payment service (e.g., Stripe). Processes payment status updates.",
+    responses={
+        200: {
+            "description": "Webhook processed successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "status": "success",
+                        "message": "Webhook processed successfully"
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Webhook processing failed",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Invalid webhook signature"
+                    }
+                }
+            }
+        }
+    }
 )
 async def handle_webhook(
     request: Request,
     payment_service: PaymentServiceInterface = Depends(get_payment_service)
 ) -> dict:
+    """Handle incoming webhooks from payment service.
+
+    Args:
+        request (Request): The incoming webhook request.
+        payment_service (PaymentServiceInterface): Payment service dependency.
+
+    Returns:
+        dict: Webhook processing result.
+    """
     payload = await request.body()
     signature = request.headers.get("stripe-signature", "")
 
@@ -388,7 +755,73 @@ async def handle_webhook(
     "/admin/payments/",
     response_model=PaymentListSchema,
     status_code=status.HTTP_200_OK,
-    tags=["payments", "admin", "moderator"]
+    tags=["payments", "moderator"],
+    summary="List all payments (Admin)",
+    description="Get a paginated list of all payments with filtering options. Only moderators and admins can access.",
+    responses={
+        200: {
+            "description": "List of payments returned successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "payments": [
+                            {
+                                "id": 1,
+                                "user_id": 1,
+                                "order_id": 1,
+                                "payment_intent_id": "pi_1234567890abcdef",
+                                "amount": "29.97",
+                                "currency": "usd",
+                                "status": "succeeded",
+                                "created_at": "2024-01-01T00:00:00Z",
+                                "updated_at": "2024-01-01T00:00:00Z"
+                            }
+                        ],
+                        "total_pages": 1,
+                        "total_items": 1,
+                        "prev_page": None,
+                        "next_page": None
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        403: {
+            "description": "Forbidden",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Access denied. Moderator or admin privileges required."
+                    }
+                }
+            }
+        },
+        422: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": [
+                            {
+                                "loc": ["query", "page"],
+                                "msg": "ensure this value is greater than or equal to 1",
+                                "type": "value_error.number.not_ge"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
 )
 async def get_all_payments(
     page: int = Query(1, ge=1),
@@ -400,6 +833,21 @@ async def get_all_payments(
     authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
 ) -> PaymentListSchema:
+    """Get a paginated list of all payments with filtering options.
+
+    Args:
+        page (int): Page number for pagination.
+        per_page (int): Number of payments per page.
+        user_id (Optional[int]): Filter by specific user ID.
+        status_filter (Optional[PaymentStatusEnum]): Filter by payment status.
+        date_from (Optional[str]): Filter payments from this date.
+        date_to (Optional[str]): Filter payments to this date.
+        authorized: Dependency to check moderator/admin rights.
+        db (AsyncSession): Database session dependency.
+
+    Returns:
+        PaymentListSchema: Paginated list of payments with filtering applied.
+    """
     filters = []
 
     stmt = (

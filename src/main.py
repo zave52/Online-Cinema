@@ -6,7 +6,21 @@ from fastapi.responses import HTMLResponse
 
 from config.dependencies import get_current_user
 from database.models.accounts import UserModel
-from routers import accounts, profiles, movies, shopping_cart, orders, payments
+from routers import (
+    accounts,
+    profiles,
+    movies,
+    shopping_cart,
+    orders,
+    payments,
+    directors,
+    comments,
+    genres,
+    likes,
+    stars,
+    rates,
+    favorites
+)
 
 security = HTTPBearer(auto_error=False)
 
@@ -156,22 +170,57 @@ app.include_router(
 app.include_router(
     movies.router,
     prefix=f"{api_version_index}/cinema",
-    tags=["cinema"]
+    tags=["movies"]
+)
+app.include_router(
+    directors.router,
+    prefix=f"{api_version_index}/cinema",
+    tags=["directors"]
+)
+app.include_router(
+    comments.router,
+    prefix=f"{api_version_index}/cinema",
+    tags=["comments"]
+)
+app.include_router(
+    favorites.router,
+    prefix=f"{api_version_index}/cinema",
+    tags=["favorites"]
+)
+app.include_router(
+    genres.router,
+    prefix=f"{api_version_index}/cinema",
+    tags=["genres"]
+)
+app.include_router(
+    likes.router,
+    prefix=f"{api_version_index}/cinema",
+    tags=["likes"]
+)
+app.include_router(
+    rates.router,
+    prefix=f"{api_version_index}/cinema",
+    tags=["rates"]
+)
+app.include_router(
+    stars.router,
+    prefix=f"{api_version_index}/cinema",
+    tags=["stars"]
 )
 app.include_router(
     shopping_cart.router,
     prefix=f"{api_version_index}/ecommerce",
-    tags=["ecommerce"]
+    tags=["cart"]
 )
 app.include_router(
     orders.router,
-    prefix=f"{api_version_index}",
-    tags=["ecommerce"]
+    prefix=f"{api_version_index}/ecommerce",
+    tags=["orders"]
 )
 app.include_router(
     payments.router,
-    prefix=f"{api_version_index}",
-    tags=["ecommerce"]
+    prefix=f"{api_version_index}/ecommerce",
+    tags=["payments"]
 )
 
 

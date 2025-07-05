@@ -51,7 +51,48 @@ admin_only = RoleChecker([UserGroupEnum.ADMIN])
 @router.post(
     "/register/",
     response_model=UserRegistrationResponseSchema,
-    status_code=status.HTTP_201_CREATED
+    status_code=status.HTTP_201_CREATED,
+    summary="Register a new user",
+    description="Register a new user with email and password. Sends an activation email with a token.",
+    responses={
+        201: {
+            "description": "User successfully registered",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "email": "user@example.com",
+                        "is_active": False,
+                        "created_at": "2024-01-01T00:00:00Z",
+                        "group": {
+                            "id": 1,
+                            "name": "user"
+                        }
+                    }
+                }
+            }
+        },
+        409: {
+            "description": "User with this email already exists",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "A user with this email user@example.com already exists."
+                    }
+                }
+            }
+        },
+        500: {
+            "description": "Internal server error during user creation",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "An error occurred during user creation."
+                    }
+                }
+            }
+        }
+    },
 )
 async def register_user(
     data: UserRegistrationRequestSchema,
@@ -60,6 +101,18 @@ async def register_user(
     email_sender: EmailSenderInterface = Depends(get_email_sender),
     db: AsyncSession = Depends(get_db)
 ) -> UserRegistrationResponseSchema:
+    """Register a new user and send an activation email.
+
+    Args:
+        data: Registration data (email, password).
+        background_tasks: FastAPI background tasks for sending email.
+        settings: Application settings.
+        email_sender: Email sender service.
+        db: Database session.
+
+    Returns:
+        UserRegistrationResponseSchema: The registered user data.
+    """
     stmt = select(UserModel).where(UserModel.email == data.email)
     result = await db.execute(stmt)
     existing_user = result.scalars().first()
@@ -117,7 +170,31 @@ async def register_user(
 @router.post(
     "/activate/resend/",
     response_model=MessageResponseSchema,
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
+    summary="Resend activation token",
+    description="Resend a new activation token to the user's email if the previous one expired.",
+    responses={
+        200: {
+            "description": "Activation token resent successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "If your account exists and is not activated, you will receive an email with instructions."
+                    }
+                }
+            }
+        },
+        500: {
+            "description": "Internal server error during token resend",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "An error occurred during resending activation token."
+                    }
+                }
+            }
+        }
+    },
 )
 async def resend_activation_token(
     data: ResendActivationTokenRequestSchema,
@@ -126,6 +203,18 @@ async def resend_activation_token(
     email_sender: EmailSenderInterface = Depends(get_email_sender),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
+    """Resend a new activation token to the user's email if the previous one expired.
+
+    Args:
+        data: Email for which to resend the activation token.
+        background_tasks: FastAPI background tasks for sending email.
+        settings: Application settings.
+        email_sender: Email sender service.
+        db: Database session.
+
+    Returns:
+        MessageResponseSchema: Standard message response.
+    """
     standard_response = MessageResponseSchema(
         message="If your account exists and is not activated, you will receive an email with instructions."
     )
@@ -170,7 +259,41 @@ async def resend_activation_token(
 @router.post(
     "/activate/",
     response_model=MessageResponseSchema,
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
+    summary="Activate user account",
+    description="Activate a user account using the activation token sent via email.",
+    responses={
+        200: {
+            "description": "User account activated successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "User account activated successfully."
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Invalid or expired activation token",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Invalid or expired activation token."
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "User account already active",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "User account is already active."
+                    }
+                }
+            }
+        }
+    },
 )
 async def activate_account(
     data: UserActivationRequestSchema,
@@ -179,6 +302,18 @@ async def activate_account(
     email_sender: EmailSenderInterface = Depends(get_email_sender),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
+    """Activate a user account using the activation token sent via email.
+
+    Args:
+        data: Activation token and email.
+        background_tasks: FastAPI background tasks for sending email.
+        settings: Application settings.
+        email_sender: Email sender service.
+        db: Database session.
+
+    Returns:
+        MessageResponseSchema: Standard message response.
+    """
     stmt = (
         select(ActivationTokenModel)
         .options(joinedload(ActivationTokenModel.user))
@@ -225,7 +360,21 @@ async def activate_account(
 @router.post(
     "/password-reset/request/",
     response_model=MessageResponseSchema,
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
+    summary="Request password reset",
+    description="Request a password reset token to be sent to the user's email.",
+    responses={
+        200: {
+            "description": "Password reset token sent successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "If you are registered, you will receive an email with instructions."
+                    }
+                }
+            }
+        }
+    },
 )
 async def request_password_reset_token(
     data: PasswordResetRequestSchema,
@@ -234,6 +383,18 @@ async def request_password_reset_token(
     email_sender: EmailSenderInterface = Depends(get_email_sender),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
+    """Request a password reset token to be sent to the user's email.
+
+    Args:
+        data: Email for which to request password reset.
+        background_tasks: FastAPI background tasks for sending email.
+        settings: Application settings.
+        email_sender: Email sender service.
+        db: Database session.
+
+    Returns:
+        MessageResponseSchema: Standard message response.
+    """
     stmt = select(UserModel).where(UserModel.email == data.email)
     result = await db.execute(stmt)
     user: UserModel = result.scalars().first()
@@ -269,7 +430,41 @@ async def request_password_reset_token(
 @router.post(
     "/password-reset/complete/",
     response_model=MessageResponseSchema,
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
+    summary="Complete password reset",
+    description="Complete the password reset process using the token sent via email.",
+    responses={
+        200: {
+            "description": "Password reset completed successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "Password reset successfully."
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Invalid email or token",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Invalid email or token."
+                    }
+                }
+            }
+        },
+        500: {
+            "description": "Internal server error during password reset",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "An error occurred while resetting the password."
+                    }
+                }
+            }
+        }
+    },
 )
 async def reset_password(
     data: PasswordResetCompleteRequestSchema,
@@ -278,6 +473,18 @@ async def reset_password(
     email_sender: EmailSenderInterface = Depends(get_email_sender),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
+    """Complete the password reset process using the token sent via email.
+
+    Args:
+        data: Email, new password, and reset token.
+        background_tasks: FastAPI background tasks for sending email.
+        settings: Application settings.
+        email_sender: Email sender service.
+        db: Database session.
+
+    Returns:
+        MessageResponseSchema: Standard message response.
+    """
     stmt = select(UserModel).where(UserModel.email == data.email)
     result = await db.execute(stmt)
     user: UserModel = result.scalars().first()
@@ -329,7 +536,51 @@ async def reset_password(
 @router.post(
     "/password-change/",
     response_model=MessageResponseSchema,
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
+    summary="Change password",
+    description="Change the user's password by providing the old and new password.",
+    responses={
+        200: {
+            "description": "Password changed successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "Password changed successfully."
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "New password same as current password",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "New password must be different from the current password."
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Current password incorrect",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Current password is incorrect."
+                    }
+                }
+            }
+        },
+        500: {
+            "description": "Internal server error during password change",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "An error occurred during password change."
+                    }
+                }
+            }
+        }
+    },
 )
 async def change_password(
     data: PasswordChangeRequestSchema,
@@ -338,6 +589,18 @@ async def change_password(
     email_sender: EmailSenderInterface = Depends(get_email_sender),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
+    """Change the user's password by providing the old and new password.
+
+    Args:
+        data: Old and new password.
+        background_tasks: FastAPI background tasks for sending email.
+        user: The current authenticated user.
+        email_sender: Email sender service.
+        db: Database session.
+
+    Returns:
+        MessageResponseSchema: Standard message response.
+    """
     if not user.verify_password(data.old_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -379,7 +642,53 @@ async def change_password(
 @router.post(
     "/login/",
     response_model=UserLoginResponseSchema,
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
+    summary="User login",
+    description="Authenticate user and return JWT access and refresh tokens.",
+    responses={
+        200: {
+            "description": "User successfully authenticated",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "token_type": "bearer",
+                        "user": {
+                            "id": 1,
+                            "email": "user@example.com",
+                            "is_active": True,
+                            "created_at": "2024-01-01T00:00:00Z",
+                            "group": {
+                                "id": 1,
+                                "name": "user"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Invalid credentials",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Invalid email or password"
+                    }
+                }
+            }
+        },
+        403: {
+            "description": "Account not activated",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Account is not activated. Please check your email for activation link."
+                    }
+                }
+            }
+        }
+    },
 )
 async def login_user(
     data: UserLoginRequestSchema,
@@ -387,6 +696,17 @@ async def login_user(
     jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
     db: AsyncSession = Depends(get_db)
 ) -> UserLoginResponseSchema:
+    """Authenticate user and return JWT access and refresh tokens.
+
+    Args:
+        data: Login credentials (email, password).
+        settings: Application settings.
+        jwt_manager: JWT manager service.
+        db: Database session.
+
+    Returns:
+        UserLoginResponseSchema: JWT tokens for the user.
+    """
     stmt = select(UserModel).where(UserModel.email == data.email)
     result = await db.execute(stmt)
     user: UserModel = result.scalars().first()
@@ -432,7 +752,51 @@ async def login_user(
 @router.post(
     "/logout/",
     response_model=MessageResponseSchema,
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
+    summary="User logout",
+    description="Logout user by deleting the refresh token.",
+    responses={
+        200: {
+            "description": "User logged out successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "Successfully logged out."
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Invalid or mismatched tokens",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Invalid or mismatched tokens"
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "User not found or inactive",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "User not found or inactive"
+                    }
+                }
+            }
+        },
+        500: {
+            "description": "Internal server error during logout",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "An error occurred during logout."
+                    }
+                }
+            }
+        }
+    },
 )
 async def logout_user(
     data: TokenRefreshRequestSchema,
@@ -440,6 +804,17 @@ async def logout_user(
     jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
+    """Logout user by deleting the refresh token.
+
+    Args:
+        data: Refresh token to revoke.
+        access_token: JWT access token.
+        jwt_manager: JWT manager service.
+        db: Database session.
+
+    Returns:
+        MessageResponseSchema: Standard message response.
+    """
     try:
         decoded_access_token = jwt_manager.decode_access_token(access_token)
         access_token_user_id = decoded_access_token.get("user_id")
@@ -501,13 +876,67 @@ async def logout_user(
 @router.post(
     "/refresh/",
     response_model=TokenRefreshResponseSchema,
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
+    summary="Refresh access token",
+    description="Obtain a new access token using a valid refresh token.",
+    responses={
+        200: {
+            "description": "Access token refreshed successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Invalid refresh token",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Invalid refresh token"
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Refresh token not found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Refresh token not found."
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "User not found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "User not found."
+                    }
+                }
+            }
+        }
+    },
 )
 async def refresh_access_token(
     data: TokenRefreshRequestSchema,
     jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
     db: AsyncSession = Depends(get_db)
 ) -> TokenRefreshResponseSchema:
+    """Obtain a new access token using a valid refresh token.
+
+    Args:
+        data: Refresh token.
+        jwt_manager: JWT manager service.
+        db: Database session.
+
+    Returns:
+        TokenRefreshResponseSchema: New access token.
+    """
     try:
         decoded_token = jwt_manager.decode_refresh_token(data.refresh_token)
         user_id = decoded_token.get("user_id")
@@ -547,13 +976,47 @@ async def refresh_access_token(
 @router.post(
     "/verify/",
     response_model=MessageResponseSchema,
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
+    summary="Verify access token",
+    description="Verify if a given access token is valid and not expired.",
+    responses={
+        200: {
+            "description": "Token is valid",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "Token valid."
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Token invalid or expired",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Token invalid or expired."
+                    }
+                }
+            }
+        }
+    },
 )
 async def verify_access_token(
     data: TokenVerifyRequestSchema,
     jwt_manager: JWTManagerInterface = Depends(get_jwt_manager),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
+    """Verify if a given access token is valid and not expired.
+
+    Args:
+        data: Access token to verify.
+        jwt_manager: JWT manager service.
+        db: Database session.
+
+    Returns:
+        MessageResponseSchema: Standard message response.
+    """
     try:
         decoded_token = jwt_manager.decode_access_token(data.access_token)
         user_id = decoded_token.get("user_id")
@@ -577,7 +1040,51 @@ async def verify_access_token(
     "/admin/users/{user_id}/change-group/",
     response_model=MessageResponseSchema,
     status_code=status.HTTP_200_OK,
-    tags=["admin"]
+    tags=["admin", "accounts"],
+    summary="Change user group (admin only)",
+    description="Change the group (role) of a user. Only accessible by admins.",
+    responses={
+        200: {
+            "description": "User group successfully changed",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "User group successfully changed to admin"
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Authentication required",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        403: {
+            "description": "Admin access required",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Access denied. Admin privileges required."
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "User not found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "User not found"
+                    }
+                }
+            }
+        }
+    }
 )
 async def change_user_group(
     user_id: int,
@@ -585,6 +1092,17 @@ async def change_user_group(
     authorized: None = Depends(admin_only),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
+    """Change the group (role) of a user. Only accessible by admins.
+
+    Args:
+        user_id: ID of the user to change group for.
+        data: New group information.
+        authorized: Dependency to ensure admin access.
+        db: Database session.
+
+    Returns:
+        MessageResponseSchema: Standard message response.
+    """
     stmt = select(UserModel).where(UserModel.id == user_id)
     result = await db.execute(stmt)
     target_user: UserModel = result.scalars().first()
@@ -630,7 +1148,71 @@ async def change_user_group(
     "/admin/users/activate/",
     response_model=MessageResponseSchema,
     status_code=status.HTTP_200_OK,
-    tags=["admin"]
+    tags=["admin", "accounts"],
+    summary="Manually activate user (admin only)",
+    description="Manually activate a user account. Only accessible by admins.",
+    responses={
+        200: {
+            "description": "User activated successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "User account for user@example.com has been manually activated."
+                    }
+                }
+            }
+        },
+        200: {
+            "description": "User already active",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "User account for user@example.com is already active."
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Authentication required",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        403: {
+            "description": "Admin access required",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Access denied. Admin privileges required."
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "User not found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "User with email user@example.com not found."
+                    }
+                }
+            }
+        },
+        500: {
+            "description": "Internal server error during activation",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Failed to activate user account."
+                    }
+                }
+            }
+        }
+    }
 )
 async def admin_activate_user(
     data: UserManualActivationSchema,
@@ -640,6 +1222,19 @@ async def admin_activate_user(
     settings: BaseAppSettings = Depends(get_settings),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
+    """Manually activate a user account. Only accessible by admins.
+
+    Args:
+        data: User email to activate.
+        background_tasks: FastAPI background tasks for sending email.
+        authorized: Dependency to ensure admin access.
+        email_sender: Email sender service.
+        settings: Application settings.
+        db: Database session.
+
+    Returns:
+        MessageResponseSchema: Standard message response.
+    """
     stmt = select(UserModel).where(UserModel.email == data.email)
     result = await db.execute(stmt)
     target_user: UserModel = result.scalars().first()

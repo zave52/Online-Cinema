@@ -75,6 +75,11 @@ movie_director_association = Table(
 
 
 class GenreModel(Base):
+    """Model representing movie genres.
+    
+    This model stores different movie genres that can be associated
+    with movies through a many-to-many relationship.
+    """
     __tablename__ = "genres"
 
     id: Mapped[int] = mapped_column(
@@ -93,6 +98,11 @@ class GenreModel(Base):
 
 
 class StarModel(Base):
+    """Model representing movie stars/actors.
+    
+    This model stores information about movie stars that can be associated
+    with movies through a many-to-many relationship.
+    """
     __tablename__ = "stars"
 
     id: Mapped[int] = mapped_column(
@@ -111,6 +121,11 @@ class StarModel(Base):
 
 
 class DirectorModel(Base):
+    """Model representing movie directors.
+    
+    This model stores information about movie directors that can be associated
+    with movies through a many-to-many relationship.
+    """
     __tablename__ = "directors"
 
     id: Mapped[int] = mapped_column(
@@ -129,6 +144,11 @@ class DirectorModel(Base):
 
 
 class CertificationModel(Base):
+    """Model representing movie certifications/ratings.
+    
+    This model stores different movie certifications (e.g., G, PG, R)
+    that can be associated with movies.
+    """
     __tablename__ = "certifications"
 
     id: Mapped[int] = mapped_column(
@@ -150,6 +170,12 @@ class CertificationModel(Base):
 
 
 class MovieModel(Base):
+    """Model representing movies in the cinema system.
+    
+    This is the main model for movies, containing all movie information
+    including title, year, duration, ratings, price, and relationships
+    to genres, stars, directors, and user interactions.
+    """
     __tablename__ = "movies"
 
     id: Mapped[int] = mapped_column(
@@ -221,7 +247,8 @@ class MovieModel(Base):
 
     __table_args__ = (
         UniqueConstraint("name", "year", "time"),
-        CheckConstraint("time >= 0", name="check_time_positive"),
+        CheckConstraint("year >= 1888", name="check_year_valid"),
+        CheckConstraint("time > 0", name="check_time_positive"),
         CheckConstraint("imdb >= 0 AND imdb <= 10", name="check_imdb_range"),
         CheckConstraint("votes >= 0", name="check_votes_positive"),
         CheckConstraint(
@@ -240,6 +267,11 @@ class MovieModel(Base):
 
 
 class LikeModel(Base):
+    """Model representing user likes for movies.
+    
+    This model tracks which users have liked which movies,
+    creating a many-to-many relationship between users and movies.
+    """
     __tablename__ = "likes"
 
     id: Mapped[int] = mapped_column(
@@ -266,10 +298,15 @@ class LikeModel(Base):
     __table_args__ = (UniqueConstraint("movie_id", "user_id"),)
 
     def __repr__(self) -> str:
-        return f"<LikeModel(id={self.id}, movie_id={self.movie_id}, user_id={self.user_id})>"
+        return f"<LikeModel(id={self.id}, user_id={self.user_id}, movie_id={self.movie_id})>"
 
 
 class CommentModel(Base):
+    """Model representing user comments on movies.
+    
+    This model stores user comments on movies, supporting nested replies
+    through a self-referencing relationship.
+    """
     __tablename__ = "comments"
 
     id: Mapped[int] = mapped_column(
@@ -312,10 +349,15 @@ class CommentModel(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<CommentModel(id={self.id}, content={self.content}, movie_id={self.movie_id}, user_id={self.user_id})>"
+        return f"<CommentModel(id={self.id}, user_id={self.user_id}, movie_id={self.movie_id})>"
 
 
 class FavoriteMovieModel(Base):
+    """Model representing user favorite movies.
+    
+    This model tracks which movies users have marked as favorites,
+    creating a many-to-many relationship between users and movies.
+    """
     __tablename__ = "favorite_movies"
 
     id: Mapped[int] = mapped_column(
@@ -342,10 +384,15 @@ class FavoriteMovieModel(Base):
     __table_args__ = (UniqueConstraint("movie_id", "user_id"),)
 
     def __repr__(self) -> str:
-        return f"<FavoriteMovieModel(id={self.id}, movie_id={self.movie_id}, user_id={self.user_id})>"
+        return f"<FavoriteMovieModel(id={self.id}, user_id={self.user_id}, movie_id={self.movie_id})>"
 
 
 class RateMovieModel(Base):
+    """Model representing user ratings for movies.
+    
+    This model tracks user ratings (1-10 scale) for movies,
+    creating a many-to-many relationship between users and movies.
+    """
     __tablename__ = "rates"
 
     id: Mapped[int] = mapped_column(
@@ -373,8 +420,8 @@ class RateMovieModel(Base):
 
     __table_args__ = (
         UniqueConstraint("movie_id", "user_id"),
-        CheckConstraint("rate >= 1 AND rate <= 10", name="rate_check"),
+        CheckConstraint("rate >= 1 AND rate <= 10", name="check_rate_range"),
     )
 
     def __repr__(self) -> str:
-        return f"<RateMovieModel(id={self.id}, movie_id={self.movie_id}, user_id={self.user_id})>"
+        return f"<RateMovieModel(user_id={self.user_id}, movie_id={self.movie_id}, rate={self.rate})>"

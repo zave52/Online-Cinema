@@ -15,6 +15,19 @@ celery_app.autodiscover_tasks()
 
 
 def async_task(*args: Any, **kwargs: Any):
+    """Decorator to convert async functions to Celery tasks.
+    
+    This decorator wraps async functions and converts them to synchronous
+    Celery tasks using AsyncToSync, allowing async functions to be used
+    as background tasks.
+    
+    Args:
+        *args: Positional arguments to pass to the Celery task decorator.
+        **kwargs: Keyword arguments to pass to the Celery task decorator.
+        
+    Returns:
+        Callable: Decorated function that can be used as a Celery task.
+    """
     def _decorator(func: Callable[..., Coroutine[Any, Any, Any]]):
         sync_call = AsyncToSync(func)
 

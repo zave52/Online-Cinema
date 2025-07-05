@@ -5,6 +5,28 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from .exapmles.movies import (
+    movie_item_schema_example,
+    movie_list_response_schema_example,
+    movie_create_schema_example,
+    movie_create_response_schema_example,
+    movie_detail_schema_example,
+    movie_update_schema_example,
+    genre_schema_example,
+    genre_with_movie_count_schema_example,
+    genre_list_schema_example,
+    star_schema_example,
+    star_list_schema_example,
+    director_schema_example,
+    director_list_schema_example,
+    certification_schema_example,
+    comment_schema_example,
+    comment_movie_request_schema_example,
+    name_schema_example,
+    rate_movie_schema_example,
+    message_response_schema_example,
+)
+
 
 class BaseListSchema(BaseModel):
     prev_page: Optional[str] = None
@@ -19,44 +41,92 @@ class GenreSchema(BaseModel):
     id: int
     name: str = Field(..., max_length=100)
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": genre_schema_example
+        }
+    )
 
 
 class GenreWithMovieCountSchema(GenreSchema):
     movie_count: int
 
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": genre_with_movie_count_schema_example
+        }
+    )
+
 
 class GenreListSchema(BaseListSchema):
     genres: List[GenreSchema]
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": genre_list_schema_example
+        }
+    )
 
 
 class StarSchema(BaseModel):
     id: int
     name: str = Field(..., max_length=100)
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": star_schema_example
+        }
+    )
 
 
 class StarListSchema(BaseListSchema):
     stars: List[StarSchema]
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": star_list_schema_example
+        }
+    )
 
 
 class DirectorSchema(BaseModel):
     id: int
     name: str = Field(..., max_length=100)
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": director_schema_example
+        }
+    )
 
 
 class DirectorListSchema(BaseListSchema):
     directors: List[DirectorSchema]
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": director_list_schema_example
+        }
+    )
 
 
 class CertificationSchema(BaseModel):
     id: int
     name: str = Field(..., max_length=100)
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": certification_schema_example
+        }
+    )
 
 
 class CommentSchema(BaseModel):
@@ -65,15 +135,32 @@ class CommentSchema(BaseModel):
     created_at: datetime
     parent_id: Optional[int]
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": comment_schema_example
+        }
+    )
 
 
 class CommentMovieRequestSchema(BaseModel):
     content: str
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": comment_movie_request_schema_example
+        }
+    )
+
 
 class NameSchema(BaseModel):
     name: str = Field(..., max_length=100)
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": name_schema_example
+        }
+    )
 
 
 class MovieBaseSchema(BaseModel):
@@ -105,6 +192,13 @@ class MovieDetailSchema(MovieBaseExtendedSchema):
     average_rating: float
     comments: List[CommentSchema]
 
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": movie_detail_schema_example
+        }
+    )
+
 
 class MovieListItemSchema(BaseModel):
     id: int
@@ -114,11 +208,23 @@ class MovieListItemSchema(BaseModel):
     genres: List[GenreSchema]
     description: str
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": movie_item_schema_example
+        }
+    )
 
 
 class MovieListResponseSchema(BaseListSchema):
     movies: List[MovieListItemSchema]
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": movie_list_response_schema_example
+        }
+    )
 
 
 class MovieCreateRequestSchema(MovieBaseSchema):
@@ -126,6 +232,12 @@ class MovieCreateRequestSchema(MovieBaseSchema):
     genres: List[str]
     stars: List[str]
     directors: List[str]
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": movie_create_schema_example
+        }
+    )
 
     @field_validator("certification")
     @classmethod
@@ -139,7 +251,12 @@ class MovieCreateRequestSchema(MovieBaseSchema):
 
 
 class MovieCreateResponseSchema(MovieBaseExtendedSchema):
-    pass
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": movie_create_response_schema_example
+        }
+    )
 
 
 class MovieUpdateSchema(BaseModel):
@@ -157,12 +274,29 @@ class MovieUpdateSchema(BaseModel):
     stars: Optional[List[str]] = None
     directors: Optional[List[str]] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": movie_update_schema_example
+        }
+    )
 
 
 class MessageResponseSchema(BaseModel):
     message: str
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": message_response_schema_example
+        }
+    )
+
 
 class RateMovieSchema(BaseModel):
     rate: int = Field(..., ge=1, le=10)
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": rate_movie_schema_example
+        }
+    )

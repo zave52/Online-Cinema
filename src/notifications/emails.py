@@ -7,7 +7,19 @@ from notifications.interfaces import EmailSenderInterface
 
 
 class EmailSender(FastMail, EmailSenderInterface):
+    """Email sender service for sending various types of notifications.
+    
+    This class extends FastMail to provide specific email templates for
+    different types of notifications like account activation, password reset,
+    payment confirmations, etc.
+    """
+    
     def __init__(self, config: ConnectionConfig) -> None:
+        """Initialize the email sender with connection configuration.
+        
+        Args:
+            config (ConnectionConfig): Email server configuration.
+        """
         super().__init__(config=config)
 
     async def send_activation_email(
@@ -15,6 +27,12 @@ class EmailSender(FastMail, EmailSenderInterface):
         email: EmailStr,
         activation_link: str
     ) -> None:
+        """Send account activation email to new users.
+        
+        Args:
+            email (EmailStr): Recipient's email address.
+            activation_link (str): Link for account activation.
+        """
         message = MessageSchema(
             recipients=[email],
             subject="Account Activation",
@@ -32,6 +50,12 @@ class EmailSender(FastMail, EmailSenderInterface):
         email: EmailStr,
         login_link: str
     ) -> None:
+        """Send confirmation email when account activation is complete.
+        
+        Args:
+            email (EmailStr): Recipient's email address.
+            login_link (str): Link to login page.
+        """
         message = MessageSchema(
             recipients=[email],
             subject="Account Activation Successfully",
@@ -49,6 +73,12 @@ class EmailSender(FastMail, EmailSenderInterface):
         email: EmailStr,
         password_reset_link: str
     ) -> None:
+        """Send password reset email with reset link.
+        
+        Args:
+            email (EmailStr): Recipient's email address.
+            password_reset_link (str): Link for password reset.
+        """
         message = MessageSchema(
             recipients=[email],
             subject="Password Reset Request",
@@ -65,7 +95,13 @@ class EmailSender(FastMail, EmailSenderInterface):
         self,
         email: EmailStr,
         login_link: str
-    ):
+    ) -> None:
+        """Send confirmation email when password reset is complete.
+        
+        Args:
+            email (EmailStr): Recipient's email address.
+            login_link (str): Link to login page.
+        """
         message = MessageSchema(
             recipients=[email],
             subject="Password Reset Complete",
@@ -79,6 +115,11 @@ class EmailSender(FastMail, EmailSenderInterface):
         )
 
     async def send_password_changed_email(self, email: EmailStr) -> None:
+        """Send confirmation email when password is changed successfully.
+        
+        Args:
+            email (EmailStr): Recipient's email address.
+        """
         message = MessageSchema(
             recipients=[email],
             subject="Password Change Successfully",
@@ -97,6 +138,14 @@ class EmailSender(FastMail, EmailSenderInterface):
         reply_text: str,
         reply_author: EmailStr
     ) -> None:
+        """Send notification email when someone replies to a user's comment.
+        
+        Args:
+            email (EmailStr): Recipient's email address.
+            comment_id (int): ID of the original comment.
+            reply_text (str): Text of the reply.
+            reply_author (EmailStr): Email of the person who replied.
+        """
         message = MessageSchema(
             recipients=[email],
             subject="New Reply to Your Comment",
@@ -119,6 +168,13 @@ class EmailSender(FastMail, EmailSenderInterface):
         order_id: int,
         amount: Decimal
     ) -> None:
+        """Send confirmation email when a refund is processed.
+        
+        Args:
+            email (EmailStr): Recipient's email address.
+            order_id (int): ID of the order being refunded.
+            amount (Decimal): Amount being refunded.
+        """
         message = MessageSchema(
             recipients=[email],
             subject="Refund Confirmation",
@@ -140,6 +196,13 @@ class EmailSender(FastMail, EmailSenderInterface):
         order_id: int,
         amount: Decimal
     ) -> None:
+        """Send confirmation email when a payment is processed successfully.
+        
+        Args:
+            email (EmailStr): Recipient's email address.
+            order_id (int): ID of the order being paid for.
+            amount (Decimal): Amount paid.
+        """
         message = MessageSchema(
             recipients=[email],
             subject="Payment Confirmation",

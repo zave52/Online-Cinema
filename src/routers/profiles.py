@@ -33,7 +33,84 @@ router = APIRouter()
 @router.post(
     "/users/{user_id}/profile/",
     response_model=ProfileResponseSchema,
-    status_code=status.HTTP_201_CREATED
+    status_code=status.HTTP_201_CREATED,
+    summary="Create user profile",
+    description="Create a new profile for a user with avatar upload to S3 storage.",
+    responses={
+        201: {
+            "description": "Profile created successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "user_id": 1,
+                        "first_name": "John",
+                        "last_name": "Doe",
+                        "gender": "MALE",
+                        "date_of_birth": "1990-01-01",
+                        "info": "Software developer from New York",
+                        "avatar": "https://example-bucket.s3.amazonaws.com/avatars/1_profile.jpg"
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "User already has a profile",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "User already has a profile."
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        403: {
+            "description": "Forbidden",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "You don't have permission to edit this profile."
+                    }
+                }
+            }
+        },
+        500: {
+            "description": "Avatar upload failed",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Failed to upload avatar. Please try again later."
+                    }
+                }
+            }
+        },
+        422: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": [
+                            {
+                                "loc": ["body", "first_name"],
+                                "msg": "field required",
+                                "type": "value_error.missing"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    },
 )
 async def create_profile(
     user_id: int,
@@ -44,6 +121,18 @@ async def create_profile(
     s3_storage: S3StorageInterface = Depends(get_s3_storage),
     db: AsyncSession = Depends(get_db)
 ) -> ProfileResponseSchema:
+    """Create a new profile for a user.
+
+    Args:
+        user_id (int): The ID of the user to create profile for.
+        profile_data (ProfileCreateRequestSchema): Profile data including avatar file.
+        user (UserModel): The current authenticated user.
+        s3_storage (S3StorageInterface): S3 storage service dependency.
+        db (AsyncSession): Database session dependency.
+
+    Returns:
+        ProfileResponseSchema: The created profile with avatar URL.
+    """
     if user_id != user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -105,7 +194,59 @@ async def create_profile(
 @router.get(
     "/users/{user_id}/profile/",
     response_model=ProfileRetrieveSchema,
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
+    summary="Get user profile",
+    description="Retrieve a user's profile. Users can only view their own profile unless they are admin.",
+    responses={
+        200: {
+            "description": "Profile retrieved successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "user_id": 1,
+                        "email": "user@example.com",
+                        "first_name": "John",
+                        "last_name": "Doe",
+                        "gender": "MALE",
+                        "info": "Software developer from New York",
+                        "date_of_birth": "1990-01-01",
+                        "avatar": "https://example-bucket.s3.amazonaws.com/avatars/1_profile.jpg"
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        403: {
+            "description": "Forbidden",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "You don't have permission to view this profile."
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Profile not found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Profile for this user not found."
+                    }
+                }
+            }
+        }
+    },
 )
 async def get_user_profile(
     user_id: int,
@@ -113,6 +254,17 @@ async def get_user_profile(
     s3_storage: S3StorageInterface = Depends(get_s3_storage),
     db: AsyncSession = Depends(get_db)
 ) -> ProfileRetrieveSchema:
+    """Retrieve a user's profile.
+
+    Args:
+        user_id (int): The ID of the user whose profile to retrieve.
+        current_user (UserModel): The current authenticated user.
+        s3_storage (S3StorageInterface): S3 storage service dependency.
+        db (AsyncSession): Database session dependency.
+
+    Returns:
+        ProfileRetrieveSchema: User profile with avatar URL.
+    """
     if current_user.id != user_id:
         stmt = (
             select(UserGroupModel)
@@ -160,7 +312,84 @@ async def get_user_profile(
 @router.put(
     "/users/{user_id}/profile/",
     response_model=ProfileResponseSchema,
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
+    summary="Update user profile",
+    description="Update a user's profile completely. Users can only update their own profile unless they are admin.",
+    responses={
+        200: {
+            "description": "Profile updated successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "user_id": 1,
+                        "first_name": "John",
+                        "last_name": "Doe",
+                        "gender": "MALE",
+                        "date_of_birth": "1990-01-01",
+                        "info": "Software developer from New York",
+                        "avatar": "https://example-bucket.s3.amazonaws.com/avatars/1_profile.jpg"
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        403: {
+            "description": "Forbidden",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "You don't have permission to update this profile."
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Profile not found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Profile for this user not found."
+                    }
+                }
+            }
+        },
+        500: {
+            "description": "Avatar upload failed",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Failed to upload avatar. Please try again later."
+                    }
+                }
+            }
+        },
+        422: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": [
+                            {
+                                "loc": ["body", "first_name"],
+                                "msg": "field required",
+                                "type": "value_error.missing"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    },
 )
 async def update_profile(
     user_id: int,
@@ -171,6 +400,18 @@ async def update_profile(
     s3_storage: S3StorageInterface = Depends(get_s3_storage),
     db: AsyncSession = Depends(get_db)
 ) -> ProfileResponseSchema:
+    """Update a user's profile completely.
+
+    Args:
+        user_id (int): The ID of the user whose profile to update.
+        profile_data (ProfileUpdateRequestSchema): Updated profile data.
+        current_user (UserModel): The current authenticated user.
+        s3_storage (S3StorageInterface): S3 storage service dependency.
+        db (AsyncSession): Database session dependency.
+
+    Returns:
+        ProfileResponseSchema: The updated profile with avatar URL.
+    """
     if user_id != current_user.id:
         stmt = (
             select(UserGroupModel)
@@ -242,7 +483,84 @@ async def update_profile(
 @router.patch(
     "/users/{user_id}/profile/",
     response_model=ProfileResponseSchema,
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
+    summary="Patch user profile",
+    description="Partially update a user's profile. Users can only update their own profile unless they are admin.",
+    responses={
+        200: {
+            "description": "Profile patched successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "user_id": 1,
+                        "first_name": "John",
+                        "last_name": "Doe",
+                        "gender": "MALE",
+                        "date_of_birth": "1990-01-01",
+                        "info": "Software developer from New York",
+                        "avatar": "https://example-bucket.s3.amazonaws.com/avatars/1_profile.jpg"
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        403: {
+            "description": "Forbidden",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "You don't have permission to update this profile."
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Profile not found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Profile for this user not found."
+                    }
+                }
+            }
+        },
+        500: {
+            "description": "Avatar upload failed",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Failed to upload avatar. Please try again later."
+                    }
+                }
+            }
+        },
+        422: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": [
+                            {
+                                "loc": ["body", "first_name"],
+                                "msg": "ensure this value has at least 1 characters",
+                                "type": "value_error.any_str.min_length"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    },
 )
 async def patch_profile(
     user_id: int,
@@ -253,6 +571,18 @@ async def patch_profile(
     s3_storage: S3StorageInterface = Depends(get_s3_storage),
     db: AsyncSession = Depends(get_db)
 ) -> ProfileResponseSchema:
+    """Partially update a user's profile.
+
+    Args:
+        user_id (int): The ID of the user whose profile to patch.
+        profile_data (ProfilePatchRequestSchema): Partial profile data to update.
+        current_user (UserModel): The current authenticated user.
+        s3_storage (S3StorageInterface): S3 storage service dependency.
+        db (AsyncSession): Database session dependency.
+
+    Returns:
+        ProfileResponseSchema: The patched profile with avatar URL.
+    """
     if user_id != current_user.id:
         stmt = (
             select(UserGroupModel)

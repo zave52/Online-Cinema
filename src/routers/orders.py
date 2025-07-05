@@ -48,7 +48,79 @@ moderator_and_admin = RoleChecker(
     "/orders/",
     response_model=OrderSchema,
     status_code=status.HTTP_201_CREATED,
-    tags=["orders"]
+    summary="Create order",
+    description="Create a new order from cart items. Validates that movies are not already purchased and not in pending orders.",
+    responses={
+        201: {
+            "description": "Order created successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "user_id": 1,
+                        "status": "pending",
+                        "total_amount": "29.97",
+                        "created_at": "2024-01-01T00:00:00Z",
+                        "updated_at": "2024-01-01T00:00:00Z",
+                        "items": [
+                            {
+                                "id": 1,
+                                "order_id": 1,
+                                "movie_id": 1,
+                                "price_at_order": "9.99"
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Cart is empty or invalid cart items",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Cart is empty. Cannot create order."
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        409: {
+            "description": "Movies already purchased or in pending orders",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Movies already purchased: The Shawshank Redemption"
+                    }
+                }
+            }
+        },
+        422: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": [
+                            {
+                                "loc": ["body", "cart_item_ids"],
+                                "msg": "field required",
+                                "type": "value_error.missing"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
 )
 async def create_order(
     data: CreateOrderSchema,
@@ -56,6 +128,17 @@ async def create_order(
     cart: CartModel = Depends(get_or_create_cart),
     db: AsyncSession = Depends(get_db)
 ) -> OrderSchema:
+    """Create a new order from cart items.
+
+    Args:
+        data (CreateOrderSchema): Order creation data with cart item IDs.
+        user (UserModel): The current authenticated user.
+        cart (CartModel): User's shopping cart.
+        db (AsyncSession): Database session dependency.
+
+    Returns:
+        OrderSchema: The created order.
+    """
     if not data.cart_item_ids:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -153,7 +236,67 @@ async def create_order(
     "/orders/",
     response_model=OrderListSchema,
     status_code=status.HTTP_200_OK,
-    tags=["orders"]
+    summary="List user orders",
+    description="Get a paginated list of orders for the current user with sorting options.",
+    responses={
+        200: {
+            "description": "List of orders returned successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "orders": [
+                            {
+                                "id": 1,
+                                "user_id": 1,
+                                "status": "completed",
+                                "total_amount": "29.97",
+                                "created_at": "2024-01-01T00:00:00Z",
+                                "updated_at": "2024-01-01T00:00:00Z",
+                                "items": [
+                                    {
+                                        "id": 1,
+                                        "order_id": 1,
+                                        "movie_id": 1,
+                                        "price_at_order": "9.99"
+                                    }
+                                ]
+                            }
+                        ],
+                        "total_pages": 1,
+                        "total_items": 1,
+                        "prev_page": None,
+                        "next_page": None
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        422: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": [
+                            {
+                                "loc": ["query", "page"],
+                                "msg": "ensure this value is greater than or equal to 1",
+                                "type": "value_error.number.not_ge"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
 )
 async def get_user_orders(
     page: int = Query(1, ge=1),
@@ -162,6 +305,18 @@ async def get_user_orders(
     user: UserModel = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> OrderListSchema:
+    """Get a paginated list of orders for the current user.
+
+    Args:
+        page (int): Page number for pagination.
+        per_page (int): Number of orders per page.
+        sort_by (Optional[str]): Field to sort by (e.g., 'created_at', 'total_amount').
+        user (UserModel): The current authenticated user.
+        db (AsyncSession): Database session dependency.
+
+    Returns:
+        OrderListSchema: Paginated list of user orders.
+    """
     count_stmt = (
         select(func.count(OrderModel.id))
         .where(OrderModel.user_id == user.id)
@@ -214,13 +369,75 @@ async def get_user_orders(
     "/orders/{order_id}/",
     response_model=OrderSchema,
     status_code=status.HTTP_200_OK,
-    tags=["orders"]
+    summary="Get order details",
+    description="Retrieve detailed information about a specific order by its ID.",
+    responses={
+        200: {
+            "description": "Order details returned successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "user_id": 1,
+                        "status": "completed",
+                        "total_amount": "29.97",
+                        "created_at": "2024-01-01T00:00:00Z",
+                        "updated_at": "2024-01-01T00:00:00Z",
+                        "items": [
+                            {
+                                "id": 1,
+                                "order_id": 1,
+                                "movie_id": 1,
+                                "price_at_order": "9.99"
+                            },
+                            {
+                                "id": 2,
+                                "order_id": 1,
+                                "movie_id": 2,
+                                "price_at_order": "9.99"
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Order not found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Order not found"
+                    }
+                }
+            }
+        }
+    }
 )
 async def get_order_by_id(
     order_id: int,
     user: UserModel = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> OrderSchema:
+    """Retrieve detailed information about a specific order.
+
+    Args:
+        order_id (int): The ID of the order to retrieve.
+        user (UserModel): The current authenticated user.
+        db (AsyncSession): Database session dependency.
+
+    Returns:
+        OrderSchema: Detailed order information.
+    """
     stmt = (
         select(OrderModel)
         .options(
@@ -263,13 +480,59 @@ async def get_order_by_id(
 @router.delete(
     "/orders/{order_id}/",
     status_code=status.HTTP_204_NO_CONTENT,
-    tags=["orders"]
+    summary="Cancel order",
+    description="Cancel a pending order. Paid orders cannot be canceled directly.",
+    responses={
+        204: {
+            "description": "Order canceled successfully"
+        },
+        400: {
+            "description": "Order cannot be canceled",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Cannot cancel a completed order."
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Order not found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Order not found"
+                    }
+                }
+            }
+        }
+    }
 )
 async def cancel_order(
     order_id: int,
     user: UserModel = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> None:
+    """Cancel a pending order.
+
+    Args:
+        order_id (int): The ID of the order to cancel.
+        user (UserModel): The current authenticated user.
+        db (AsyncSession): Database session dependency.
+
+    Returns:
+        None
+    """
     stmt = (
         select(OrderModel)
         .where(
@@ -309,7 +572,66 @@ async def cancel_order(
     "/orders/{order_id}/refund/",
     response_model=MessageResponseSchema,
     status_code=status.HTTP_200_OK,
-    tags=["orders"]
+    summary="Request refund",
+    description="Request a refund for a paid order. Processes refund through payment service and removes movies from user's purchased list. Allowed refund reasons: 'requested_by_customer', 'fraudulent', 'duplicate'.",
+    responses={
+        200: {
+            "description": "Refund processed successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "Refund processed successfully. Amount: $29.97"
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Order cannot be refunded",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Order is not in a refundable state."
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Order or payment not found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Order or payment not found"
+                    }
+                }
+            }
+        },
+        422: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": [
+                            {
+                                "loc": ["body", "reason"],
+                                "msg": "field required",
+                                "type": "value_error.missing"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
 )
 async def refund_order(
     order_id: int,
@@ -320,6 +642,20 @@ async def refund_order(
     email_sender: EmailSenderInterface = Depends(get_email_sender),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
+    """Request a refund for a paid order.
+
+    Args:
+        order_id (int): The ID of the order to refund.
+        data (RefundRequestSchema): Refund request data.
+        background_tasks (BackgroundTasks): FastAPI background tasks.
+        user (UserModel): The current authenticated user.
+        payment_service (PaymentServiceInterface): Payment service dependency.
+        email_sender (EmailSenderInterface): Email sender dependency.
+        db (AsyncSession): Database session dependency.
+
+    Returns:
+        MessageResponseSchema: Success message with refund information.
+    """
     user_stmt = (
         select(UserModel)
         .options(selectinload(UserModel.purchased))
@@ -413,7 +749,78 @@ async def refund_order(
     "/admin/orders/",
     response_model=OrderListSchema,
     status_code=status.HTTP_200_OK,
-    tags=["orders", "moderator", "admin"]
+    tags=["orders", "moderator"],
+    summary="List all orders (Admin)",
+    description="Get a paginated list of all orders with filtering options. Only moderators and admins can access.",
+    responses={
+        200: {
+            "description": "List of orders returned successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "orders": [
+                            {
+                                "id": 1,
+                                "user_id": 1,
+                                "status": "completed",
+                                "total_amount": "29.97",
+                                "created_at": "2024-01-01T00:00:00Z",
+                                "updated_at": "2024-01-01T00:00:00Z",
+                                "items": [
+                                    {
+                                        "id": 1,
+                                        "order_id": 1,
+                                        "movie_id": 1,
+                                        "price_at_order": "9.99"
+                                    }
+                                ]
+                            }
+                        ],
+                        "total_pages": 1,
+                        "total_items": 1,
+                        "prev_page": None,
+                        "next_page": None
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        403: {
+            "description": "Forbidden",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Access denied. Moderator or admin privileges required."
+                    }
+                }
+            }
+        },
+        422: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": [
+                            {
+                                "loc": ["query", "page"],
+                                "msg": "ensure this value is greater than or equal to 1",
+                                "type": "value_error.number.not_ge"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
 )
 async def get_all_orders(
     page: int = Query(1, ge=1),
@@ -425,6 +832,21 @@ async def get_all_orders(
     authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
 ) -> OrderListSchema:
+    """Get a paginated list of all orders with filtering options.
+
+    Args:
+        page (int): Page number for pagination.
+        per_page (int): Number of orders per page.
+        user_id (Optional[int]): Filter by specific user ID.
+        status_filter (Optional[OrderStatusEnum]): Filter by order status.
+        date_from (Optional[str]): Filter orders from this date.
+        date_to (Optional[str]): Filter orders to this date.
+        authorized: Dependency to check moderator/admin rights.
+        db (AsyncSession): Database session dependency.
+
+    Returns:
+        OrderListSchema: Paginated list of orders with filtering applied.
+    """
     filters = []
 
     if user_id:

@@ -6,15 +6,14 @@ from fastapi import (
     status,
     Depends,
     Query,
-    HTTPException,
-    BackgroundTasks
+    HTTPException
 )
 from sqlalchemy import select, func, or_, desc, asc
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, joinedload
 
-from config.dependencies import RoleChecker, get_current_user, get_email_sender
+from config.dependencies import RoleChecker, get_current_user
 from database import get_db
 from database.models.accounts import (
     UserGroupEnum,
@@ -33,7 +32,6 @@ from database.models.movies import (
     FavoriteMovieModel,
     RateMovieModel
 )
-from notifications.interfaces import EmailSenderInterface
 from schemas.movies import (
     MovieListResponseSchema,
     MovieListItemSchema,
@@ -41,18 +39,7 @@ from schemas.movies import (
     MovieCreateRequestSchema,
     MovieDetailSchema,
     MovieUpdateSchema,
-    MessageResponseSchema,
-    NameSchema,
-    GenreSchema,
-    GenreListSchema,
-    StarListSchema,
-    StarSchema,
-    DirectorListSchema,
-    DirectorSchema,
-    GenreWithMovieCountSchema,
-    RateMovieSchema,
-    CommentSchema,
-    CommentMovieRequestSchema
+    MessageResponseSchema
 )
 
 router = APIRouter()
@@ -65,7 +52,66 @@ moderator_and_admin = RoleChecker(
 @router.get(
     "/movies/",
     response_model=MovieListResponseSchema,
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
+    summary="List movies",
+    description="Browse the movie catalog with pagination, filtering, sorting, and search.",
+    responses={
+        200: {
+            "description": "List of movies returned successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "movies": [
+                            {
+                                "id": 1,
+                                "name": "The Shawshank Redemption",
+                                "year": 1994,
+                                "price": 9.99,
+                                "imdb": 9.3,
+                                "time": 142,
+                                "genres": [{"id": 1, "name": "Drama"}],
+                                "stars": [{"id": 1, "name": "Tim Robbins"}],
+                                "directors": [
+                                    {"id": 1, "name": "Frank Darabont"}]
+                            },
+                            {
+                                "id": 2,
+                                "name": "The Godfather",
+                                "year": 1972,
+                                "price": 9.99,
+                                "imdb": 9.2,
+                                "time": 175,
+                                "genres": [{"id": 2, "name": "Crime"}],
+                                "stars": [{"id": 2, "name": "Marlon Brando"}],
+                                "directors": [
+                                    {"id": 2, "name": "Francis Ford Coppola"}]
+                            }
+                        ],
+                        "total_pages": 1,
+                        "total_items": 2,
+                        "prev_page": None,
+                        "next_page": None
+                    }
+                }
+            }
+        },
+        422: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": [
+                            {
+                                "loc": ["query", "page"],
+                                "msg": "ensure this value is greater than or equal to 1",
+                                "type": "value_error.number.not_ge"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    },
 )
 async def get_movies(
     page: int = Query(1, ge=1),
@@ -78,6 +124,22 @@ async def get_movies(
     genre: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db)
 ) -> MovieListResponseSchema:
+    """Retrieve a paginated list of movies with optional filters and sorting.
+
+    Args:
+        page (int): Page number for pagination.
+        per_page (int): Number of movies per page.
+        sort_by (Optional[str]): Field to sort by.
+        search (Optional[str]): Search term for title, description, actor, or director.
+        year_from (Optional[int]): Filter movies released from this year.
+        year_to (Optional[int]): Filter movies released up to this year.
+        imdb_min (Optional[int]): Minimum IMDb rating.
+        genre (Optional[str]): Filter by genre name.
+        db (AsyncSession): Database session.
+
+    Returns:
+        MovieListResponseSchema: Paginated list of movies.
+    """
     base_filters = []
 
     if year_from:
@@ -167,7 +229,63 @@ async def get_movies(
     "/movies/purchased/",
     response_model=MovieListResponseSchema,
     status_code=status.HTTP_200_OK,
-    tags=["movies"]
+    summary="List purchased movies",
+    description="Get a paginated list of movies purchased by the current user.",
+    responses={
+        200: {
+            "description": "List of purchased movies returned successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "movies": [
+                            {
+                                "id": 1,
+                                "name": "The Shawshank Redemption",
+                                "year": 1994,
+                                "price": 9.99,
+                                "imdb": 9.3,
+                                "time": 142,
+                                "genres": [{"id": 1, "name": "Drama"}],
+                                "stars": [{"id": 1, "name": "Tim Robbins"}],
+                                "directors": [
+                                    {"id": 1, "name": "Frank Darabont"}]
+                            }
+                        ],
+                        "total_pages": 1,
+                        "total_items": 1,
+                        "prev_page": None,
+                        "next_page": None
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        422: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": [
+                            {
+                                "loc": ["query", "page"],
+                                "msg": "ensure this value is greater than or equal to 1",
+                                "type": "value_error.number.not_ge"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    },
 )
 async def get_purchased_movies(
     page: int = Query(1, ge=1),
@@ -235,142 +353,84 @@ async def get_purchased_movies(
 
 
 @router.get(
-    "/movies/likes/",
-    response_model=MovieListResponseSchema,
-    status_code=status.HTTP_200_OK,
-    tags=["likes", "movies"]
-)
-async def get_liked_movies(
-    page: int = Query(1, ge=1),
-    per_page: int = Query(10, ge=1, le=100),
-    sort_by: Optional[str] = Query(None),
-    user: UserModel = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-) -> MovieListResponseSchema:
-    count_stmt = (
-        select(func.count(MovieModel.id))
-        .where(
-            MovieModel.likes.any(LikeModel.user_id == user.id)
-        )
-    )
-    result = await db.execute(count_stmt)
-    total_items = result.scalar_one()
-
-    if not total_items:
-        return MovieListResponseSchema(movies=[], total_pages=0, total_items=0)
-
-    stmt = (
-        select(MovieModel)
-        .options(
-            selectinload(MovieModel.genres)
-        )
-        .where(
-            MovieModel.likes.any(LikeModel.user_id == user.id)
-        )
-    )
-
-    if sort_by:
-        sort_field = sort_by.strip("-")
-        allowed_sort_fields = ("year", "price", "imdb", "name", "time")
-        if sort_field in allowed_sort_fields:
-            column = getattr(MovieModel, sort_field)
-            if sort_by.startswith("-"):
-                stmt = stmt.order_by(desc(column))
-            else:
-                stmt = stmt.order_by(asc(column))
-
-    offset = (page - 1) * per_page
-
-    stmt = stmt.offset(offset).limit(per_page)
-    result = await db.execute(stmt)
-    movies: Sequence[MovieModel] = result.scalars().all()
-
-    movie_list = [MovieListItemSchema.model_validate(movie) for movie in movies]
-
-    total_pages = (total_items + per_page - 1) // per_page
-
-    return MovieListResponseSchema(
-        movies=movie_list,
-        prev_page=f"/cinema/movies/likes/?page={page - 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page > 1 else None,
-        next_page=f"/cinema/movies/likes/?page={page + 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page < total_pages else None,
-        total_pages=total_pages,
-        total_items=total_items
-    )
-
-
-@router.get(
-    "/movies/favorites/",
-    response_model=MovieListResponseSchema,
-    status_code=status.HTTP_200_OK,
-    tags=["favorites", "movies"]
-)
-async def get_favorite_movies(
-    page: int = Query(1, ge=1),
-    per_page: int = Query(10, ge=1, le=100),
-    sort_by: Optional[str] = Query(None),
-    user: UserModel = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-) -> MovieListResponseSchema:
-    count_stmt = (
-        select(func.count(MovieModel.id))
-        .where(
-            MovieModel.favorites.any(FavoriteMovieModel.user_id == user.id)
-        )
-    )
-    result = await db.execute(count_stmt)
-    total_items = result.scalar_one()
-
-    if not total_items:
-        return MovieListResponseSchema(movies=[], total_pages=0, total_items=0)
-
-    stmt = (
-        select(MovieModel)
-        .options(
-            selectinload(MovieModel.genres)
-        )
-        .where(
-            MovieModel.favorites.any(FavoriteMovieModel.user_id == user.id)
-        )
-    )
-
-    if sort_by:
-        sort_field = sort_by.strip("-")
-        allowed_sort_fields = ("year", "price", "imdb", "name", "time")
-        if sort_field in allowed_sort_fields:
-            column = getattr(MovieModel, sort_field)
-            if sort_by.startswith("-"):
-                stmt = stmt.order_by(desc(column))
-            else:
-                stmt = stmt.order_by(asc(column))
-
-    offset = (page - 1) * per_page
-
-    stmt = stmt.offset(offset).limit(per_page)
-    result = await db.execute(stmt)
-    movies: Sequence[MovieModel] = result.scalars().all()
-
-    movie_list = [MovieListItemSchema.model_validate(movie) for movie in movies]
-
-    total_pages = (total_items + per_page - 1) // per_page
-
-    return MovieListResponseSchema(
-        movies=movie_list,
-        prev_page=f"/cinema/movies/favorites/?page={page - 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page > 1 else None,
-        next_page=f"/cinema/movies/favorites/?page={page + 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page < total_pages else None,
-        total_pages=total_pages,
-        total_items=total_items
-    )
-
-
-@router.get(
     "/movies/{movie_id}/",
     response_model=MovieDetailSchema,
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
+    summary="Get movie details",
+    description="Retrieve detailed information about a specific movie by its ID.",
+    responses={
+        200: {
+            "description": "Movie details returned successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "name": "The Shawshank Redemption",
+                        "description": "Two imprisoned men bond over a number of years...",
+                        "year": 1994,
+                        "price": 9.99,
+                        "imdb": 9.3,
+                        "time": 142,
+                        "genres": [{"id": 1, "name": "Drama"}],
+                        "stars": [{"id": 1, "name": "Tim Robbins"}],
+                        "directors": [{"id": 1, "name": "Frank Darabont"}],
+                        "certification": {"id": 1, "name": "R"},
+                        "comments": [
+                            {
+                                "id": 1,
+                                "text": "Amazing movie!",
+                                "user": {"id": 1, "email": "user@example.com"},
+                                "created_at": "2024-01-01T00:00:00Z"
+                            }
+                        ],
+                        "likes_count": 150,
+                        "favorites_count": 75,
+                        "average_rating": 9.2
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Movie not found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Movie not found"
+                    }
+                }
+            }
+        },
+        422: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": [
+                            {
+                                "loc": ["path", "movie_id"],
+                                "msg": "ensure this value is greater than 0",
+                                "type": "value_error.number.not_gt"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
 )
 async def get_movie_by_id(
     movie_id: int,
     db: AsyncSession = Depends(get_db)
 ) -> MovieDetailSchema:
+    """Retrieve detailed information about a specific movie by its ID.
+
+    Args:
+        movie_id (int): The ID of the movie to retrieve.
+        db (AsyncSession): Database session dependency.
+
+    Returns:
+        MovieDetailSchema: Detailed information about the movie.
+    """
     movie_stmt = (
         select(MovieModel)
         .options(
@@ -441,13 +501,93 @@ async def get_movie_by_id(
     "/movies/",
     response_model=MovieCreateResponseSchema,
     status_code=status.HTTP_201_CREATED,
-    tags=["admin", "moderator"]
+    tags=["movies", "moderator"],
+    summary="Create a new movie",
+    description="Create a new movie entry. Only moderators and admins can perform this action.",
+    responses={
+        201: {
+            "description": "Movie created successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "name": "The Shawshank Redemption",
+                        "description": "Two imprisoned men bond over a number of years...",
+                        "year": 1994,
+                        "price": 9.99,
+                        "imdb": 9.3,
+                        "time": 142,
+                        "genres": [{"id": 1, "name": "Drama"}],
+                        "stars": [{"id": 1, "name": "Tim Robbins"}],
+                        "directors": [{"id": 1, "name": "Frank Darabont"}],
+                        "certification": {"id": 1, "name": "R"}
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        403: {
+            "description": "Forbidden",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Access denied. Moderator or admin privileges required."
+                    }
+                }
+            }
+        },
+        409: {
+            "description": "Movie already exists",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Movie with this name already exists."
+                    }
+                }
+            }
+        },
+        422: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": [
+                            {
+                                "loc": ["body", "name"],
+                                "msg": "field required",
+                                "type": "value_error.missing"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
 )
 async def create_movie(
     data: MovieCreateRequestSchema,
     authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
 ) -> MovieCreateResponseSchema:
+    """Create a new movie entry in the database.
+
+    Args:
+        data (MovieCreateRequestSchema): Data for the new movie.
+        authorized: Dependency to check moderator/admin rights.
+        db (AsyncSession): Database session dependency.
+
+    Returns:
+        MovieCreateResponseSchema: The created movie object.
+    """
     existing_stmt = (
         select(MovieModel)
         .where(
@@ -556,7 +696,67 @@ async def create_movie(
     "/movies/{movie_id}/",
     response_model=MessageResponseSchema,
     status_code=status.HTTP_200_OK,
-    tags=["admin", "moderator"]
+    tags=["movies", "moderator"],
+    summary="Update movie",
+    description="Update an existing movie's information. Only moderators and admins can perform this action.",
+    responses={
+        200: {
+            "description": "Movie updated successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "Movie updated successfully."
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        403: {
+            "description": "Forbidden",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Access denied. Moderator or admin privileges required."
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Movie not found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Movie not found"
+                    }
+                }
+            }
+        },
+        422: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": [
+                            {
+                                "loc": ["body", "name"],
+                                "msg": "ensure this value has at least 1 characters",
+                                "type": "value_error.any_str.min_length"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
 )
 async def update_movie(
     movie_id: int,
@@ -564,6 +764,17 @@ async def update_movie(
     authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema:
+    """Update an existing movie's information in the database.
+
+    Args:
+        movie_id (int): The ID of the movie to update.
+        data (MovieUpdateSchema): Updated movie data.
+        authorized: Dependency to check moderator/admin rights.
+        db (AsyncSession): Database session dependency.
+
+    Returns:
+        MessageResponseSchema: Success message.
+    """
     movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
     result = await db.execute(movie_stmt)
     movie = result.scalars().first()
@@ -674,17 +885,70 @@ async def update_movie(
 
 @router.delete(
     "/movies/{movie_id}/",
+    tags=["movies", "moderator"],
+    summary="Delete movie",
+    description="Delete a movie from the database. Only moderators and admins can perform this action.",
     responses={
-        status.HTTP_204_NO_CONTENT: {},
-        status.HTTP_200_OK: {"model": MessageResponseSchema}
-    },
-    tags=["admin", "moderator"]
+        200: {
+            "description": "Movie deleted successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "Movie deleted successfully."
+                    }
+                }
+            }
+        },
+        204: {
+            "description": "Movie deleted successfully"
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Not authenticated"
+                    }
+                }
+            }
+        },
+        403: {
+            "description": "Forbidden",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Access denied. Moderator or admin privileges required."
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Movie not found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Movie not found"
+                    }
+                }
+            }
+        }
+    }
 )
 async def delete_movie(
     movie_id: int,
     authorized: None = Depends(moderator_and_admin),
     db: AsyncSession = Depends(get_db)
 ) -> MessageResponseSchema | None:
+    """Delete a movie from the database.
+
+    Args:
+        movie_id (int): The ID of the movie to delete.
+        authorized: Dependency to check moderator/admin rights.
+        db (AsyncSession): Database session dependency.
+
+    Returns:
+        MessageResponseSchema | None: Success message or None.
+    """
     movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
     result = await db.execute(movie_stmt)
     movie = result.scalars().first()
@@ -725,959 +989,3 @@ async def delete_movie(
         )
 
     return None
-
-
-@router.post(
-    "/movies/{movie_id}/comments/",
-    response_model=CommentSchema,
-    status_code=status.HTTP_201_CREATED,
-    tags=["comments", "movies"]
-)
-async def comment_movie(
-    movie_id: int,
-    data: CommentMovieRequestSchema,
-    user: UserModel = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-) -> CommentSchema:
-    movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
-    result = await db.execute(movie_stmt)
-    movie = result.scalars().first()
-
-    if not movie:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Movie with the given id was not found."
-        )
-
-    comment = CommentModel(
-        content=data.content,
-        movie_id=movie_id,
-        user_id=user.id
-    )
-
-    db.add(comment)
-    await db.commit()
-    await db.refresh(comment)
-
-    return CommentSchema.model_validate(comment)
-
-
-@router.post(
-    "/movies/{movie_id}/comments/{comment_id}/replies/",
-    response_model=CommentSchema,
-    status_code=status.HTTP_201_CREATED,
-    tags=["comments", "movies"]
-)
-async def reply_to_comment(
-    movie_id: int,
-    comment_id: int,
-    background_tasks: BackgroundTasks,
-    data: CommentMovieRequestSchema,
-    user: UserModel = Depends(get_current_user),
-    email_sender: EmailSenderInterface = Depends(get_email_sender),
-    db: AsyncSession = Depends(get_db)
-) -> CommentSchema:
-    movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
-    result = await db.execute(movie_stmt)
-    movie = result.scalars().first()
-
-    if not movie:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Movie with the given id was not found."
-        )
-
-    parent_comment_stmt = (
-        select(CommentModel)
-        .options(joinedload(CommentModel.user))
-        .where(
-            CommentModel.id == comment_id,
-            CommentModel.movie_id == movie_id
-        )
-    )
-    result = await db.execute(parent_comment_stmt)
-    parent_comment = result.scalars().first()
-
-    if not parent_comment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Comment with the given id was not found for this movie."
-        )
-
-    reply = CommentModel(
-        content=data.content,
-        movie_id=movie_id,
-        user_id=user.id,
-        parent_id=comment_id
-    )
-
-    db.add(reply)
-    await db.commit()
-    await db.refresh(reply)
-
-    background_tasks.add_task(
-        email_sender.send_comment_reply_notification_email,
-        parent_comment.user.email,
-        parent_comment.id,
-        reply.content,
-        user.email
-    )
-
-    return CommentSchema.model_validate(reply)
-
-
-@router.delete(
-    "/movies/{movie_id}/comments/{comment_id}/",
-    status_code=status.HTTP_204_NO_CONTENT,
-    tags=["comments", "movies"]
-)
-async def delete_comment(
-    movie_id: int,
-    comment_id: int,
-    user: UserModel = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-) -> None:
-    movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
-    result = await db.execute(movie_stmt)
-    movie = result.scalars().first()
-
-    if not movie:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Movie with the given id was not found."
-        )
-
-    comment_stmt = (
-        select(CommentModel)
-        .where(
-            CommentModel.id == comment_id,
-            CommentModel.movie_id == movie_id
-        )
-    )
-    result = await db.execute(comment_stmt)
-    comment: CommentModel = result.scalars().first()
-
-    if not comment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Comment with the given id was not found for this movie."
-        )
-
-    if comment.user_id != user.id and user.group.name not in (
-            UserGroupEnum.ADMIN, UserGroupEnum.MODERATOR):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not allowed to delete this comment."
-        )
-
-    await db.delete(comment)
-    await db.commit()
-
-    return
-
-
-@router.post(
-    "/movies/{movie_id}/likes/",
-    response_model=MessageResponseSchema,
-    status_code=status.HTTP_200_OK,
-    tags=["likes", "movies"]
-)
-async def like_movie(
-    movie_id: int,
-    user: UserModel = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-) -> MessageResponseSchema:
-    movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
-    result = await db.execute(movie_stmt)
-    movie = result.scalars().first()
-
-    if not movie:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Movie with the given id was not found."
-        )
-
-    like_stmt = (
-        select(LikeModel)
-        .where(
-            LikeModel.movie_id == movie_id,
-            LikeModel.user_id == user.id
-        )
-    )
-    result = await db.execute(like_stmt)
-    like = result.scalars().first()
-
-    if like:
-        return MessageResponseSchema(message="You already like this movie.")
-
-    new_like = LikeModel(user_id=user.id, movie_id=movie_id)
-    db.add(new_like)
-    await db.commit()
-
-    return MessageResponseSchema(message="You successfully liked this movie.")
-
-
-@router.delete(
-    "/movies/{movie_id}/likes/",
-    status_code=status.HTTP_204_NO_CONTENT,
-    tags=["likes", "movies"]
-)
-async def unlike_movie(
-    movie_id: int,
-    user: UserModel = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-) -> None:
-    movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
-    result = await db.execute(movie_stmt)
-    movie = result.scalars().first()
-
-    if not movie:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Movie with the given id was not found."
-        )
-
-    like_stmt = (
-        select(LikeModel)
-        .where(
-            LikeModel.user_id == user.id,
-            LikeModel.movie_id == movie_id
-        )
-    )
-    result = await db.execute(like_stmt)
-    like = result.scalars().first()
-
-    if not like:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="You haven't liked this movie yet."
-        )
-
-    await db.delete(like)
-    await db.commit()
-
-    return
-
-
-@router.post(
-    "/movies/{movie_id}/favorites/",
-    response_model=MessageResponseSchema,
-    status_code=status.HTTP_200_OK,
-    tags=["favorites", "movies"]
-)
-async def add_movie_to_favorites(
-    movie_id: int,
-    user: UserModel = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-) -> MessageResponseSchema:
-    movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
-    result = await db.execute(movie_stmt)
-    movie = result.scalars().first()
-
-    if not movie:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Movie with the given id was not found."
-        )
-
-    favorite_stmt = (
-        select(FavoriteMovieModel)
-        .where(
-            FavoriteMovieModel.movie_id == movie_id,
-            FavoriteMovieModel.user_id == user.id
-        )
-    )
-    result = await db.execute(favorite_stmt)
-    existing_favorite = result.scalars().first()
-
-    if existing_favorite:
-        return MessageResponseSchema(
-            message="You have already added this movie to favorites."
-        )
-
-    new_favorite = FavoriteMovieModel(movie_id=movie_id, user_id=user.id)
-    db.add(new_favorite)
-    await db.commit()
-
-    return MessageResponseSchema(
-        message="You successfully added this movie to favorites."
-    )
-
-
-@router.delete(
-    "/movies/{movie_id}/favorites/",
-    status_code=status.HTTP_204_NO_CONTENT,
-    tags=["favorites", "movies"]
-)
-async def remove_movie_from_favorites(
-    movie_id: int,
-    user: UserModel = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-) -> None:
-    movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
-    result = await db.execute(movie_stmt)
-    movie = result.scalars().first()
-
-    if not movie:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Movie with the given id was not found."
-        )
-
-    favorite_stmt = (
-        select(FavoriteMovieModel)
-        .where(
-            FavoriteMovieModel.movie_id == movie_id,
-            FavoriteMovieModel.user_id == user.id
-        )
-    )
-    result = await db.execute(favorite_stmt)
-    favorite = result.scalars().first()
-
-    if not favorite:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="This movie is not in your favorites."
-        )
-
-    await db.delete(favorite)
-    await db.commit()
-
-    return
-
-
-@router.post(
-    "/movies/{movie_id}/rates/",
-    response_model=MessageResponseSchema,
-    status_code=status.HTTP_200_OK,
-    tags=["rates", "movies"]
-)
-async def rate_movie(
-    movie_id: int,
-    data: RateMovieSchema,
-    user: UserModel = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-) -> MessageResponseSchema:
-    movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
-    result = await db.execute(movie_stmt)
-    movie = result.scalars().first()
-
-    if not movie:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Movie with the given id was not found."
-        )
-
-    rate_stmt = (
-        select(RateMovieModel)
-        .where(
-            RateMovieModel.movie_id == movie_id,
-            RateMovieModel.user_id == user.id
-        )
-    )
-    result = await db.execute(rate_stmt)
-    existing_rate: RateMovieModel = result.scalars().first()
-
-    if existing_rate:
-        previous_rate = existing_rate.rate
-        existing_rate.rate = data.rate
-        await db.commit()
-
-        return MessageResponseSchema(
-            message=f"You changed your rating for the movie "
-                    f"from {previous_rate} to {existing_rate.rate}."
-        )
-
-    new_rate = RateMovieModel(
-        rate=data.rate,
-        movie_id=movie_id,
-        user_id=user.id
-    )
-    db.add(new_rate)
-    await db.commit()
-
-    return MessageResponseSchema(
-        message=f"You gave the movie a rating of {new_rate.rate}."
-    )
-
-
-@router.delete(
-    "/movies/{movie_id}/rates/",
-    status_code=status.HTTP_204_NO_CONTENT,
-    tags=["rates", "movies"]
-)
-async def delete_rate(
-    movie_id: int,
-    user: UserModel = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-) -> None:
-    movie_stmt = select(MovieModel).where(MovieModel.id == movie_id)
-    result = await db.execute(movie_stmt)
-    movie = result.scalars().first()
-
-    if not movie:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Movie with the given id was not found."
-        )
-
-    rate_stmt = (
-        select(RateMovieModel)
-        .where(
-            RateMovieModel.movie_id == movie_id,
-            RateMovieModel.user_id == user.id
-        )
-    )
-    result = await db.execute(rate_stmt)
-    rate: RateMovieModel = result.scalars().first()
-
-    if not rate:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="You haven't rated this movie yet."
-        )
-
-    await db.delete(rate)
-    await db.commit()
-
-    return
-
-
-@router.get(
-    "/genres/",
-    response_model=GenreListSchema,
-    status_code=status.HTTP_200_OK,
-    tags=["admin", "moderator", "genres"]
-)
-async def get_genres(
-    page: int = Query(1, ge=1),
-    per_page: int = Query(10, ge=1, le=100),
-    authorized: None = Depends(moderator_and_admin),
-    db: AsyncSession = Depends(get_db)
-) -> GenreListSchema:
-    subquery = (
-        select(
-            GenreModel.id,
-            func.count(MovieModel.id).label("movie_count")
-        )
-        .join(MovieModel.genres)
-        .group_by(GenreModel.id)
-        .subquery()
-    )
-
-    stmt = (
-        select(GenreModel, subquery.c.movie_count)
-        .outerjoin(subquery, GenreModel.id == subquery.c.id)
-    )
-
-    count_stmt = select(func.count(GenreModel.id))
-    result = await db.execute(count_stmt)
-    total_items = result.scalar_one()
-
-    if not total_items:
-        return GenreListSchema(genres=[], total_pages=0, total_items=0)
-
-    offset = (page - 1) * per_page
-
-    stmt = stmt.offset(offset).limit(per_page).order_by(GenreModel.name)
-    result = await db.execute(stmt)
-    genres_with_counts = result.all()
-
-    genre_list = [
-        GenreWithMovieCountSchema(
-            id=genre.id,
-            name=genre.name,
-            movie_count=count or 0
-        )
-        for genre, count in genres_with_counts
-    ]
-
-    total_pages = (total_items + per_page - 1) // per_page
-
-    return GenreListSchema(
-        genres=genre_list,
-        prev_page=f"/cinema/genres/?page={page - 1}&per_page={per_page}" if page > 1 else None,
-        next_page=f"/cinema/genres/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
-        total_pages=total_pages,
-        total_items=total_items
-    )
-
-
-@router.get(
-    "/genres/{genre_id}/",
-    response_model=GenreWithMovieCountSchema,
-    status_code=status.HTTP_200_OK,
-    tags=["admin", "moderator", "genres"]
-)
-async def get_genre_by_id(
-    genre_id: int,
-    authorized: None = Depends(moderator_and_admin),
-    db: AsyncSession = Depends(get_db)
-) -> GenreWithMovieCountSchema:
-    stmt = select(GenreModel).where(GenreModel.id == genre_id)
-    result = await db.execute(stmt)
-    genre: GenreModel = result.scalars().first()
-
-    if not genre:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Genre with the given id was not found."
-        )
-
-    movie_count_stmt = (
-        select(func.count(MovieModel.id))
-        .where(MovieModel.genres.any(GenreModel.id == genre_id))
-    )
-    result = await db.execute(movie_count_stmt)
-    movie_count = result.scalar_one()
-
-    return GenreWithMovieCountSchema(
-        id=genre_id,
-        name=genre.name,
-        movie_count=movie_count
-    )
-
-
-@router.post(
-    "/genres/",
-    response_model=GenreSchema,
-    status_code=status.HTTP_201_CREATED,
-    tags=["admin", "moderator", "genres"]
-)
-async def create_genre(
-    data: NameSchema,
-    authorized: None = Depends(moderator_and_admin),
-    db: AsyncSession = Depends(get_db)
-) -> GenreSchema:
-    stmt = select(GenreModel).where(GenreModel.name == data.name)
-    result = await db.execute(stmt)
-    existing_genre = result.scalars().first()
-
-    if existing_genre:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"A genre with the name '{data.name}' already exists."
-        )
-
-    genre = GenreModel(name=data.name.title())
-    db.add(genre)
-    await db.commit()
-    await db.refresh(genre)
-
-    return GenreSchema.model_validate(genre)
-
-
-@router.patch(
-    "/genres/{genre_id}/",
-    response_model=GenreSchema,
-    status_code=status.HTTP_200_OK,
-    tags=["admin", "moderator", "genres"]
-)
-async def update_genre(
-    genre_id: int,
-    data: NameSchema,
-    authorized: None = Depends(moderator_and_admin),
-    db: AsyncSession = Depends(get_db)
-) -> GenreSchema:
-    stmt = select(GenreModel).where(GenreModel.id == genre_id)
-    result = await db.execute(stmt)
-    genre: GenreModel = result.scalars().first()
-
-    if not genre:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Genre with the given id was not found."
-        )
-
-    try:
-        genre.name = data.name.title()
-
-        await db.commit()
-        await db.refresh(genre)
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid input data."
-        )
-
-    return GenreSchema.model_validate(genre)
-
-
-@router.delete(
-    "/genres/{genre_id}/",
-    status_code=status.HTTP_204_NO_CONTENT,
-    tags=["admin", "moderator", "genres"]
-)
-async def delete_genre(
-    genre_id: int,
-    authorized: None = Depends(moderator_and_admin),
-    db: AsyncSession = Depends(get_db)
-) -> None:
-    stmt = select(GenreModel).where(GenreModel.id == genre_id)
-    result = await db.execute(stmt)
-    genre = result.scalars().first()
-
-    if not genre:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Genre with the given id was not found."
-        )
-
-    movies_check_stmt = select(func.count(MovieModel.id)).where(
-        MovieModel.genres.any(GenreModel.id == genre_id)
-    )
-    result = await db.execute(movies_check_stmt)
-    movies_count = result.scalar_one()
-
-    if movies_count > 0:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Cannot delete genre: {movies_count} movies are associated with it"
-        )
-
-    await db.delete(genre)
-    await db.commit()
-
-    return
-
-
-@router.get(
-    "/stars/",
-    response_model=StarListSchema,
-    status_code=status.HTTP_200_OK,
-    tags=["admin", "moderator", "stars"]
-)
-async def get_stars(
-    page: int = Query(1, ge=1),
-    per_page: int = Query(10, ge=1, le=100),
-    authorized: None = Depends(moderator_and_admin),
-    db: AsyncSession = Depends(get_db)
-) -> StarListSchema:
-    stmt = select(StarModel)
-
-    count_stmt = select(func.count(StarModel.id.distinct())).select_from(stmt.subquery())
-    result = await db.execute(count_stmt)
-    total_items = result.scalar_one()
-
-    if not total_items:
-        return StarListSchema(stars=[], total_pages=0, total_items=0)
-
-    offset = (page - 1) * per_page
-
-    stmt = stmt.offset(offset).limit(per_page)
-    result = await db.execute(stmt)
-    stars: Sequence[StarModel] = result.scalars().all()
-
-    star_list = [StarSchema.model_validate(star) for star in stars]
-
-    total_pages = (total_items + per_page - 1) // per_page
-
-    return StarListSchema(
-        stars=star_list,
-        prev_page=f"/cinema/stars/?page={page - 1}&per_page={per_page}" if page > 1 else None,
-        next_page=f"/cinema/stars/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
-        total_pages=total_pages,
-        total_items=total_items
-    )
-
-
-@router.get(
-    "/stars/{star_id}/",
-    response_model=StarSchema,
-    status_code=status.HTTP_200_OK,
-    tags=["admin", "moderator", "stars"]
-)
-async def get_star_by_id(
-    star_id: int,
-    authorized: None = Depends(moderator_and_admin),
-    db: AsyncSession = Depends(get_db)
-) -> StarSchema:
-    stmt = select(StarModel).where(StarModel.id == star_id)
-    result = await db.execute(stmt)
-    star = result.scalars().first()
-
-    if not star:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Star with the given id was not found."
-        )
-
-    return StarSchema.model_validate(star)
-
-
-@router.post(
-    "/stars/",
-    response_model=StarSchema,
-    status_code=status.HTTP_201_CREATED,
-    tags=["admin", "moderator", "stars"]
-)
-async def create_star(
-    data: NameSchema,
-    authorized: None = Depends(moderator_and_admin),
-    db: AsyncSession = Depends(get_db)
-) -> StarSchema:
-    stmt = select(StarModel).where(StarModel.name == data.name)
-    result = await db.execute(stmt)
-    star = result.scalars().first()
-
-    if star:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"A star with the name '{data.name}' already exists."
-        )
-
-    star = StarModel(name=data.name.title())
-    db.add(star)
-    await db.commit()
-    await db.refresh(star)
-
-    return StarSchema.model_validate(star)
-
-
-@router.patch(
-    "/stars/{star_id}/",
-    response_model=StarSchema,
-    status_code=status.HTTP_200_OK,
-    tags=["admin", "moderator", "stars"]
-)
-async def update_star(
-    star_id: int,
-    data: NameSchema,
-    authorized: None = Depends(moderator_and_admin),
-    db: AsyncSession = Depends(get_db)
-) -> StarSchema:
-    stmt = select(StarModel).where(StarModel.id == star_id)
-    result = await db.execute(stmt)
-    star = result.scalars().first()
-
-    if not star:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Star with the given id was not found."
-        )
-
-    try:
-        star.name = data.name.title()
-
-        await db.commit()
-        await db.refresh(star)
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid input data."
-        )
-
-    return StarSchema.model_validate(star)
-
-
-@router.delete(
-    "/stars/{star_id}/",
-    status_code=status.HTTP_204_NO_CONTENT,
-    tags=["admin", "moderator", "stars"]
-)
-async def delete_star(
-    star_id: int,
-    authorized: None = Depends(moderator_and_admin),
-    db: AsyncSession = Depends(get_db)
-) -> None:
-    stmt = select(StarModel).where(StarModel.id == star_id)
-    result = await db.execute(stmt)
-    star = result.scalars().first()
-
-    if not star:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Star with the given id was not found."
-        )
-
-    movies_check_stmt = select(func.count(MovieModel.id)).where(
-        MovieModel.stars.any(StarModel.id == star_id)
-    )
-    result = await db.execute(movies_check_stmt)
-    movies_count = result.scalar_one()
-
-    if movies_count > 0:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Cannot delete star: {movies_count} movies are associated with it"
-        )
-
-    await db.delete(star)
-    await db.commit()
-
-    return
-
-
-@router.get(
-    "/director/",
-    response_model=DirectorListSchema,
-    status_code=status.HTTP_200_OK,
-    tags=["admin", "moderator", "directors"]
-)
-async def get_directors(
-    page: int = Query(1, ge=1),
-    per_page: int = Query(10, ge=1, le=100),
-    authorized: None = Depends(moderator_and_admin),
-    db: AsyncSession = Depends(get_db)
-) -> DirectorListSchema:
-    stmt = select(DirectorModel)
-
-    count_stmt = (
-        select(func.count(DirectorModel.id.distinct()))
-        .select_from(stmt.subquery())
-    )
-    result = await db.execute(count_stmt)
-    total_items = result.scalar_one()
-
-    if not total_items:
-        return DirectorListSchema(directors=[], total_pages=0, total_items=0)
-
-    offset = (page - 1) * per_page
-
-    stmt = stmt.offset(offset).limit(per_page)
-    result = await db.execute(stmt)
-    directors: Sequence[DirectorModel] = result.scalars().all()
-
-    director_list = [
-        DirectorSchema.model_validate(director) for director in directors
-    ]
-
-    total_pages = (total_items + per_page - 1) // per_page
-
-    return DirectorListSchema(
-        directors=director_list,
-        prev_page=f"/cinema/directors/?page={page - 1}&per_page={per_page}" if page > 1 else None,
-        next_page=f"/cinema/directors/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
-        total_pages=total_pages,
-        total_items=total_items
-    )
-
-
-@router.get(
-    "/directors/{director_id}/",
-    response_model=DirectorSchema,
-    status_code=status.HTTP_200_OK,
-    tags=["admin", "moderator", "directors"]
-)
-async def get_director_by_id(
-    director_id: int,
-    authorized: None = Depends(moderator_and_admin),
-    db: AsyncSession = Depends(get_db)
-) -> DirectorSchema:
-    stmt = select(DirectorModel).where(DirectorModel.id == director_id)
-    result = await db.execute(stmt)
-    director = result.scalars().first()
-
-    if not director:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Director with the given id was not found."
-        )
-
-    return DirectorSchema.model_validate(director)
-
-
-@router.post(
-    "/directors/",
-    response_model=DirectorSchema,
-    status_code=status.HTTP_201_CREATED,
-    tags=["admin", "moderator", "directors"]
-)
-async def create_director(
-    data: NameSchema,
-    authorized: None = Depends(moderator_and_admin),
-    db: AsyncSession = Depends(get_db)
-) -> DirectorSchema:
-    stmt = select(DirectorModel).where(DirectorModel.name == data.name)
-    result = await db.execute(stmt)
-    director = result.scalars().first()
-
-    if director:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"A director with the name '{data.name}' already exists."
-        )
-
-    director = DirectorModel(name=data.name.title())
-    db.add(director)
-    await db.commit()
-    await db.refresh(director)
-
-    return DirectorSchema.model_validate(director)
-
-
-@router.patch(
-    "/directors/{director_id}/",
-    response_model=DirectorSchema,
-    status_code=status.HTTP_200_OK,
-    tags=["admin", "moderator", "directors"]
-)
-async def update_director(
-    director_id: int,
-    data: NameSchema,
-    authorized: None = Depends(moderator_and_admin),
-    db: AsyncSession = Depends(get_db)
-) -> DirectorSchema:
-    stmt = select(DirectorModel).where(DirectorModel.id == director_id)
-    result = await db.execute(stmt)
-    director = result.scalars().first()
-
-    if not director:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Director with the given id was not found."
-        )
-
-    try:
-        director.name = data.name.title()
-
-        await db.commit()
-        await db.refresh(director)
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid input data."
-        )
-
-    return DirectorSchema.model_validate(director)
-
-
-@router.delete(
-    "/directors/{director_id}/",
-    status_code=status.HTTP_204_NO_CONTENT,
-    tags=["admin", "moderator", "directors"]
-)
-async def delete_director(
-    director_id: int,
-    authorized: None = Depends(moderator_and_admin),
-    db: AsyncSession = Depends(get_db)
-) -> None:
-    stmt = select(DirectorModel).where(DirectorModel.id == director_id)
-    result = await db.execute(stmt)
-    director = result.scalars().first()
-
-    if not director:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Director with the given id was not found"
-        )
-
-    movies_check_stmt = select(func.count(MovieModel.id)).where(
-        MovieModel.directors.any(DirectorModel.id == director_id)
-    )
-    result = await db.execute(movies_check_stmt)
-    movies_count = result.scalar_one()
-
-    if movies_count > 0:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Cannot delete director: {movies_count} movies are associated with it"
-        )
-
-    await db.delete(director)
-    await db.commit()
-
-    return

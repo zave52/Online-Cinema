@@ -18,6 +18,17 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from database.models.base import Base
+from database.models.profiles import UserProfileModel
+from database.models.movies import (
+    LikeModel,
+    CommentModel,
+    FavoriteMovieModel,
+    RateMovieModel,
+    MovieModel
+)
+from database.models.shopping_cart import CartModel
+from database.models.orders import OrderModel
+from database.models.payments import PaymentModel
 from database.validators.accounts import (
     validate_email,
     validate_password_strength
@@ -43,17 +54,35 @@ purchased_movies_association = Table(
 
 
 class UserGroupEnum(Enum):
+    """Enumeration for user group types.
+    
+    Defines the different user groups in the system:
+    - USER: Regular user with basic permissions
+    - MODERATOR: User with moderation capabilities
+    - ADMIN: Administrator with full system access
+    """
     USER = "user"
     MODERATOR = "moderator"
     ADMIN = "admin"
 
 
 class GenderEnum(Enum):
+    """Enumeration for user gender options.
+    
+    Defines the gender options for user profiles:
+    - MAN: Male
+    - WOMAN: Female
+    """
     MAN = "man"
     WOMAN = "woman"
 
 
 class UserGroupModel(Base):
+    """Model representing user groups in the system.
+    
+    This model stores different user groups that determine permissions
+    and access levels for users in the application.
+    """
     __tablename__ = "user_groups"
 
     id: Mapped[int] = mapped_column(
@@ -72,6 +101,11 @@ class UserGroupModel(Base):
 
 
 class UserModel(Base):
+    """User model representing registered users in the system.
+    
+    This model handles user authentication, profile management, and relationships
+    with other entities like movies, orders, and payments.
+    """
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(
@@ -172,36 +206,86 @@ class UserModel(Base):
         return f"<UserModel(id={self.id}, email={self.email}, is_active={self.is_active})>"
 
     def has_group(self, group_name: UserGroupEnum) -> bool:
+        """Check if the user belongs to a specific group.
+        
+        Args:
+            group_name (UserGroupEnum): The group to check for.
+            
+        Returns:
+            bool: True if user belongs to the specified group, False otherwise.
+        """
         return self.group.name == group_name
 
     @classmethod
     def create(
         cls, email: EmailStr, raw_password: str, group_id: int | Mapped[int]
     ) -> "UserModel":
+        """Create a new user instance with hashed password.
+        
+        Args:
+            email (EmailStr): User's email address.
+            raw_password (str): Plain text password to be hashed.
+            group_id (int | Mapped[int]): ID of the user's group.
+            
+        Returns:
+            UserModel: New user instance with hashed password.
+        """
         user = cls(email=email, group_id=group_id)
         user.password = raw_password
         return user
 
     @property
     def password(self) -> None:
+        """Password property getter - raises error as password is write-only.
+        
+        Raises:
+            AttributeError: Always raised as password is write-only for security.
+        """
         raise AttributeError(
             "Password is write-only. Use the setter to set the password."
         )
 
     @password.setter
     def password(self, raw_password: str) -> None:
+        """Set the user's password with validation and hashing.
+        
+        Args:
+            raw_password (str): Plain text password to be validated and hashed.
+        """
         validate_password_strength(raw_password)
         self._hashed_password = hash_password(raw_password)
 
     def verify_password(self, raw_password: str) -> bool:
+        """Verify a plain text password against the stored hash.
+        
+        Args:
+            raw_password (str): Plain text password to verify.
+            
+        Returns:
+            bool: True if password matches, False otherwise.
+        """
         return verify_password(raw_password, self._hashed_password)
 
     @validates("email")
     def validate_email_field(self, field_name: str, email: str) -> str:
-        return validate_email(email.lower())
+        """Validate email field using custom validation logic.
+        
+        Args:
+            field_name (str): Name of the field being validated.
+            email (str): Email address to validate.
+            
+        Returns:
+            str: Validated email address.
+        """
+        return validate_email(email)
 
 
 class TokenBaseModel(Base):
+    """Base model for all token types in the system.
+    
+    This abstract base class provides common functionality for all token
+    models including activation tokens, password reset tokens, and refresh tokens.
+    """
     __abstract__ = True
 
     id: Mapped[int] = mapped_column(
@@ -227,12 +311,24 @@ class TokenBaseModel(Base):
     )
 
     def is_expired(self) -> bool:
+        """Check if the token has expired.
+        
+        Compares the token's expiration time with the current UTC time.
+        
+        Returns:
+            bool: True if token has expired, False otherwise.
+        """
         return cast(datetime, self.expires_at).replace(
             tzinfo=timezone.utc
         ) < datetime.now(timezone.utc)
 
 
 class ActivationTokenModel(TokenBaseModel):
+    """Model representing user account activation tokens.
+    
+    This model stores tokens used for email verification and account activation.
+    Each user can have only one activation token at a time.
+    """
     __tablename__ = "activation_tokens"
 
     user: Mapped[UserModel] = relationship(
@@ -247,6 +343,11 @@ class ActivationTokenModel(TokenBaseModel):
 
 
 class PasswordResetTokenModel(TokenBaseModel):
+    """Model representing password reset tokens.
+    
+    This model stores tokens used for password reset functionality.
+    Each user can have only one password reset token at a time.
+    """
     __tablename__ = "password_reset_tokens"
 
     user: Mapped[UserModel] = relationship(
@@ -261,6 +362,11 @@ class PasswordResetTokenModel(TokenBaseModel):
 
 
 class RefreshTokenModel(TokenBaseModel):
+    """Model representing JWT refresh tokens.
+    
+    This model stores refresh tokens used for JWT authentication.
+    Users can have multiple refresh tokens for different sessions.
+    """
     __tablename__ = "refresh_tokens"
 
     user: Mapped[UserModel] = relationship(
@@ -278,6 +384,16 @@ class RefreshTokenModel(TokenBaseModel):
     def create(
         cls, user_id: int | Mapped[int], minutes_valid: int, token: str
     ) -> "RefreshTokenModel":
+        """Create a new refresh token with custom expiration time.
+        
+        Args:
+            user_id (int | Mapped[int]): ID of the user the token belongs to.
+            minutes_valid (int): Number of minutes the token should be valid.
+            token (str): The refresh token string.
+            
+        Returns:
+            RefreshTokenModel: New refresh token instance.
+        """
         expires_at = datetime.now(timezone.utc) + timedelta(
             minutes=minutes_valid
         )

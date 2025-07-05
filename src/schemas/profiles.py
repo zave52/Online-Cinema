@@ -1,14 +1,23 @@
 from datetime import date
+from typing import Optional
 
 from fastapi import UploadFile, Form, HTTPException
-from pydantic import BaseModel, field_validator, HttpUrl
-from typing import Optional
+from pydantic import BaseModel, field_validator, HttpUrl, ConfigDict
 
 from validation.profiles import (
     validate_name,
     validate_image,
     validate_gender,
     validate_birth_date
+)
+
+from .exapmles.profiles import (
+    profile_create_request_schema_example,
+    profile_update_request_schema_example,
+    profile_patch_request_schema_example,
+    profile_response_schema_example,
+    profile_retrieve_schema_example,
+    message_response_schema_example
 )
 
 
@@ -22,6 +31,12 @@ class ProfileBaseModel(BaseModel):
 
 class ProfileCreateRequestSchema(ProfileBaseModel):
     avatar: UploadFile
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": profile_create_request_schema_example
+        }
+    )
 
     @classmethod
     def from_form(
@@ -129,6 +144,12 @@ class ProfileCreateRequestSchema(ProfileBaseModel):
 
 class ProfileUpdateRequestSchema(ProfileBaseModel):
     avatar: Optional[UploadFile] = None
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": profile_update_request_schema_example
+        }
+    )
 
     @classmethod
     def from_form(
@@ -246,6 +267,12 @@ class ProfilePatchRequestSchema(BaseModel):
     date_of_birth: Optional[date] = None
     info: Optional[str] = None
     avatar: Optional[UploadFile] = None
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": profile_patch_request_schema_example
+        }
+    )
 
     @classmethod
     def from_form(
@@ -372,6 +399,28 @@ class ProfileResponseSchema(ProfileBaseModel):
     user_id: int
     avatar: HttpUrl
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": profile_response_schema_example
+        }
+    )
+
 
 class ProfileRetrieveSchema(ProfileResponseSchema):
     email: str
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": profile_retrieve_schema_example
+        }
+    )
+
+
+class MessageResponseSchema(BaseModel):
+    message: str
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": message_response_schema_example
+        }
+    )

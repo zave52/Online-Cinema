@@ -5,6 +5,15 @@ from pydantic import BaseModel, ConfigDict, model_validator
 
 from database.models.orders import OrderStatusEnum, OrderItemModel
 
+from .exapmles.orders import (
+    order_item_schema_example,
+    order_schema_example,
+    order_list_schema_example,
+    create_order_schema_example,
+    refund_request_schema_example,
+    message_response_schema_example
+)
+
 
 class OrderItemSchema(BaseModel):
     id: int
@@ -15,6 +24,9 @@ class OrderItemSchema(BaseModel):
     model_config = ConfigDict(
         from_attributes=True,
         populate_by_name=True,
+        json_schema_extra={
+            "example": order_item_schema_example
+        }
     )
 
     @model_validator(mode="before")
@@ -32,7 +44,12 @@ class OrderSchema(BaseModel):
     total_amount: Optional[Decimal]
     items: List[OrderItemSchema]
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": order_schema_example
+        }
+    )
 
 
 class OrderListSchema(BaseModel):
@@ -42,15 +59,39 @@ class OrderListSchema(BaseModel):
     prev_page: Optional[str] = None
     next_page: Optional[str] = None
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": order_list_schema_example
+        }
+    )
+
 
 class CreateOrderSchema(BaseModel):
     cart_item_ids: List[int]
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": create_order_schema_example
+        }
+    )
 
 
 class RefundRequestSchema(BaseModel):
     reason: str
     amount: Optional[Decimal] = None
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": refund_request_schema_example
+        }
+    )
+
 
 class MessageResponseSchema(BaseModel):
     message: str
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": message_response_schema_example
+        }
+    )

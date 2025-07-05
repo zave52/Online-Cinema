@@ -344,12 +344,7 @@ class CommentModel(Base):
     )
     replies: Mapped[List["CommentModel"]] = relationship(
         "CommentModel",
-        back_populates="parent",
-        remote_side=[id]
-    )
-    parent: Mapped[Optional["CommentModel"]] = relationship(
-        "CommentModel",
-        back_populates="replies",
+        backref="parent",
         remote_side=[id]
     )
 

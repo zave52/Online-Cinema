@@ -8,7 +8,14 @@ from pydantic_settings import BaseSettings
 
 
 class BaseAppSettings(BaseSettings):
-    BASE_URL: HttpUrl = os.getenv("BASE_URL", "http://127.0.0.1:8000")
+    """Base application settings configuration.
+    
+    This class contains all the core configuration settings for the Online Cinema
+    application, including JWT tokens, email settings, S3 storage, and Stripe
+    payment configuration. It inherits from Pydantic's BaseSettings for
+    automatic environment variable loading and validation.
+    """
+    BASE_URL: str = os.getenv("BASE_URL", "http://127.0.0.1:8000")
     BASE_DIR: Path = Path(__file__).parent.parent
     PATH_TO_DB: str = str(BASE_DIR / "database" / "source" / "online_cinema.db")
 
@@ -46,6 +53,11 @@ class BaseAppSettings(BaseSettings):
 
     @property
     def S3_STORAGE_ENDPOINT(self) -> str:
+        """Get the complete S3 storage endpoint URL.
+        
+        Returns:
+            str: The full S3 storage endpoint URL combining host and port.
+        """
         return f"http://{self.S3_STORAGE_HOST}:{self.S3_STORAGE_PORT}"
 
     STRIPE_PUBLISHABLE_KEY: str = os.getenv("STRIPE_PUBLISHABLE_KEY")
@@ -53,14 +65,32 @@ class BaseAppSettings(BaseSettings):
 
 
 class Settings(BaseAppSettings):
+    """Production settings configuration.
+    
+    This class inherits from BaseAppSettings and is used for production
+    environment configuration. It can be extended with production-specific
+    settings if needed.
+    """
     pass
 
 
 class DevelopmentSettings(BaseAppSettings):
+    """Development settings configuration.
+    
+    This class inherits from BaseAppSettings and is used for development
+    environment configuration. It can be extended with development-specific
+    settings if needed.
+    """
     pass
 
 
 class CelerySettings(BaseSettings):
+    """Celery background task configuration.
+    
+    This class contains all the configuration settings for Celery background
+    tasks, including broker URL, result backend, task imports, and scheduled
+    task definitions.
+    """
     broker_url: str = os.getenv(
         "CELERY_BROKER_URL",
         "redis://localhost:6379/0"
@@ -74,6 +104,16 @@ class CelerySettings(BaseSettings):
 
     @property
     def beat_schedule(self) -> Dict[str, Any]:
+        """Get the Celery beat schedule configuration.
+        
+        Defines periodic tasks that run automatically:
+        - Daily cleanup of expired activation tokens
+        - Daily cleanup of expired password reset tokens
+        - Daily cleanup of expired refresh tokens
+        
+        Returns:
+            Dict[str, Any]: Dictionary containing scheduled task configurations.
+        """
         return {
             "delete-activation-tokens": {
                 "task": "tasks.tasks.delete_expires_activation_tokens",
@@ -91,6 +131,15 @@ class CelerySettings(BaseSettings):
 
 
 def get_settings() -> BaseAppSettings:
+    """Get the appropriate settings instance based on environment.
+    
+    This function determines which settings class to use based on the
+    ENVIRONMENT environment variable. It defaults to development settings
+    if no environment is specified or if the environment is not production.
+    
+    Returns:
+        BaseAppSettings: The appropriate settings instance for the current environment.
+    """
     environment = os.getenv("ENVIRONMENT", "developing")
     if environment == "production":
         return Settings()

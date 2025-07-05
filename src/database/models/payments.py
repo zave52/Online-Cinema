@@ -14,15 +14,30 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.models.base import Base
+from database.models.accounts import UserModel
+from database.models.orders import OrderModel, OrderItemModel
 
 
 class PaymentStatusEnum(Enum):
+    """Enumeration for payment status values.
+    
+    Defines the possible states a payment can be in:
+    - SUCCESSFUL: Payment was completed successfully
+    - CANCELED: Payment was canceled
+    - REFUNDED: Payment was refunded
+    """
     SUCCESSFUL = "successful"
     CANCELED = "canceled"
     REFUNDED = "refunded"
 
 
 class PaymentModel(Base):
+    """Model representing payment transactions.
+    
+    This model stores payment information including status, amount,
+    creation time, external payment ID, and relationships to users,
+    orders, and payment items.
+    """
     __tablename__ = "payments"
 
     id: Mapped[int] = mapped_column(
@@ -76,6 +91,12 @@ class PaymentModel(Base):
 
 
 class PaymentItemModel(Base):
+    """Model representing individual items within a payment.
+    
+    This model stores information about each order item in a payment,
+    including the price at the time of payment and relationships to
+    the payment and order item.
+    """
     __tablename__ = "payment_items"
 
     id: Mapped[int] = mapped_column(

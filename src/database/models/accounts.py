@@ -18,17 +18,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from database.models.base import Base
-from database.models.profiles import UserProfileModel
-from database.models.movies import (
-    LikeModel,
-    CommentModel,
-    FavoriteMovieModel,
-    RateMovieModel,
-    MovieModel
-)
-from database.models.shopping_cart import CartModel
-from database.models.orders import OrderModel
-from database.models.payments import PaymentModel
 from database.validators.accounts import (
     validate_email,
     validate_password_strength

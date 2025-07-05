@@ -21,8 +21,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.models.accounts import UserModel
 from database.models.base import Base
-from database.models.shopping_cart import CartItemModel
-from database.models.orders import OrderItemModel
 
 movie_genre_association = Table(
     "movie_genres",

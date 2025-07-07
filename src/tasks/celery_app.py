@@ -1,8 +1,8 @@
+import asyncio
 from functools import wraps
 from typing import Any, Callable, Coroutine
 
 from celery.app import Celery
-from asgiref.sync import AsyncToSync
 
 from config.settings import CelerySettings
 
@@ -28,13 +28,17 @@ def async_task(*args: Any, **kwargs: Any):
     Returns:
         Callable: Decorated function that can be used as a Celery task.
     """
-    def _decorator(func: Callable[..., Coroutine[Any, Any, Any]]):
-        sync_call = AsyncToSync(func)
 
+    def _decorator(func: Callable[..., Coroutine[Any, Any, Any]]):
         @celery_app.task(*args, **kwargs)
         @wraps(func)
         def _decorated(*args, **kwargs) -> Any:
-            return sync_call(*args, **kwargs)
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                return loop.run_until_complete(func(*args, **kwargs))
+            finally:
+                loop.close()
 
         return _decorated
 

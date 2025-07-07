@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Dict, Any
 
 from celery.schedules import crontab
-from pydantic import EmailStr, SecretStr, HttpUrl
+from pydantic import EmailStr
 from pydantic_settings import BaseSettings
 
 
@@ -39,14 +39,14 @@ class BaseAppSettings(BaseSettings):
     MAIL_SERVER: str = os.getenv("MAIL_SERVER", "mailhog")
     MAIL_PORT: int = int(os.getenv("MAIL_PORT", 25))
     MAIL_USERNAME: str = os.getenv("MAIL_USERNAME", "test_user")
-    MAIL_PASSWORD: SecretStr = os.getenv("MAIL_PASSWORD", "some_password")
+    MAIL_PASSWORD: str = os.getenv("MAIL_PASSWORD", "some_password")
     MAIL_FROM: EmailStr = os.getenv("MAIL_FROM", "test@email.com")
     MAIL_FROM_NAME: str = os.getenv("MAIL_FROM_NAME", "Test User")
     MAIL_STARTTLS: bool = os.getenv("MAIL_STARTTLS", "False").lower() == "true"
     MAIL_SSL_TLS: bool = os.getenv("MAIL_SSL_TLS", "False").lower() == "true"
 
     S3_STORAGE_HOST: str = os.getenv("MINIO_HOST", "minio-cinema")
-    S3_STORAGE_PORT: int = os.getenv("MINIO_PORT", 9000)
+    S3_STORAGE_PORT: int = int(os.getenv("MINIO_PORT", 9000))
     S3_STORAGE_ACCESS_KEY: str = os.getenv("MINIO_ROOT_USER", "test_user")
     S3_STORAGE_SECRET_KEY: str = os.getenv("MINIO_ROOT_PASSWORD", "password")
     S3_BUCKET_NAME: str = os.getenv("MINIO_STORAGE", "online-cinema-storage")
@@ -60,8 +60,8 @@ class BaseAppSettings(BaseSettings):
         """
         return f"http://{self.S3_STORAGE_HOST}:{self.S3_STORAGE_PORT}"
 
-    STRIPE_PUBLISHABLE_KEY: str = os.getenv("STRIPE_PUBLISHABLE_KEY")
-    STRIPE_SECRET_KEY: str = os.getenv("STRIPE_SECRET_KEY")
+    STRIPE_PUBLISHABLE_KEY: str = os.getenv("STRIPE_PUBLISHABLE_KEY") or ""
+    STRIPE_SECRET_KEY: str = os.getenv("STRIPE_SECRET_KEY") or ""
 
 
 class Settings(BaseAppSettings):
@@ -71,10 +71,14 @@ class Settings(BaseAppSettings):
     environment configuration. It can be extended with production-specific
     settings if needed.
     """
-    pass
+    POSTGRES_USER: str = os.getenv("POSTGRES_USER", "test_user")
+    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "test_password")
+    POSTGRES_HOST: str = os.getenv("POSTGRES_HOST", "test_host")
+    POSTGRES_DB_PORT: int = int(os.getenv("POSTGRES_DB_PORT", 5432))
+    POSTGRES_DB: str = os.getenv("POSTGRES_DB", "test_db")
 
 
-class DevelopmentSettings(BaseAppSettings):
+class TestingSettings(BaseAppSettings):
     """Development settings configuration.
     
     This class inherits from BaseAppSettings and is used for development
@@ -117,30 +121,30 @@ class CelerySettings(BaseSettings):
         return {
             "delete-activation-tokens": {
                 "task": "tasks.tasks.delete_expires_activation_tokens",
-                "schedule": crontab(minute="0", hour="0"),
+                "schedule": crontab(minute="0"),
             },
             "delete-password-reset-tokens": {
                 "task": "tasks.tasks.delete_expires_password_reset_tokens",
-                "schedule": crontab(minute="0", hour="0"),
+                "schedule": crontab(minute="0"),
             },
             "delete-refresh-tokens": {
                 "task": "tasks.tasks.delete_expires_refresh_tokens",
-                "schedule": crontab(minute="0", hour="0"),
+                "schedule": crontab(minute="0"),
             },
         }
 
 
 def get_settings() -> BaseAppSettings:
-    """Get the appropriate settings instance based on environment.
+    """Return the settings instance based on the ENVIRONMENT variable.
     
-    This function determines which settings class to use based on the
-    ENVIRONMENT environment variable. It defaults to development settings
-    if no environment is specified or if the environment is not production.
+    If the ENVIRONMENT environment variable is set to 'testing', this function returns
+    an instance of TestingSettings. For any other value (including when unset), it returns
+    an instance of Settings.
     
     Returns:
-        BaseAppSettings: The appropriate settings instance for the current environment.
+        BaseAppSettings: The settings instance appropriate for the current environment.
     """
     environment = os.getenv("ENVIRONMENT", "developing")
-    if environment == "production":
-        return Settings()
-    return DevelopmentSettings()
+    if environment == "testing":
+        return TestingSettings()
+    return Settings()

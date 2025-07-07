@@ -37,7 +37,9 @@ class EmailSender(FastMail, EmailSenderInterface):
             recipients=[email],
             subject="Account Activation",
             subtype=MessageType.html,
-            template_body={"activation_link": activation_link}
+            template_body={
+                "email": email,
+                "activation_link": activation_link}
         )
 
         await self.send_message(
@@ -60,7 +62,10 @@ class EmailSender(FastMail, EmailSenderInterface):
             recipients=[email],
             subject="Account Activation Successfully",
             subtype=MessageType.html,
-            template_body={"login_link": login_link}
+            template_body={
+                "email": email,
+                "login_link": login_link
+            }
         )
 
         await self.send_message(
@@ -83,7 +88,10 @@ class EmailSender(FastMail, EmailSenderInterface):
             recipients=[email],
             subject="Password Reset Request",
             subtype=MessageType.html,
-            template_body={"password_reset_link": password_reset_link}
+            template_body={
+                "email": email,
+                "password_reset_link": password_reset_link
+            }
         )
 
         await self.send_message(
@@ -106,7 +114,10 @@ class EmailSender(FastMail, EmailSenderInterface):
             recipients=[email],
             subject="Password Reset Complete",
             subtype=MessageType.html,
-            template_body={"login_link": login_link}
+            template_body={
+                "email": email,
+                "login_link": login_link
+            }
         )
 
         await self.send_message(
@@ -123,7 +134,8 @@ class EmailSender(FastMail, EmailSenderInterface):
         message = MessageSchema(
             recipients=[email],
             subject="Password Change Successfully",
-            subtype=MessageType.html
+            subtype=MessageType.html,
+            template_body={"email": email}
         )
 
         await self.send_message(

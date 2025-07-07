@@ -15,8 +15,13 @@ import os
 
 environment = os.getenv("ENVIRONMENT", "developing")
 
-if environment == "production":
-    pass
+if environment == "developing":
+    from database.session_postgresql import (
+    get_postgresql_db as get_db,
+    AsyncPostgresqlSessionLocal as AsyncSessionLocal,
+    get_postgresql_db_contextmanager as get_db_contextmanager,
+    sync_postgresql_engine as sync_db_engine
+    )
 else:
     from .session_sqlite import (
         get_sqlite_db as get_db,

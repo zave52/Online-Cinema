@@ -121,15 +121,15 @@ class CelerySettings(BaseSettings):
         return {
             "delete-activation-tokens": {
                 "task": "tasks.tasks.delete_expires_activation_tokens",
-                "schedule": crontab(minute="0", hour="0"),
+                "schedule": crontab(minute="0"),
             },
             "delete-password-reset-tokens": {
                 "task": "tasks.tasks.delete_expires_password_reset_tokens",
-                "schedule": crontab(minute="0", hour="0"),
+                "schedule": crontab(minute="0"),
             },
             "delete-refresh-tokens": {
                 "task": "tasks.tasks.delete_expires_refresh_tokens",
-                "schedule": crontab(minute="0", hour="0"),
+                "schedule": crontab(minute="0"),
             },
         }
 

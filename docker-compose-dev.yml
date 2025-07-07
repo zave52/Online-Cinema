@@ -134,7 +134,7 @@ services:
       - cinema_network
 
   mailhog:
-    container_name: "mailhog-cinema"
+    container_name: mailhog-cinema
     build:
       context: .
       dockerfile: ./docker/mailhog/Dockerfile
@@ -150,7 +150,7 @@ services:
       - cinema_network
 
   minio:
-    container_name: "minio-cinema"
+    container_name: minio-cinema
     image: minio/minio:latest
     command: server --console-address ":9001" /data
     ports:

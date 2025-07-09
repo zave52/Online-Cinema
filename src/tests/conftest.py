@@ -1,3 +1,4 @@
+import io
 import os
 import uuid
 from decimal import Decimal
@@ -5,6 +6,7 @@ from typing import AsyncGenerator, Any
 
 import pytest
 import pytest_asyncio
+from PIL import Image
 from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
 from jose import jwt
@@ -399,3 +401,11 @@ async def pending_order(db_session, activated_user, seed_movies) -> OrderModel:
     order_with_items = order_with_items_result.scalars().first()
 
     return order_with_items
+
+
+def create_test_image() -> bytes:
+    """Create a minimal valid JPEG image for testing."""
+    img = Image.new('RGB', (1, 1), color='red')
+    img_bytes = io.BytesIO()
+    img.save(img_bytes, format='JPEG')
+    return img_bytes.getvalue()

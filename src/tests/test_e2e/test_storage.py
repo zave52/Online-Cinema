@@ -1,15 +1,6 @@
-import io
-
 import pytest
-from PIL import Image
 
-
-def create_test_image() -> bytes:
-    """Create a minimal valid JPEG image for testing."""
-    img = Image.new('RGB', (1, 1), color='red')
-    img_bytes = io.BytesIO()
-    img.save(img_bytes, format='JPEG')
-    return img_bytes.getvalue()
+from tests.conftest import create_test_image
 
 
 @pytest.mark.e2e

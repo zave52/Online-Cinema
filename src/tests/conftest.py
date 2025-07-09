@@ -1,5 +1,6 @@
 import os
 import uuid
+from decimal import Decimal
 
 import pytest
 import pytest_asyncio
@@ -12,6 +13,7 @@ from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker
 )
+from sqlalchemy.orm import selectinload
 from sqlalchemy.pool import StaticPool
 
 from config.dependencies import get_email_sender, get_s3_storage, get_payment_service
@@ -20,6 +22,7 @@ from database import get_db
 from database.models.accounts import UserModel, UserGroupModel, UserGroupEnum
 from database.models.base import Base
 from database.models.movies import MovieModel, CertificationModel
+from database.models.orders import OrderModel, OrderStatusEnum, OrderItemModel
 from main import create_app
 from tests.doubles.fakes.payments import FakePaymentService
 from tests.doubles.fakes.storage import FakeStorage
@@ -117,7 +120,6 @@ async def client(
     """Provide an asynchronous HTTP client for testing."""
     app.dependency_overrides[get_email_sender] = lambda: email_sender_stub
     app.dependency_overrides[get_s3_storage] = lambda: s3_storage_fake
-
     app.dependency_overrides[get_payment_service] = lambda: payment_service_fake
 
     async def override_get_db():
@@ -145,7 +147,6 @@ def user_data():
 @pytest_asyncio.fixture(scope="function")
 async def activated_user(client, user_data, admin_token):
     """Create a user, activate them, and return user data with access token."""
-    import uuid
 
     unique_user_data = user_data.copy()
     unique_user_data["email"] = f"activated_{uuid.uuid4().hex[:8]}@example.com"
@@ -318,3 +319,74 @@ def admin_token(admin_user) -> str:
         algorithm=settings.JWT_SIGNING_ALGORITHM
     )
     return token
+
+
+@pytest_asyncio.fixture(scope="function")
+async def pending_order(db_session, activated_user, seed_movies):
+    """Create a pending order with order items for testing payments."""
+    if not seed_movies:
+        cert_result = await db_session.execute(
+            select(CertificationModel).where(CertificationModel.id == 1)
+        )
+        existing_cert = cert_result.scalars().first()
+
+        if not existing_cert:
+            certification = CertificationModel(id=1, name="PG")
+            db_session.add(certification)
+            await db_session.commit()
+            await db_session.refresh(certification)
+
+        test_movie = MovieModel(
+            name="Test Movie for Payment",
+            year=2023,
+            time=120,
+            imdb=7.5,
+            votes=1000,
+            meta_score=80.0,
+            gross=10000000.0,
+            description="Test movie for payment testing",
+            price=Decimal("29.97"),
+            certification_id=1
+        )
+        db_session.add(test_movie)
+        await db_session.commit()
+        await db_session.refresh(test_movie)
+        movie_data = {
+            "id": test_movie.id,
+            "name": test_movie.name,
+            "price": float(test_movie.price)
+        }
+    else:
+        movie_data = seed_movies[0]
+        movie_result = await db_session.execute(
+            select(MovieModel).where(MovieModel.id == movie_data["id"])
+        )
+        test_movie = movie_result.scalars().first()
+
+    order = OrderModel(
+        user_id=activated_user["user_id"],
+        status=OrderStatusEnum.PENDING,
+        total_amount=Decimal(str(movie_data["price"]))
+    )
+    db_session.add(order)
+    await db_session.commit()
+    await db_session.refresh(order)
+
+    order_item = OrderItemModel(
+        order_id=order.id,
+        movie_id=test_movie.id,
+        price_at_order=Decimal(str(movie_data["price"]))
+    )
+    db_session.add(order_item)
+    await db_session.commit()
+    await db_session.refresh(order_item)
+
+    order_with_items_result = await db_session.execute(
+        select(OrderModel)
+        .options(selectinload(OrderModel.items).selectinload(OrderItemModel.movie))
+        .where(OrderModel.id == order.id)
+    )
+    order_with_items = order_with_items_result.scalars().first()
+
+    return order_with_items
+

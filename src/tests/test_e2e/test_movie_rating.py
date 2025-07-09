@@ -2,28 +2,10 @@ import pytest
 
 
 @pytest.mark.anyio
-async def test_movie_rating_flow(client, user_data, admin_token, seed_movies):
+async def test_movie_rating_flow(client, activated_user, seed_movies):
     """Test complete movie rating workflow."""
-    await client.post("/api/v1/accounts/register/", json=user_data)
+    headers = {"Authorization": f"Bearer {activated_user['access_token']}"}
 
-    admin_headers = {
-        "Authorization": f"Bearer {admin_token}"
-    }
-    activation_data = {"email": user_data["email"]}
-    await client.post(
-        "/api/v1/accounts/admin/users/activate/",
-        json=activation_data,
-        headers=admin_headers
-    )
-
-    login_resp = await client.post(
-        "/api/v1/accounts/login/",
-        json={"email": user_data["email"], "password": user_data["password"]},
-        headers={"Content-Type": "application/json"}
-    )
-
-    token = login_resp.json()["access_token"]
-    headers = {"Authorization": f"Bearer {token}"}
     movie_id = seed_movies[0]["id"]
 
     rating_data = {"rate": 8}
@@ -41,28 +23,10 @@ async def test_movie_rating_flow(client, user_data, admin_token, seed_movies):
 
 
 @pytest.mark.anyio
-async def test_movie_like_flow(client, user_data, admin_token, seed_movies):
+async def test_movie_like_flow(client, activated_user, seed_movies):
     """Test movie like/unlike workflow."""
-    await client.post("/api/v1/accounts/register/", json=user_data)
+    headers = {"Authorization": f"Bearer {activated_user['access_token']}"}
 
-    admin_headers = {
-        "Authorization": f"Bearer {admin_token}"
-    }
-    activation_data = {"email": user_data["email"]}
-    await client.post(
-        "/api/v1/accounts/admin/users/activate/",
-        json=activation_data,
-        headers=admin_headers
-    )
-
-    login_resp = await client.post(
-        "/api/v1/accounts/login/",
-        json={"email": user_data["email"], "password": user_data["password"]},
-        headers={"Content-Type": "application/json"}
-    )
-
-    token = login_resp.json()["access_token"]
-    headers = {"Authorization": f"Bearer {token}"}
     movie_id = seed_movies[0]["id"]
 
     like_resp = await client.post(

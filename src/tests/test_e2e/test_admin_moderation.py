@@ -27,7 +27,6 @@ async def test_admin_movie_moderation_flow(client, admin_token):
         json=movie_data,
         headers=admin_headers
     )
-    print(create_resp.content)
 
     assert create_resp.status_code == 201
 

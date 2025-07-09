@@ -1,25 +1,25 @@
 import pytest
 
 
-@pytest.mark.anyio
+@pytest.mark.integration
 async def test_invalid_http_method(client):
     resp = await client.put("/api/v1/accounts/register/", json={})
     assert resp.status_code == 405
 
 
-@pytest.mark.anyio
+@pytest.mark.integration
 async def test_invalid_missing_fields(client):
     resp = await client.post("/api/v1/accounts/register/", json={})
     assert resp.status_code == 422
 
 
-@pytest.mark.anyio
+@pytest.mark.integration
 async def test_unauthorized_access(client):
     resp = await client.get("/api/v1/ecommerce/orders/")
     assert resp.status_code == 403
 
 
-@pytest.mark.anyio
+@pytest.mark.integration
 async def test_forbidden_access(client, activated_user):
     """Test that a normal user cannot access an admin/moderator-only endpoint."""
     headers = activated_user["headers"]
@@ -30,13 +30,13 @@ async def test_forbidden_access(client, activated_user):
     assert resp.status_code == 403
 
 
-@pytest.mark.anyio
+@pytest.mark.integration
 async def test_error_handling_not_found(client):
     resp = await client.get("/api/v1/nonexistent-endpoint/")
     assert resp.status_code == 404
 
 
-@pytest.mark.anyio
+@pytest.mark.integration
 async def test_advanced_search_filter(client, activated_user):
     """Test advanced search and filtering capabilities"""
     resp = await client.get(
@@ -58,7 +58,7 @@ async def test_advanced_search_filter(client, activated_user):
         assert len(data) == 0
 
 
-@pytest.mark.anyio
+@pytest.mark.integration
 async def test_error_message_format_general(client):
     resp = await client.post("/api/v1/accounts/register/", json={})
     assert resp.status_code == 422
@@ -66,7 +66,7 @@ async def test_error_message_format_general(client):
     assert "detail" in data
 
 
-@pytest.mark.anyio
+@pytest.mark.integration
 async def test_permissions_forbidden_access(client, activated_user):
     """Test that a normal user cannot access an admin/moderator-only endpoint (permissions check)."""
     headers = activated_user["headers"]

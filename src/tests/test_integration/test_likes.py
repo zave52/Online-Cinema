@@ -1,7 +1,7 @@
 import pytest
 
 
-@pytest.mark.anyio
+@pytest.mark.integration
 async def test_like_nonexistent_movie(client, activated_user):
     headers = activated_user["headers"]
     resp = await client.post(
@@ -11,13 +11,13 @@ async def test_like_nonexistent_movie(client, activated_user):
     assert resp.status_code == 404
 
 
-@pytest.mark.anyio
+@pytest.mark.integration
 async def test_like_unauthorized(client):
     resp = await client.post("/api/v1/cinema/movies/1/likes/")
     assert resp.status_code == 403
 
 
-@pytest.mark.anyio
+@pytest.mark.integration
 async def test_double_like_movie(client, activated_user):
     headers = activated_user["headers"]
     await client.post("/api/v1/cinema/movies/1/likes/", headers=headers)
@@ -25,7 +25,7 @@ async def test_double_like_movie(client, activated_user):
     assert resp.status_code == 200
 
 
-@pytest.mark.anyio
+@pytest.mark.integration
 async def test_unlike_not_liked_movie(client, activated_user):
     headers = activated_user["headers"]
     resp = await client.delete(
@@ -35,14 +35,14 @@ async def test_unlike_not_liked_movie(client, activated_user):
     assert resp.status_code == 404
 
 
-@pytest.mark.anyio
+@pytest.mark.integration
 async def test_like_valid_movie(client, activated_user):
     headers = activated_user["headers"]
     resp = await client.post("/api/v1/cinema/movies/1/likes/", headers=headers)
     assert resp.status_code == 200
 
 
-@pytest.mark.anyio
+@pytest.mark.integration
 async def test_remove_like_valid(client, activated_user):
     headers = activated_user["headers"]
     await client.post("/api/v1/cinema/movies/1/likes/", headers=headers)
@@ -53,7 +53,7 @@ async def test_remove_like_valid(client, activated_user):
     assert resp.status_code == 204
 
 
-@pytest.mark.anyio
+@pytest.mark.integration
 async def test_get_likes_list_count(client, activated_user):
     headers = activated_user["headers"]
     resp = await client.get("/api/v1/cinema/movies/likes/", headers=headers)
@@ -63,7 +63,7 @@ async def test_get_likes_list_count(client, activated_user):
     assert "movies" in likes
 
 
-@pytest.mark.anyio
+@pytest.mark.integration
 async def test_like_schema_fields_and_types(client, activated_user):
     headers = activated_user["headers"]
     resp = await client.post("/api/v1/cinema/movies/1/likes/", headers=headers)
@@ -71,13 +71,13 @@ async def test_like_schema_fields_and_types(client, activated_user):
     assert "message" in data
 
 
-@pytest.mark.anyio
+@pytest.mark.integration
 async def test_likes_invalid_http_method(client):
     resp = await client.put("/api/v1/cinema/movies/1/likes/")
     assert resp.status_code == 405
 
 
-@pytest.mark.anyio
+@pytest.mark.integration
 async def test_like_error_message_format(client, activated_user):
     headers = activated_user["headers"]
     resp = await client.post(

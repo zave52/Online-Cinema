@@ -69,7 +69,6 @@ async def test_remove_favorite_unauthorized(client):
 async def test_get_favorites_list_count(client, activated_user):
     headers = activated_user["headers"]
     resp = await client.get("/api/v1/cinema/movies/favorites/", headers=headers)
-    print(resp.content)
     assert resp.status_code == 200
     favorites = resp.json()
     assert isinstance(favorites, dict)

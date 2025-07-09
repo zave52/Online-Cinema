@@ -51,7 +51,7 @@ async def test_password_change_flow(client, user_data, admin_token):
 
     new_login_resp = await client.post(
         "/api/v1/accounts/login/",
-        json={"email": user_data["email"], "password": user_data["password"]},
+        json={"email": user_data["email"], "password": new_password},
         headers={"Content-Type": "application/json"}
     )
 

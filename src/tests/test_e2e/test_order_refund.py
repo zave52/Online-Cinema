@@ -1,7 +1,7 @@
 import pytest
 
 
-@pytest.mark.anyio
+@pytest.mark.e2e
 async def test_order_refund_flow(
     client,
     activated_user,
@@ -70,7 +70,7 @@ async def test_order_refund_flow(
     assert order_data["status"] == "canceled"
 
 
-@pytest.mark.anyio
+@pytest.mark.e2e
 async def test_order_refund_validation_flow(client, activated_user):
     """Test order refund validation workflow."""
     headers = {"Authorization": f"Bearer {activated_user['access_token']}"}

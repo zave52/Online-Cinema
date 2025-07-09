@@ -1,7 +1,7 @@
 import pytest
 
 
-@pytest.mark.anyio
+@pytest.mark.e2e
 async def test_admin_movie_moderation_flow(client, admin_token):
     """Test admin movie moderation workflow."""
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
@@ -38,7 +38,7 @@ async def test_admin_movie_moderation_flow(client, admin_token):
     assert moderate_resp.status_code == 200
 
 
-@pytest.mark.anyio
+@pytest.mark.e2e
 async def test_admin_user_role_management_flow(client, user_data, admin_token):
     """Test admin user role management workflow."""
     await client.post(

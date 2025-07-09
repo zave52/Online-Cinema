@@ -1,7 +1,7 @@
 import pytest
 
 
-@pytest.mark.anyio
+@pytest.mark.api
 async def test_create_payment_unauthorized(client):
     payment_data = {
         "order_id": 1
@@ -13,7 +13,7 @@ async def test_create_payment_unauthorized(client):
     assert resp.status_code in (401, 403)
 
 
-@pytest.mark.anyio
+@pytest.mark.api
 async def test_create_payment_invalid_order(client, activated_user):
     """Test payment with invalid order id."""
     headers = {"Authorization": f"Bearer {activated_user['access_token']}"}
@@ -28,7 +28,7 @@ async def test_create_payment_invalid_order(client, activated_user):
     assert resp.status_code == 404
 
 
-@pytest.mark.anyio
+@pytest.mark.api
 async def test_create_payment_missing_fields(client, activated_user):
     """Test payment with missing required fields."""
     headers = {"Authorization": f"Bearer {activated_user['access_token']}"}
@@ -41,7 +41,7 @@ async def test_create_payment_missing_fields(client, activated_user):
     assert resp.status_code == 422
 
 
-@pytest.mark.anyio
+@pytest.mark.api
 async def test_get_payment_status(
     client,
     activated_user,
@@ -104,7 +104,7 @@ async def test_get_payment_status(
     assert payment_data["status"] == "successful"
 
 
-@pytest.mark.anyio
+@pytest.mark.api
 async def test_full_payment_journey_with_order_completion(
     client,
     activated_user,
@@ -158,7 +158,7 @@ async def test_full_payment_journey_with_order_completion(
     assert payment_data["status"] == "successful"
 
 
-@pytest.mark.anyio
+@pytest.mark.api
 async def test_payment_journey_with_different_card_types(
     client,
     activated_user,

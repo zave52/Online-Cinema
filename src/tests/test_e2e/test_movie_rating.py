@@ -1,7 +1,7 @@
 import pytest
 
 
-@pytest.mark.anyio
+@pytest.mark.e2e
 async def test_movie_rating_flow(client, activated_user, seed_movies):
     """Test complete movie rating workflow."""
     headers = {"Authorization": f"Bearer {activated_user['access_token']}"}
@@ -22,7 +22,7 @@ async def test_movie_rating_flow(client, activated_user, seed_movies):
     assert "average_rating" in data
 
 
-@pytest.mark.anyio
+@pytest.mark.e2e
 async def test_movie_like_flow(client, activated_user, seed_movies):
     """Test movie like/unlike workflow."""
     headers = {"Authorization": f"Bearer {activated_user['access_token']}"}

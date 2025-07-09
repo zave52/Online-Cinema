@@ -2,7 +2,7 @@ import pytest
 import uuid
 
 
-@pytest.mark.anyio
+@pytest.mark.e2e
 async def test_email_notification_registration_flow(
     client,
     user_data,
@@ -51,7 +51,7 @@ async def test_email_notification_registration_flow(
     assert resend_email["recipient"] == unique_user_data["email"]
 
 
-@pytest.mark.anyio
+@pytest.mark.e2e
 async def test_email_notification_password_reset_flow(
     client,
     user_data,
@@ -91,7 +91,7 @@ async def test_email_notification_password_reset_flow(
     assert len(fake_emails) == 0
 
 
-@pytest.mark.anyio
+@pytest.mark.e2e
 async def test_email_notification_password_change_flow(
     client,
     user_data,
@@ -125,7 +125,7 @@ async def test_email_notification_password_change_flow(
     assert change_email["subject"] == "Password Change Successfully"
 
 
-@pytest.mark.anyio
+@pytest.mark.e2e
 async def test_email_notification_activation_complete_flow(
     client,
     user_data,
@@ -152,7 +152,7 @@ async def test_email_notification_activation_complete_flow(
 
     email_sender_stub.clear_sent_emails()
 
-@pytest.mark.anyio
+@pytest.mark.e2e
 async def test_email_notification_types_are_distinct(
     client,
     user_data,
@@ -199,7 +199,7 @@ async def test_email_notification_types_are_distinct(
     assert "reset_link" in reset_emails[0]
 
 
-@pytest.mark.anyio
+@pytest.mark.e2e
 async def test_email_sender_stub_functionality(email_sender_stub):
     """Test the email sender stub functionality directly."""
     assert len(email_sender_stub.get_sent_emails()) == 0

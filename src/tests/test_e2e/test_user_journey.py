@@ -395,8 +395,6 @@ async def test_multiuser_interaction_journey(client, user_data, admin_token):
 @pytest.mark.e2e
 async def test_concurrent_operations_journey(client, user_data):
     """Test registration that would typically be done concurrently, but executed sequentially to avoid DB conflicts."""
-    import uuid
-
     registration_results = []
     for i in range(3):
         unique_user_data = user_data.copy()

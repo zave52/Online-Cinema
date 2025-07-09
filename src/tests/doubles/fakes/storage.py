@@ -1,5 +1,3 @@
-from typing import Optional
-
 from storages.interfaces import S3StorageInterface
 
 

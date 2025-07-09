@@ -169,7 +169,7 @@ async def test_authentication_security_journey(client, user_data, admin_token):
     )
     assert verify_resp.status_code == 200
 
-    tampered_token = token[:-1] + ("a" if token[-1] != "a" else "b")
+    tampered_token = token[:-2] + ("aa" if token[-1] != "a" else "bb")
     tampered_verify_resp = await client.post(
         "/api/v1/accounts/verify/",
         json={"access_token": tampered_token}

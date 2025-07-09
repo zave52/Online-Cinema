@@ -205,7 +205,7 @@ async def test_profile_jwt_tampering(client, user_data, admin_token):
         headers={"Content-Type": "application/json"}
     )
     token = login_resp.json()["access_token"]
-    tampered_token = token[:-1] + ("a" if token[-1] != "a" else "b")
+    tampered_token = token[:-2] + ("aa" if token[-1] != "a" else "bb")
     headers = {"Authorization": f"Bearer {tampered_token}"}
     resp = await client.get(
         f"/api/v1/profiles/users/{user_id}/profile/",

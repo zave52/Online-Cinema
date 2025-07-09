@@ -1,6 +1,7 @@
 import os
 import uuid
 from decimal import Decimal
+from typing import AsyncGenerator, Any
 
 import pytest
 import pytest_asyncio
@@ -11,12 +12,16 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
     AsyncSession,
-    async_sessionmaker
+    async_sessionmaker, AsyncEngine
 )
 from sqlalchemy.orm import selectinload
 from sqlalchemy.pool import StaticPool
 
-from config.dependencies import get_email_sender, get_s3_storage, get_payment_service
+from config.dependencies import (
+    get_email_sender,
+    get_s3_storage,
+    get_payment_service
+)
 from config.settings import get_settings
 from database import get_db
 from database.models.accounts import UserModel, UserGroupModel, UserGroupEnum
@@ -42,7 +47,7 @@ def anyio_backend():
 
 
 @pytest_asyncio.fixture(scope="session")
-async def async_engine():
+async def async_engine() -> AsyncGenerator[AsyncEngine, Any]:
     engine = create_async_engine(
         "sqlite+aiosqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -56,7 +61,7 @@ async def async_engine():
 
 
 @pytest_asyncio.fixture(scope="function")
-async def db_session(async_engine):
+async def db_session(async_engine) -> AsyncGenerator[AsyncSession, Any]:
     """Provide an async database session for database interactions."""
     async_session_local = async_sessionmaker(
         bind=async_engine,
@@ -116,7 +121,7 @@ async def client(
     s3_storage_fake,
     payment_service_fake,
     db_session
-):
+) -> AsyncGenerator[AsyncClient, Any]:
     """Provide an asynchronous HTTP client for testing."""
     app.dependency_overrides[get_email_sender] = lambda: email_sender_stub
     app.dependency_overrides[get_s3_storage] = lambda: s3_storage_fake
@@ -137,7 +142,7 @@ async def client(
 
 
 @pytest.fixture
-def user_data():
+def user_data() -> dict:
     return {
         "email": "testuser@gmail.com",
         "password": "StrongPass123!"
@@ -145,7 +150,11 @@ def user_data():
 
 
 @pytest_asyncio.fixture(scope="function")
-async def activated_user(client, user_data, admin_token):
+async def activated_user(
+    client,
+    user_data,
+    admin_token
+) -> dict[str, dict[str, str]]:
     """Create a user, activate them, and return user data with access token."""
 
     unique_user_data = user_data.copy()
@@ -189,7 +198,7 @@ async def activated_user(client, user_data, admin_token):
 
 
 @pytest_asyncio.fixture(scope="function")
-async def seed_movies(db_session):
+async def seed_movies(db_session) -> list[dict[str, Any]]:
     result = await db_session.execute(select(MovieModel))
     existing_movies = result.scalars().all()
 
@@ -258,12 +267,11 @@ async def seed_movies(db_session):
         "votes": m.votes,
         "meta_score": m.meta_score,
         "gross": m.gross,
-        "description": m.description
     } for m in movies]
 
 
 @pytest_asyncio.fixture(scope="function")
-async def admin_user(db_session) -> dict:
+async def admin_user(db_session) -> dict[str, Any]:
     """Create an admin user in the database and return admin data."""
     admin_email = "admin@gmail.com"
     stmt = select(UserModel).where(UserModel.email == admin_email)
@@ -322,7 +330,7 @@ def admin_token(admin_user) -> str:
 
 
 @pytest_asyncio.fixture(scope="function")
-async def pending_order(db_session, activated_user, seed_movies):
+async def pending_order(db_session, activated_user, seed_movies) -> OrderModel:
     """Create a pending order with order items for testing payments."""
     if not seed_movies:
         cert_result = await db_session.execute(
@@ -383,10 +391,11 @@ async def pending_order(db_session, activated_user, seed_movies):
 
     order_with_items_result = await db_session.execute(
         select(OrderModel)
-        .options(selectinload(OrderModel.items).selectinload(OrderItemModel.movie))
+        .options(
+            selectinload(OrderModel.items).selectinload(OrderItemModel.movie)
+        )
         .where(OrderModel.id == order.id)
     )
     order_with_items = order_with_items_result.scalars().first()
 
     return order_with_items
-

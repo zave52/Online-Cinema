@@ -84,6 +84,6 @@ async def test_like_error_message_format(client, activated_user):
         "/api/v1/cinema/movies/invalid/likes/",
         headers=headers
     )
-    assert resp.status_code == 404
+    assert resp.status_code == 422
     data = resp.json()
     assert "detail" in data

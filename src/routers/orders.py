@@ -227,9 +227,19 @@ async def create_order(
         await db.delete(cart_item)
 
     await db.commit()
-    await db.refresh(order)
 
-    return OrderSchema.model_validate(order)
+    order_query = (
+        select(OrderModel)
+        .options(
+            selectinload(OrderModel.items).selectinload(OrderItemModel.movie)
+        )
+        .where(OrderModel.id == order.id)
+    )
+
+    result = await db.execute(order_query)
+    order_with_items = result.scalar_one()
+
+    return OrderSchema.model_validate(order_with_items)
 
 
 @router.get(

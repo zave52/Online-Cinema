@@ -92,11 +92,6 @@ def create_app() -> FastAPI:
         tags=["profiles"]
     )
     app.include_router(
-        movies.router,
-        prefix=f"{api_version_index}/cinema",
-        tags=["movies"]
-    )
-    app.include_router(
         directors.router,
         prefix=f"{api_version_index}/cinema",
         tags=["directors"]
@@ -130,6 +125,11 @@ def create_app() -> FastAPI:
         stars.router,
         prefix=f"{api_version_index}/cinema",
         tags=["stars"]
+    )
+    app.include_router(
+        movies.router,
+        prefix=f"{api_version_index}/cinema",
+        tags=["movies"]
     )
     app.include_router(
         shopping_cart.router,

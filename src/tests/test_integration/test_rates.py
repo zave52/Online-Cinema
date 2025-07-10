@@ -2,6 +2,7 @@ import pytest
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_rate_nonexistent_movie(client, activated_user):
     headers = activated_user["headers"]
     resp = await client.post(
@@ -13,6 +14,7 @@ async def test_rate_nonexistent_movie(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_rate_unauthorized(client):
     resp = await client.post(
         "/api/v1/cinema/movies/1/rates/",
@@ -22,6 +24,7 @@ async def test_rate_unauthorized(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_double_rate_movie(client, activated_user):
     headers = activated_user["headers"]
     resp1 = await client.post(
@@ -39,6 +42,7 @@ async def test_double_rate_movie(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_rate_valid_movie(client, activated_user):
     headers = activated_user["headers"]
     resp = await client.post(

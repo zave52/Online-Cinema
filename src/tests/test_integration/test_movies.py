@@ -4,6 +4,7 @@ import pytest
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_list_movies_empty(client):
     """Test listing movies when database has movies."""
     response = await client.get("/api/v1/cinema/movies/")
@@ -15,6 +16,7 @@ async def test_list_movies_empty(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_create_and_list_movies(client, admin_token):
     """Test creating and listing movies with admin privileges."""
     headers = {"Authorization": f"Bearer {admin_token}"}
@@ -47,6 +49,7 @@ async def test_create_and_list_movies(client, admin_token):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_movie_not_found(client):
     """Test getting non-existent movie."""
     resp = await client.get("/api/v1/cinema/movies/9999/")
@@ -54,6 +57,7 @@ async def test_movie_not_found(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_create_movie_missing_fields(client, admin_token):
     """Test creating movie with missing required fields."""
     headers = {"Authorization": f"Bearer {admin_token}"}
@@ -66,6 +70,7 @@ async def test_create_movie_missing_fields(client, admin_token):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_filter_movies_no_results(client):
     """Test filtering movies with no results."""
     resp = await client.get("/api/v1/cinema/movies/?genre=NonExistentGenre")
@@ -75,6 +80,7 @@ async def test_filter_movies_no_results(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_get_movie_invalid_id_format(client):
     """Test getting movie with invalid ID format."""
     resp = await client.get("/api/v1/cinema/movies/not-an-id/")
@@ -82,6 +88,7 @@ async def test_get_movie_invalid_id_format(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_list_movies_empty_database(client):
     """Test listing movies from empty database."""
     resp = await client.get("/api/v1/cinema/movies/")
@@ -91,6 +98,7 @@ async def test_list_movies_empty_database(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_movies_default_pagination(client, seed_movies):
     """Test movies list with default pagination."""
     resp = await client.get("/api/v1/cinema/movies/")
@@ -104,6 +112,7 @@ async def test_movies_default_pagination(client, seed_movies):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_movies_custom_pagination(client, seed_movies):
     """Test movies list with custom pagination."""
     resp = await client.get("/api/v1/cinema/movies/?per_page=1&page=2")
@@ -114,6 +123,7 @@ async def test_movies_custom_pagination(client, seed_movies):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "page, per_page",
     [(-1, 10), (0, 10), (1, -1), (1, 0), (1, 101)]
@@ -127,6 +137,7 @@ async def test_movies_invalid_pagination_params(client, page, per_page):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_movies_invalid_query_types(client):
     """Test movies list with invalid query parameter types."""
     resp = await client.get("/api/v1/cinema/movies/?page=abc&per_page=xyz")
@@ -134,6 +145,7 @@ async def test_movies_invalid_query_types(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_movies_sort_by_year(client):
     """Test movies list sorted by year."""
     resp = await client.get("/api/v1/cinema/movies/?sort_by=year")
@@ -141,6 +153,7 @@ async def test_movies_sort_by_year(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_movies_sort_by_imdb(client):
     """Test movies list sorted by IMDB rating."""
     resp = await client.get("/api/v1/cinema/movies/?sort_by=imdb")
@@ -148,6 +161,7 @@ async def test_movies_sort_by_imdb(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_movies_sort_invalid_field(client):
     """Test movies list sorted by invalid field."""
     resp = await client.get("/api/v1/cinema/movies/?sort_by=invalid_field")
@@ -155,6 +169,7 @@ async def test_movies_sort_invalid_field(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_movies_filter_by_year(client):
     """Test movies list filtered by year."""
     resp = await client.get("/api/v1/cinema/movies/?year=2020")
@@ -162,6 +177,7 @@ async def test_movies_filter_by_year(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_movies_filter_by_year_range(client):
     """Test movies list filtered by year range."""
     resp = await client.get(
@@ -171,6 +187,7 @@ async def test_movies_filter_by_year_range(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_movies_filter_by_imdb_rating(client):
     """Test movies list filtered by IMDB rating."""
     resp = await client.get("/api/v1/cinema/movies/?imdb_min=7.0")
@@ -178,6 +195,7 @@ async def test_movies_filter_by_imdb_rating(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_movies_filter_by_price_range(client):
     """Test movies list filtered by price range."""
     resp = await client.get(
@@ -187,6 +205,7 @@ async def test_movies_filter_by_price_range(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_movies_search_by_name(client):
     """Test movies list with name search."""
     resp = await client.get("/api/v1/cinema/movies/?search=Action")
@@ -194,6 +213,7 @@ async def test_movies_search_by_name(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_movies_search_case_insensitive(client):
     """Test movies list with case insensitive search."""
     resp = await client.get("/api/v1/cinema/movies/?search=ACTION")
@@ -201,6 +221,7 @@ async def test_movies_search_case_insensitive(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_movies_search_partial_match(client):
     """Test movies list with partial match search."""
     resp = await client.get("/api/v1/cinema/movies/?search=Act")
@@ -208,6 +229,7 @@ async def test_movies_search_partial_match(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_create_movie_unauthorized(client):
     """Test creating movie without authentication."""
     movie_data = {
@@ -231,6 +253,7 @@ async def test_create_movie_unauthorized(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_create_movie_invalid_data_types(client, user_data):
     """Test creating movie with invalid data types."""
     await client.post("/api/v1/accounts/register/", json=user_data)
@@ -269,6 +292,7 @@ async def test_create_movie_invalid_data_types(client, user_data):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_create_movie_boundary_values(client, admin_token):
     """Test creating movie with boundary values."""
     headers = {"Authorization": f"Bearer {admin_token}"}
@@ -298,6 +322,7 @@ async def test_create_movie_boundary_values(client, admin_token):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_update_movie_success(client, admin_token, seed_movies):
     """Test successful movie update."""
     headers = {"Authorization": f"Bearer {admin_token}"}
@@ -317,6 +342,7 @@ async def test_update_movie_success(client, admin_token, seed_movies):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_update_movie_not_found(client, admin_token):
     """Test updating non-existent movie."""
     headers = {"Authorization": f"Bearer {admin_token}"}
@@ -331,6 +357,7 @@ async def test_update_movie_not_found(client, admin_token):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_delete_movie_success(client, admin_token, seed_movies):
     """Test successful movie deletion."""
     headers = {"Authorization": f"Bearer {admin_token}"}
@@ -365,6 +392,7 @@ async def test_delete_movie_success(client, admin_token, seed_movies):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_delete_movie_unauthorized(client, seed_movies):
     """Test deleting movie without authentication."""
     movie_id = seed_movies[0]["id"]
@@ -373,6 +401,7 @@ async def test_delete_movie_unauthorized(client, seed_movies):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_movies_concurrent_access(client):
     """Test concurrent access to movies endpoint."""
     tasks = [
@@ -389,6 +418,7 @@ async def test_movies_concurrent_access(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_movies_sql_injection_attempt(client):
     """Test SQL injection attempt in movies search."""
     malicious_search = "'; DROP TABLE movies; --"
@@ -397,6 +427,7 @@ async def test_movies_sql_injection_attempt(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_movies_xss_prevention(client):
     """Test XSS prevention in movie responses."""
     xss_payload = "<script>alert('xss')</script>"
@@ -408,6 +439,7 @@ async def test_movies_xss_prevention(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_movies_large_request_payload(client, admin_token):
     """Test handling of large request payload."""
     headers = {"Authorization": f"Bearer {admin_token}"}
@@ -438,6 +470,7 @@ async def test_movies_large_request_payload(client, admin_token):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_movies_invalid_http_methods(client):
     """Test invalid HTTP methods on movies endpoint."""
     resp = await client.patch("/api/v1/cinema/movies/")
@@ -445,6 +478,7 @@ async def test_movies_invalid_http_methods(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_movies_content_type_validation(client, admin_token):
     """Test content type validation for movie creation."""
     headers = {
@@ -462,6 +496,7 @@ async def test_movies_content_type_validation(client, admin_token):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_movie_filtering_integration(client, admin_token):
     """Test movie filtering integration."""
     headers = {"Authorization": f"Bearer {admin_token}"}

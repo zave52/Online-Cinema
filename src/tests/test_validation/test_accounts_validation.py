@@ -14,6 +14,7 @@ from schemas.accounts import (
 )
 
 
+@pytest.mark.validation
 class TestAccountValidation:
     """Test account-related validation logic."""
 
@@ -62,6 +63,7 @@ class TestAccountValidation:
                 )
 
 
+@pytest.mark.validation
 class TestPasswordChangeValidation:
     """Test password change validation logic."""
 
@@ -92,6 +94,7 @@ class TestPasswordChangeValidation:
                 )
 
 
+@pytest.mark.validation
 class TestPasswordResetValidation:
     """Test password reset request validation logic."""
 
@@ -107,6 +110,7 @@ class TestPasswordResetValidation:
             PasswordResetRequestSchema(email="not-an-email")
 
 
+@pytest.mark.validation
 class TestResendActivationTokenValidation:
     """Test resend activation token request validation logic."""
 
@@ -122,6 +126,7 @@ class TestResendActivationTokenValidation:
             ResendActivationTokenRequestSchema(email="not-an-email")
 
 
+@pytest.mark.validation
 class TestPasswordResetCompleteValidation:
     """Test password reset complete validation logic."""
 
@@ -146,6 +151,7 @@ class TestPasswordResetCompleteValidation:
             )
 
 
+@pytest.mark.validation
 class TestUserActivationValidation:
     """Test user activation validation logic."""
 
@@ -164,6 +170,7 @@ class TestUserActivationValidation:
             )
 
 
+@pytest.mark.validation
 class TestUserGroupUpdateValidation:
     """Test user group update validation logic."""
 
@@ -179,6 +186,7 @@ class TestUserGroupUpdateValidation:
             UserGroupUpdateRequestSchema(group_name="invalid-group")
 
 
+@pytest.mark.validation
 class TestUserManualActivationValidation:
     """Test user manual activation validation logic."""
 

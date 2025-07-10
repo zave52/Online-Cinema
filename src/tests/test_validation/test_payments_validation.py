@@ -19,6 +19,7 @@ from schemas.payments import (
 )
 
 
+@pytest.mark.validation
 class TestPaymentItemSchema:
     def test_valid_payment_item(self):
         data = {
@@ -31,6 +32,7 @@ class TestPaymentItemSchema:
         assert item.price_at_payment == Decimal("19.99")
 
 
+@pytest.mark.validation
 class TestPaymentSchema:
     def test_valid_payment(self):
         item_data = {
@@ -65,6 +67,7 @@ class TestPaymentSchema:
             )
 
 
+@pytest.mark.validation
 class TestPaymentListSchema:
     def test_valid_payment_list(self):
         payment_data = {
@@ -87,6 +90,7 @@ class TestPaymentListSchema:
         assert len(payment_list.payments) == 1
 
 
+@pytest.mark.validation
 class TestCreatePaymentIntentSchema:
     def test_valid_create_payment_intent(self):
         data = {"order_id": 1}
@@ -98,6 +102,7 @@ class TestCreatePaymentIntentSchema:
             CreatePaymentIntentSchema(order_id="abc")
 
 
+@pytest.mark.validation
 class TestPaymentIntentResponseSchema:
     def test_valid_payment_intent_response(self):
         data = {
@@ -110,6 +115,7 @@ class TestPaymentIntentResponseSchema:
         assert response.id == "pi_123"
 
 
+@pytest.mark.validation
 class TestProcessPaymentSchema:
     def test_valid_process_payment(self):
         data = {"payment_intent_id": "pi_123"}
@@ -117,6 +123,7 @@ class TestProcessPaymentSchema:
         assert schema.payment_intent_id == "pi_123"
 
 
+@pytest.mark.validation
 class TestRefundPaymentSchema:
     def test_valid_refund(self):
         data = {"amount": Decimal("10.00"), "reason": "accidental"}
@@ -131,6 +138,7 @@ class TestRefundPaymentSchema:
         assert schema.reason == "not satisfied"
 
 
+@pytest.mark.validation
 class TestCheckoutSessionRequestSchema:
     def test_valid_checkout_request(self):
         data = {
@@ -143,6 +151,7 @@ class TestCheckoutSessionRequestSchema:
         assert schema.success_url == "https://example.com/success"
 
 
+@pytest.mark.validation
 class TestCheckoutSessionResponseSchema:
     def test_valid_checkout_response(self):
         data = {
@@ -155,6 +164,7 @@ class TestCheckoutSessionResponseSchema:
         assert schema.amount_total == Decimal("99.99")
 
 
+@pytest.mark.validation
 class TestMessageResponseSchema:
     def test_valid_message(self):
         data = {"message": "Operation successful"}

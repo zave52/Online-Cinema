@@ -12,6 +12,7 @@ from schemas.shopping_cart import (
 )
 
 
+@pytest.mark.validation
 class TestShoppingCartAddMovieRequestSchema:
     def test_valid_add_movie_request(self):
         """Test valid add movie request."""
@@ -25,6 +26,7 @@ class TestShoppingCartAddMovieRequestSchema:
             ShoppingCartAddMovieRequestSchema(movie_id="abc")
 
 
+@pytest.mark.validation
 class TestShoppingCartAddMovieResponseSchema:
     def test_valid_add_movie_response(self):
         """Test valid add movie response."""
@@ -38,6 +40,7 @@ class TestShoppingCartAddMovieResponseSchema:
             ShoppingCartAddMovieResponseSchema(cart_item_id="xyz")
 
 
+@pytest.mark.validation
 class TestMessageResponseSchema:
     def test_valid_message_response(self):
         """Test valid message response."""
@@ -51,6 +54,7 @@ class TestMessageResponseSchema:
             MessageResponseSchema(message=123)
 
 
+@pytest.mark.validation
 class TestShoppingCartMovieItemSchema:
     def test_valid_movie_item(self):
         """Test valid shopping cart movie item."""
@@ -85,6 +89,7 @@ class TestShoppingCartMovieItemSchema:
             )
 
 
+@pytest.mark.validation
 class TestShoppingCartGetMoviesSchema:
     def test_valid_get_movies_schema(self):
         """Test valid get movies schema."""

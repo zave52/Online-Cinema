@@ -2,6 +2,7 @@ import pytest
 
 
 @pytest.mark.e2e
+@pytest.mark.asyncio
 async def test_admin_movie_moderation_flow(client, admin_token):
     """Test admin movie moderation workflow."""
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
@@ -39,6 +40,7 @@ async def test_admin_movie_moderation_flow(client, admin_token):
 
 
 @pytest.mark.e2e
+@pytest.mark.asyncio
 async def test_admin_user_role_management_flow(client, user_data, admin_token):
     """Test admin user role management workflow."""
     await client.post(

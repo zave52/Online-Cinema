@@ -28,6 +28,7 @@ def mock_avatar():
     return mock_file
 
 
+@pytest.mark.validation
 class TestProfileCreateRequestSchema:
     """Test ProfileCreateRequestSchema validation logic."""
 
@@ -85,6 +86,7 @@ class TestProfileCreateRequestSchema:
             )
 
 
+@pytest.mark.validation
 class TestProfileUpdateRequestSchema:
     """Test ProfileUpdateRequestSchema validation logic."""
 
@@ -121,6 +123,7 @@ class TestProfileUpdateRequestSchema:
             pytest.fail(f"Validation failed unexpectedly: {e.detail}")
 
 
+@pytest.mark.validation
 class TestProfilePatchRequestSchema:
     """Test ProfilePatchRequestSchema validation logic."""
 

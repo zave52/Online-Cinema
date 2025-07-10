@@ -4,6 +4,7 @@ from tests.conftest import activated_user
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_list_orders_empty(client, activated_user):
     headers = activated_user["headers"]
     resp = await client.get("/api/v1/ecommerce/orders/", headers=headers)
@@ -13,12 +14,14 @@ async def test_list_orders_empty(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_create_order_unauthorized(client):
     resp = await client.post("/api/v1/ecommerce/orders/", json={})
     assert resp.status_code == 403
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_create_order_missing_data(client, activated_user):
     headers = activated_user["headers"]
     resp = await client.post(
@@ -30,6 +33,7 @@ async def test_create_order_missing_data(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_create_order_empty_items(client, activated_user):
     """Test creating order with empty items list."""
     headers = activated_user["headers"]
@@ -45,6 +49,7 @@ async def test_create_order_empty_items(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_cancel_order(client, activated_user, seed_movies):
     """Test order cancellation."""
     headers = activated_user["headers"]
@@ -74,6 +79,7 @@ async def test_cancel_order(client, activated_user, seed_movies):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_get_user_orders(client, activated_user):
     """Test getting user's orders."""
     headers = activated_user["headers"]
@@ -86,6 +92,7 @@ async def test_get_user_orders(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_get_specific_order(client, activated_user, seed_movies):
     """Test getting specific order by ID."""
     headers = activated_user["headers"]
@@ -115,6 +122,7 @@ async def test_get_specific_order(client, activated_user, seed_movies):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_get_orders_unauthorized(client):
     """Test getting orders without authentication."""
     resp = await client.get("/api/v1/ecommerce/orders/")
@@ -122,6 +130,7 @@ async def test_get_orders_unauthorized(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_order_pagination(client, activated_user):
     """Test order list pagination."""
     headers = activated_user["headers"]
@@ -134,6 +143,7 @@ async def test_order_pagination(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_order_duplicate_items(client, activated_user, seed_movies):
     """Test creating order with duplicate items."""
     headers = activated_user["headers"]
@@ -158,6 +168,7 @@ async def test_order_duplicate_items(client, activated_user, seed_movies):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_get_order_not_found(client, activated_user):
     headers = activated_user["headers"]
     resp = await client.get("/api/v1/ecommerce/orders/9999/", headers=headers)
@@ -165,6 +176,7 @@ async def test_get_order_not_found(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_create_valid_order(client, activated_user, seed_movies):
     headers = activated_user["headers"]
     cart_item_data = {"movie_id": seed_movies[0]["id"]}
@@ -186,6 +198,7 @@ async def test_create_valid_order(client, activated_user, seed_movies):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_order_schema_fields_and_types(
     client,
     activated_user,
@@ -215,6 +228,7 @@ async def test_order_schema_fields_and_types(
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_order_status_pending(client, activated_user):
     """Test order status after creating"""
     headers = activated_user["headers"]
@@ -236,6 +250,7 @@ async def test_order_status_pending(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_update_order_invalid(client, activated_user):
     """Test updating order with invalid data"""
     headers = activated_user["headers"]
@@ -248,6 +263,7 @@ async def test_update_order_invalid(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_order_schema_fields_and_types(client, activated_user):
     headers = activated_user["headers"]
 
@@ -278,12 +294,14 @@ async def test_order_schema_fields_and_types(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_orders_invalid_http_method(client):
     resp = await client.put("/api/v1/ecommerce/orders/")
     assert resp.status_code == 405
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_create_order_error_message_format(client, activated_user):
     headers = activated_user["headers"]
     resp = await client.post(

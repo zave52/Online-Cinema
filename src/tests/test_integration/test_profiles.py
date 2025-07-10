@@ -4,6 +4,7 @@ from tests.conftest import create_test_image
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_get_profile(client, activated_user):
     """Test getting user profile."""
     headers = activated_user["headers"]
@@ -20,6 +21,7 @@ async def test_get_profile(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_create_profile(client, activated_user):
     """Test creating user profile."""
     headers = activated_user["headers"]
@@ -45,6 +47,7 @@ async def test_create_profile(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_update_profile_patch(client, activated_user):
     """Test updating user profile with PATCH."""
     headers = activated_user["headers"]
@@ -79,6 +82,7 @@ async def test_update_profile_patch(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_profile_unauthorized(client):
     """Test accessing profile without authentication."""
     resp = await client.get("/api/v1/profiles/users/1/profile/")
@@ -86,6 +90,7 @@ async def test_profile_unauthorized(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_profile_forbidden(client, activated_user):
     """Test accessing another user's profile."""
     headers = activated_user["headers"]
@@ -99,6 +104,7 @@ async def test_profile_forbidden(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_update_profile_invalid_data(client, activated_user):
     """Test updating profile with invalid data."""
     headers = activated_user["headers"]
@@ -113,6 +119,7 @@ async def test_update_profile_invalid_data(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_avatar_upload_valid(client, activated_user):
     """Test valid avatar upload."""
     headers = activated_user["headers"]
@@ -147,6 +154,7 @@ async def test_avatar_upload_valid(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_avatar_upload_invalid_file(client, activated_user):
     """Test avatar upload with an invalid file type."""
     headers = activated_user["headers"]
@@ -164,6 +172,7 @@ async def test_avatar_upload_invalid_file(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_update_another_users_profile(client, activated_user, user_data):
     """Test updating another user's profile."""
     headers = activated_user["headers"]
@@ -184,6 +193,7 @@ async def test_update_another_users_profile(client, activated_user, user_data):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_create_profile_duplicate(client, activated_user):
     """Test creating duplicate profile for the same user."""
     headers = activated_user["headers"]
@@ -216,6 +226,7 @@ async def test_create_profile_duplicate(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_profile_invalid_gender(client, activated_user):
     """Test profile creation with invalid gender."""
     headers = activated_user["headers"]
@@ -240,6 +251,7 @@ async def test_profile_invalid_gender(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_profile_invalid_date_format(client, activated_user):
     """Test profile creation with invalid date format."""
     headers = activated_user["headers"]
@@ -264,6 +276,7 @@ async def test_profile_invalid_date_format(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_profile_missing_required_fields(client, activated_user):
     """Test profile creation with missing required fields."""
     headers = activated_user["headers"]
@@ -282,6 +295,7 @@ async def test_profile_missing_required_fields(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_profile_future_birth_date(client, activated_user):
     """Test profile creation with future birth date."""
     headers = activated_user["headers"]
@@ -306,6 +320,7 @@ async def test_profile_future_birth_date(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_profile_large_avatar_file(client, activated_user):
     """Test profile creation with large avatar file."""
     headers = activated_user["headers"]

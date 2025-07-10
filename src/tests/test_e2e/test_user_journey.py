@@ -6,6 +6,7 @@ from tests.conftest import create_test_image, activated_user
 
 
 @pytest.mark.e2e
+@pytest.mark.asyncio
 async def test_complete_user_journey(client, user_data, admin_token):
     """Test complete user journey from registration to profile creation."""
     unique_user_data = user_data.copy()
@@ -60,6 +61,7 @@ async def test_complete_user_journey(client, user_data, admin_token):
 
 
 @pytest.mark.e2e
+@pytest.mark.asyncio
 async def test_movie_browsing_and_ordering_journey(
     client,
     user_data,
@@ -121,6 +123,7 @@ async def test_movie_browsing_and_ordering_journey(
 
 
 @pytest.mark.e2e
+@pytest.mark.asyncio
 async def test_authentication_security_journey(client, user_data, admin_token):
     """Test complete authentication security journey."""
     unique_user_data = user_data.copy()
@@ -178,6 +181,7 @@ async def test_authentication_security_journey(client, user_data, admin_token):
 
 
 @pytest.mark.e2e
+@pytest.mark.asyncio
 async def test_payment_processing_journey(
     client,
     activated_user,
@@ -221,6 +225,7 @@ async def test_payment_processing_journey(
 
 
 @pytest.mark.e2e
+@pytest.mark.asyncio
 async def test_password_reset_journey(client, user_data, admin_token):
     """Test complete password reset journey."""
     unique_user_data = user_data.copy()
@@ -260,6 +265,7 @@ async def test_password_reset_journey(client, user_data, admin_token):
 
 
 @pytest.mark.e2e
+@pytest.mark.asyncio
 async def test_admin_user_management_journey(client, user_data, admin_token):
     """Test admin user management journey."""
     unique_user_data = user_data.copy()
@@ -296,6 +302,7 @@ async def test_admin_user_management_journey(client, user_data, admin_token):
 
 
 @pytest.mark.e2e
+@pytest.mark.asyncio
 async def test_multiuser_interaction_journey(client, user_data, admin_token):
     """Test multi-user interaction journey."""
     user1_data = user_data.copy()
@@ -393,6 +400,7 @@ async def test_multiuser_interaction_journey(client, user_data, admin_token):
 
 
 @pytest.mark.e2e
+@pytest.mark.asyncio
 async def test_concurrent_operations_journey(client, user_data):
     """Test registration that would typically be done concurrently, but executed sequentially to avoid DB conflicts."""
     registration_results = []
@@ -419,6 +427,7 @@ async def test_concurrent_operations_journey(client, user_data):
 
 
 @pytest.mark.e2e
+@pytest.mark.asyncio
 async def test_error_handling_journey(client):
     """Test comprehensive error handling journey."""
     malformed_resp = await client.post(

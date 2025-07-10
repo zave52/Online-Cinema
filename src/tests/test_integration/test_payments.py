@@ -2,6 +2,7 @@ import pytest
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_payment_nonexistent_order(client, activated_user):
     """Test payment for non-existent order."""
     headers = activated_user["headers"]
@@ -18,6 +19,7 @@ async def test_payment_nonexistent_order(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_payment_unauthorized(client):
     """Test payment without authentication."""
     payment_data = {
@@ -31,6 +33,7 @@ async def test_payment_unauthorized(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_double_payment_attempt(
     client,
     activated_user,
@@ -72,6 +75,7 @@ async def test_double_payment_attempt(
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_payment_missing_fields(client, activated_user):
     """Test payment with missing required fields."""
     headers = activated_user["headers"]
@@ -84,6 +88,7 @@ async def test_payment_missing_fields(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_payment_success_simulation(
     client,
     activated_user,
@@ -118,6 +123,7 @@ async def test_payment_success_simulation(
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_payment_status_check(
     client,
     activated_user,
@@ -132,6 +138,7 @@ async def test_payment_status_check(
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_payment_list_user_payments(client, activated_user):
     """Test listing user's payments."""
     headers = activated_user["headers"]
@@ -146,6 +153,7 @@ async def test_payment_list_user_payments(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_payment_webhook_simulation(client):
     """Test payment webhook endpoint."""
     webhook_data = {
@@ -163,6 +171,7 @@ async def test_payment_webhook_simulation(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_payment_sql_injection_attempt(client, activated_user):
     """Test SQL injection attempt in payment data."""
     headers = activated_user["headers"]
@@ -180,6 +189,7 @@ async def test_payment_sql_injection_attempt(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_payment_negative_order_id(client, activated_user):
     """Test payment with negative order ID."""
     headers = activated_user["headers"]

@@ -4,6 +4,7 @@ import pytest
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_register_success(client, user_data):
     """Test successful user registration."""
     unique_user_data = user_data.copy()
@@ -21,6 +22,7 @@ async def test_register_success(client, user_data):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_register_invalid_email(client, user_data):
     """Test registration with an invalid email address."""
     bad_data = user_data.copy()
@@ -30,7 +32,7 @@ async def test_register_invalid_email(client, user_data):
 
 
 @pytest.mark.integration
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_login_success(client, user_data, admin_token):
     """Test successful login after registration."""
     unique_user_data = user_data.copy()
@@ -60,6 +62,7 @@ async def test_login_success(client, user_data, admin_token):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_login_wrong_password(client, user_data, admin_token):
     """Test login with wrong password."""
     unique_user_data = user_data.copy()
@@ -85,6 +88,7 @@ async def test_login_wrong_password(client, user_data, admin_token):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_profile_me(client, user_data, admin_token):
     """Test getting user's own profile."""
     unique_user_data = user_data.copy()
@@ -124,6 +128,7 @@ async def test_profile_me(client, user_data, admin_token):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_register_duplicate_email(client, user_data):
     """Test registration with duplicate email."""
     unique_user_data = user_data.copy()
@@ -144,6 +149,7 @@ async def test_register_duplicate_email(client, user_data):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_register_weak_password(client, user_data):
     """Test registration with a weak password."""
     weak_data = user_data.copy()
@@ -156,6 +162,7 @@ async def test_register_weak_password(client, user_data):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_login_inactive_user(client, user_data):
     """Test login for an inactive user (if activation is required)."""
     unique_user_data = user_data.copy()
@@ -177,6 +184,7 @@ async def test_login_inactive_user(client, user_data):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_profile_jwt_tampering(client, user_data, admin_token):
     """Test accessing profile with a tampered JWT token."""
     unique_user_data = user_data.copy()
@@ -215,6 +223,7 @@ async def test_profile_jwt_tampering(client, user_data, admin_token):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_register_missing_fields(client):
     """Test registration with missing required fields."""
     resp = await client.post(
@@ -225,6 +234,7 @@ async def test_register_missing_fields(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_login_nonexistent_user(client):
     """Test login with a non-existent user."""
     resp = await client.post(
@@ -236,6 +246,7 @@ async def test_login_nonexistent_user(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_login_missing_fields(client):
     """Test login with missing required fields."""
     resp = await client.post(
@@ -247,6 +258,7 @@ async def test_login_missing_fields(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_profile_invalid_update(client, user_data, admin_token):
     """Test updating the user's profile with invalid data."""
     unique_user_data = user_data.copy()
@@ -285,6 +297,7 @@ async def test_profile_invalid_update(client, user_data, admin_token):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_profile_unauthorized_update(client):
     """Test unauthorized update of the user's profile."""
     resp = await client.patch(
@@ -295,6 +308,7 @@ async def test_profile_unauthorized_update(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_profile_access_another_user(client, activated_user):
     """Test that a user cannot access another user's profile (if not allowed)."""
     headers1 = activated_user["headers"]
@@ -314,6 +328,7 @@ async def test_profile_access_another_user(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_profile_missing_jwt(client):
     """Test accessing the user's profile without a JWT token."""
     resp = await client.get("/api/v1/profiles/users/1/profile/")
@@ -321,6 +336,7 @@ async def test_profile_missing_jwt(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_password_reset_invalid_email(client):
     """Test password reset with an invalid email address."""
     resp = await client.post(
@@ -331,6 +347,7 @@ async def test_password_reset_invalid_email(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_password_change_wrong_old_password(client, activated_user):
     """Test password change with a wrong old password."""
     headers = activated_user["headers"]
@@ -347,6 +364,7 @@ async def test_password_change_wrong_old_password(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_profile_update_another_user_forbidden(client, activated_user):
     """Test that a user cannot update another user's profile."""
     user_id1 = activated_user["user_id"]
@@ -367,6 +385,7 @@ async def test_profile_update_another_user_forbidden(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_password_reset_with_invalid_token(
     client,
     user_data,
@@ -395,6 +414,7 @@ async def test_password_reset_with_invalid_token(
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_register_empty_password(client, user_data):
     """Test registration with empty password."""
     bad_data = user_data.copy()
@@ -404,6 +424,7 @@ async def test_register_empty_password(client, user_data):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_register_empty_email(client, user_data):
     """Test registration with empty email."""
     bad_data = user_data.copy()
@@ -413,6 +434,7 @@ async def test_register_empty_email(client, user_data):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_register_very_long_email(client, user_data):
     """Test registration with very long email."""
     bad_data = user_data.copy()
@@ -422,6 +444,7 @@ async def test_register_very_long_email(client, user_data):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_register_sql_injection_attempt(client, user_data):
     """Test registration with SQL injection attempt."""
     bad_data = user_data.copy()
@@ -431,6 +454,7 @@ async def test_register_sql_injection_attempt(client, user_data):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_login_case_insensitive_email(client, user_data, admin_token):
     """Test login with different case email."""
     unique_user_data = user_data.copy()
@@ -456,6 +480,7 @@ async def test_login_case_insensitive_email(client, user_data, admin_token):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_token_verification(client, user_data, admin_token):
     """Test token verification endpoint."""
     unique_user_data = user_data.copy()
@@ -488,6 +513,7 @@ async def test_token_verification(client, user_data, admin_token):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_token_verification_invalid(client):
     """Test token verification with invalid token."""
     resp = await client.post(
@@ -498,6 +524,7 @@ async def test_token_verification_invalid(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_refresh_token_flow(client, user_data, admin_token):
     """Test refresh token flow."""
     unique_user_data = user_data.copy()
@@ -531,6 +558,7 @@ async def test_refresh_token_flow(client, user_data, admin_token):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_refresh_token_invalid(client):
     """Test refresh token with invalid token."""
     resp = await client.post(
@@ -541,6 +569,7 @@ async def test_refresh_token_invalid(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_logout_flow(client, user_data, admin_token):
     """Test logout flow."""
     unique_user_data = user_data.copy()
@@ -583,6 +612,7 @@ async def test_logout_flow(client, user_data, admin_token):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_password_change_same_password(client, activated_user):
     """Test password change with same old and new password."""
     headers = activated_user["headers"]
@@ -598,6 +628,7 @@ async def test_password_change_same_password(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_password_change_weak_new_password(client, activated_user):
     """Test password change with weak new password."""
     headers = activated_user["headers"]
@@ -613,6 +644,7 @@ async def test_password_change_weak_new_password(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_concurrent_registration_same_email(client, user_data):
     """Test that duplicate email registration is properly handled."""
     base_email = f"duplicate_test_{uuid.uuid4().hex[:8]}@example.com"

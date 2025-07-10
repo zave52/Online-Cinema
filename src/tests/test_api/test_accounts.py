@@ -4,6 +4,7 @@ import pytest
 
 
 @pytest.mark.api
+@pytest.mark.asyncio
 async def test_register_success(client, user_data):
     """Test successful user registration."""
     unique_user_data = user_data.copy()
@@ -21,6 +22,7 @@ async def test_register_success(client, user_data):
 
 
 @pytest.mark.api
+@pytest.mark.asyncio
 async def test_register_duplicate(client, user_data):
     """Test duplicate registration."""
     unique_user_data = user_data.copy()
@@ -37,6 +39,7 @@ async def test_register_duplicate(client, user_data):
 
 
 @pytest.mark.api
+@pytest.mark.asyncio
 async def test_login_success(client, user_data, admin_token):
     """Test successful login."""
     unique_user_data = user_data.copy()
@@ -73,6 +76,7 @@ async def test_login_success(client, user_data, admin_token):
 
 
 @pytest.mark.api
+@pytest.mark.asyncio
 async def test_login_invalid_password(client, user_data, admin_token):
     """Test login with invalid password."""
     unique_user_data = user_data.copy()
@@ -104,6 +108,7 @@ async def test_login_invalid_password(client, user_data, admin_token):
 
 
 @pytest.mark.api
+@pytest.mark.asyncio
 async def test_login_nonexistent_user(client):
     """Test login with non-existent user."""
     resp = await client.post(
@@ -118,6 +123,7 @@ async def test_login_nonexistent_user(client):
 
 
 @pytest.mark.api
+@pytest.mark.asyncio
 async def test_register_invalid_email_format(client, user_data):
     """Test registration with invalid email format."""
     invalid_data = user_data.copy()
@@ -129,6 +135,7 @@ async def test_register_invalid_email_format(client, user_data):
 
 
 @pytest.mark.api
+@pytest.mark.asyncio
 async def test_register_weak_password(client, user_data):
     """Test registration with weak password."""
     weak_data = user_data.copy()
@@ -140,6 +147,7 @@ async def test_register_weak_password(client, user_data):
 
 
 @pytest.mark.api
+@pytest.mark.asyncio
 async def test_register_missing_fields(client):
     """Test registration with missing required fields."""
     resp = await client.post("/api/v1/accounts/register/", json={})
@@ -149,6 +157,7 @@ async def test_register_missing_fields(client):
 
 
 @pytest.mark.api
+@pytest.mark.asyncio
 async def test_token_verification_valid(client, user_data, admin_token):
     """Test token verification with valid token."""
     await client.post("/api/v1/accounts/register/", json=user_data)
@@ -177,6 +186,7 @@ async def test_token_verification_valid(client, user_data, admin_token):
 
 
 @pytest.mark.api
+@pytest.mark.asyncio
 async def test_token_verification_invalid(client):
     """Test token verification with invalid token."""
     resp = await client.post(

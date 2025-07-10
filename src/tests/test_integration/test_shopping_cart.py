@@ -2,6 +2,7 @@ import pytest
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_add_invalid_item_to_cart(client, activated_user):
     headers = activated_user["headers"]
     resp = await client.post(
@@ -13,6 +14,7 @@ async def test_add_invalid_item_to_cart(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_remove_nonexistent_item_from_cart(client, activated_user):
     headers = activated_user["headers"]
     resp = await client.delete(
@@ -23,6 +25,7 @@ async def test_remove_nonexistent_item_from_cart(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_add_valid_item_to_cart(client, activated_user):
     headers = activated_user["headers"]
     resp = await client.post(
@@ -34,6 +37,7 @@ async def test_add_valid_item_to_cart(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_get_cart_contents(client, activated_user):
     headers = activated_user["headers"]
     await client.post(
@@ -49,6 +53,7 @@ async def test_get_cart_contents(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_remove_valid_item_from_cart(client, activated_user):
     headers = activated_user["headers"]
     add_resp = await client.post(
@@ -66,6 +71,7 @@ async def test_remove_valid_item_from_cart(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_shopping_cart_empty(client, activated_user):
     """Test getting empty shopping cart."""
     headers = activated_user["headers"]
@@ -79,6 +85,7 @@ async def test_shopping_cart_empty(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_add_movie_to_cart_unauthorized(client, seed_movies):
     """Test adding movie to cart without authentication."""
     movie_id = seed_movies[0]["id"]
@@ -92,6 +99,7 @@ async def test_add_movie_to_cart_unauthorized(client, seed_movies):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_clear_cart(client, activated_user):
     """Test clearing cart."""
     headers = activated_user["headers"]
@@ -101,6 +109,7 @@ async def test_clear_cart(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_cart_checkout(client, activated_user, seed_movies):
     """Test cart checkout."""
     headers = activated_user["headers"]

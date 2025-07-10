@@ -2,6 +2,7 @@ import pytest
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_add_comment_to_nonexistent_movie(client, activated_user):
     headers = activated_user["headers"]
     movie_id = 9999
@@ -15,6 +16,7 @@ async def test_add_comment_to_nonexistent_movie(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_add_comment_unauthorized(client):
     movie_id = 1
     comment_data = {"content": "Test comment"}
@@ -26,6 +28,7 @@ async def test_add_comment_unauthorized(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_delete_nonexistent_comment(client, activated_user):
     headers = activated_user["headers"]
     resp = await client.delete(
@@ -36,6 +39,7 @@ async def test_delete_nonexistent_comment(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_concurrent_comment_actions(client, activated_user):
     headers = activated_user["headers"]
     movie_id = 1
@@ -54,6 +58,7 @@ async def test_concurrent_comment_actions(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_add_valid_comment(client, activated_user):
     headers = activated_user["headers"]
     movie_id = 1
@@ -67,6 +72,7 @@ async def test_add_valid_comment(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_add_invalid_comment(client, activated_user):
     headers = activated_user["headers"]
     movie_id = 1
@@ -80,6 +86,7 @@ async def test_add_invalid_comment(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_reply_to_comment(client, activated_user):
     headers = activated_user["headers"]
     movie_id = 1
@@ -100,6 +107,7 @@ async def test_reply_to_comment(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_delete_others_comment(client, activated_user, admin_token):
     headers1 = activated_user["headers"]
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
@@ -121,6 +129,7 @@ async def test_delete_others_comment(client, activated_user, admin_token):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_get_comment_from_movie(client, activated_user):
     headers = activated_user["headers"]
     movie_id = 1
@@ -144,6 +153,7 @@ async def test_get_comment_from_movie(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_comment_schema_fields_and_types(client, activated_user):
     headers = activated_user["headers"]
     movie_id = 1
@@ -161,6 +171,7 @@ async def test_comment_schema_fields_and_types(client, activated_user):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_comments_invalid_http_method(client):
     movie_id = 1
     resp = await client.put(f"/api/v1/cinema/movies/{movie_id}/comments/")
@@ -168,6 +179,7 @@ async def test_comments_invalid_http_method(client):
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_comment_error_message_format(client, activated_user):
     headers = activated_user["headers"]
     movie_id = 1

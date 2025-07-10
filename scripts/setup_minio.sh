@@ -10,7 +10,7 @@ if mc ls minio | grep -q "$MINIO_STORAGE"; then
   echo "Bucket '$MINIO_STORAGE' already exists. Skipping creation."
 else
   echo "Creating bucket: $MINIO_STORAGE"
-  mc mb minio/"MINIO_STORAGE"
+  mc mb minio/"$MINIO_STORAGE"
 fi
 
 echo "Setting bucket policy to public..."

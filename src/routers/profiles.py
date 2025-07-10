@@ -46,7 +46,7 @@ router = APIRouter()
                         "user_id": 1,
                         "first_name": "John",
                         "last_name": "Doe",
-                        "gender": "MALE",
+                        "gender": "MAN",
                         "date_of_birth": "1990-01-01",
                         "info": "Software developer from New York",
                         "avatar": "https://example-bucket.s3.amazonaws.com/avatars/1_profile.jpg"
@@ -208,7 +208,7 @@ async def create_profile(
                         "email": "user@example.com",
                         "first_name": "John",
                         "last_name": "Doe",
-                        "gender": "MALE",
+                        "gender": "MAN",
                         "info": "Software developer from New York",
                         "date_of_birth": "1990-01-01",
                         "avatar": "https://example-bucket.s3.amazonaws.com/avatars/1_profile.jpg"
@@ -325,7 +325,7 @@ async def get_user_profile(
                         "user_id": 1,
                         "first_name": "John",
                         "last_name": "Doe",
-                        "gender": "MALE",
+                        "gender": "MAN",
                         "date_of_birth": "1990-01-01",
                         "info": "Software developer from New York",
                         "avatar": "https://example-bucket.s3.amazonaws.com/avatars/1_profile.jpg"
@@ -496,7 +496,7 @@ async def update_profile(
                         "user_id": 1,
                         "first_name": "John",
                         "last_name": "Doe",
-                        "gender": "MALE",
+                        "gender": "MAN",
                         "date_of_birth": "1990-01-01",
                         "info": "Software developer from New York",
                         "avatar": "https://example-bucket.s3.amazonaws.com/avatars/1_profile.jpg"

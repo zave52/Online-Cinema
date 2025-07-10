@@ -3,7 +3,7 @@ from typing import Dict, Any
 profile_create_request_schema_example: Dict[str, Any] = {
     "first_name": "John",
     "last_name": "Doe",
-    "gender": "male",
+    "gender": "man",
     "date_of_birth": "1990-05-15",
     "info": "Movie enthusiast and film critic. Love watching sci-fi and action movies.",
     "avatar": "avatar_file_upload"
@@ -12,7 +12,7 @@ profile_create_request_schema_example: Dict[str, Any] = {
 profile_update_request_schema_example: Dict[str, Any] = {
     "first_name": "John",
     "last_name": "Smith",
-    "gender": "male",
+    "gender": "man",
     "date_of_birth": "1990-05-15",
     "info": "Updated bio: Movie enthusiast and film critic. Love watching sci-fi and action movies. Also enjoy documentaries.",
     "avatar": "new_avatar_file_upload"
@@ -29,7 +29,7 @@ profile_response_schema_example: Dict[str, Any] = {
     "user_id": 1,
     "first_name": "John",
     "last_name": "Doe",
-    "gender": "male",
+    "gender": "man",
     "date_of_birth": "1990-05-15",
     "info": "Movie enthusiast and film critic. Love watching sci-fi and action movies.",
     "avatar": "https://example.com/avatars/john_doe_avatar.jpg"
@@ -40,7 +40,7 @@ profile_retrieve_schema_example: Dict[str, Any] = {
     "user_id": 1,
     "first_name": "John",
     "last_name": "Doe",
-    "gender": "male",
+    "gender": "man",
     "date_of_birth": "1990-05-15",
     "info": "Movie enthusiast and film critic. Love watching sci-fi and action movies.",
     "avatar": "https://example.com/avatars/john_doe_avatar.jpg",

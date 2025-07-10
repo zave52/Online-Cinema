@@ -1,8 +1,13 @@
 from typing import Dict, Any
 
-shopping_cart_add_movie_schema_example: Dict[str, Any] = {
+shopping_cart_add_movie_request_schema_example: Dict[str, Any] = {
     "movie_id": 1
 }
+
+shopping_cart_add_movie_response_schema_example: Dict[str, Any] = {
+    "cart_item_id": 1
+}
+
 
 shopping_cart_movie_item_schema_example: Dict[str, Any] = {
     "cart_item_id": 1,

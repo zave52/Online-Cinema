@@ -32,6 +32,7 @@ from database.models.movies import (
     FavoriteMovieModel,
     RateMovieModel
 )
+from database.models.shopping_cart import CartModel, CartItemModel
 from schemas.movies import (
     MovieListResponseSchema,
     MovieListItemSchema,
@@ -975,7 +976,9 @@ async def delete_movie(
 
     cart_count_stmt = (
         select(func.count(UserModel.id))
-        .where(UserModel.cart.any(MovieModel.id == movie_id))
+        .join(CartModel, UserModel.cart)
+        .join(CartItemModel, CartModel.items)
+        .where(CartItemModel.movie_id == movie_id)
     )
     result = await db.execute(cart_count_stmt)
     cart_count = result.scalar_one()

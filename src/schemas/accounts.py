@@ -107,6 +107,11 @@ class PasswordChangeRequestSchema(BaseModel):
         }
     )
 
+    @field_validator("new_password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        return validate_password_strength(value)
+
 
 class UserLoginResponseSchema(BaseModel):
     access_token: str

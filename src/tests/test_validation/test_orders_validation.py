@@ -37,6 +37,7 @@ class MockOrderItemModel(Mock):
         self.movie_name = movie_name
 
 
+@pytest.mark.validation
 class TestOrderItemSchema:
     def test_valid_order_item_from_model(self):
         """Test creating OrderItemSchema from a mock model."""
@@ -60,6 +61,7 @@ class TestOrderItemSchema:
         assert order_item.movie_name == "Another Movie"
 
 
+@pytest.mark.validation
 class TestOrderSchema:
     def test_valid_order(self):
         """Test a valid order schema."""
@@ -97,6 +99,7 @@ class TestOrderSchema:
             OrderSchema(**order_data)
 
 
+@pytest.mark.validation
 class TestCreateOrderSchema:
     def test_valid_create_order(self):
         """Test valid create order schema."""
@@ -116,6 +119,7 @@ class TestCreateOrderSchema:
             CreateOrderSchema(cart_item_ids=["a", "b"])
 
 
+@pytest.mark.validation
 class TestRefundRequestSchema:
     def test_valid_refund_request(self):
         """Test a valid refund request."""
@@ -132,6 +136,7 @@ class TestRefundRequestSchema:
         assert schema.amount is None
 
 
+@pytest.mark.validation
 class TestMessageResponseSchema:
     def test_valid_message(self):
         """Test a valid message response."""

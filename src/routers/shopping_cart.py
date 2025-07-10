@@ -17,7 +17,8 @@ from database.models.shopping_cart import CartModel, CartItemModel
 from database.models.orders import OrderModel, OrderItemModel, OrderStatusEnum
 from schemas.shopping_cart import (
     MessageResponseSchema,
-    ShoppingCartAddMovieSchema,
+    ShoppingCartAddMovieRequestSchema,
+    ShoppingCartAddMovieResponseSchema,
     ShoppingCartGetMoviesSchema
 )
 
@@ -30,7 +31,7 @@ moderator_and_admin = RoleChecker(
 
 @router.post(
     "/cart/items/",
-    response_model=MessageResponseSchema,
+    response_model=ShoppingCartAddMovieResponseSchema,
     status_code=status.HTTP_200_OK,
     summary="Add movie to cart",
     description="Add a movie to the user's shopping cart. Validates that the movie is not already purchased.",
@@ -40,7 +41,7 @@ moderator_and_admin = RoleChecker(
             "content": {
                 "application/json": {
                     "example": {
-                        "message": "Movie successfully added to cart with id 1."
+                        "catr_item_id": 1
                     }
                 }
             }
@@ -104,11 +105,11 @@ moderator_and_admin = RoleChecker(
     }
 )
 async def add_movie_to_cart(
-    data: ShoppingCartAddMovieSchema,
+    data: ShoppingCartAddMovieRequestSchema,
     cart: CartModel = Depends(get_or_create_cart),
     user: UserModel = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
-) -> MessageResponseSchema:
+) -> ShoppingCartAddMovieResponseSchema:
     """Add a movie to the user's shopping cart.
 
     Args:
@@ -165,9 +166,7 @@ async def add_movie_to_cart(
     db.add(new_cart_item)
     await db.commit()
 
-    return MessageResponseSchema(
-        message=f"Movie successfully added to cart with id {new_cart_item.id}."
-    )
+    return ShoppingCartAddMovieResponseSchema(cart_item_id=new_cart_item.id)
 
 
 @router.delete(

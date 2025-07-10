@@ -1,6 +1,8 @@
+from decimal import Decimal
+
 import pytest
 from pydantic import ValidationError
-from decimal import Decimal
+
 from schemas.movies import (
     GenreSchema,
     StarSchema,
@@ -14,6 +16,7 @@ from schemas.movies import (
 )
 
 
+@pytest.mark.validation
 class TestNameBasedSchemas:
     """Tests for schemas with a 'name' field."""
 
@@ -40,6 +43,7 @@ class TestNameBasedSchemas:
             Schema(**data)
 
 
+@pytest.mark.validation
 class TestMovieBaseSchema:
     """Tests for the MovieBaseSchema."""
 
@@ -92,6 +96,7 @@ class TestMovieBaseSchema:
             MovieBaseSchema(**invalid_data)
 
 
+@pytest.mark.validation
 class TestMovieCreateRequestSchema:
     """Tests for the MovieCreateRequestSchema."""
 
@@ -119,6 +124,7 @@ class TestMovieCreateRequestSchema:
         assert movie.directors == ["Christopher Nolan"]
 
 
+@pytest.mark.validation
 class TestMovieUpdateSchema:
     """Tests for the MovieUpdateSchema."""
 
@@ -135,6 +141,7 @@ class TestMovieUpdateSchema:
             MovieUpdateSchema(time=-10)
 
 
+@pytest.mark.validation
 class TestRateMovieSchema:
     """Tests for the RateMovieSchema."""
 
@@ -150,6 +157,7 @@ class TestRateMovieSchema:
             RateMovieSchema(rate=rate)
 
 
+@pytest.mark.validation
 class TestCommentMovieRequestSchema:
     """Tests for the CommentMovieRequestSchema."""
 

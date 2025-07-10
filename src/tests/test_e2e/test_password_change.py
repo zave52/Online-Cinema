@@ -4,6 +4,7 @@ import pytest
 
 
 @pytest.mark.e2e
+@pytest.mark.asyncio
 async def test_password_change_flow(client, user_data, admin_token):
     """Test complete password change workflow."""
     unique_user_data = user_data.copy()

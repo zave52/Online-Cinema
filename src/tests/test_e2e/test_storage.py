@@ -4,6 +4,7 @@ from tests.conftest import create_test_image
 
 
 @pytest.mark.e2e
+@pytest.mark.asyncio
 async def test_storage_file_upload_flow(client, activated_user):
     """Test complete file upload storage workflow."""
     headers = {"Authorization": f"Bearer {activated_user['access_token']}"}
@@ -30,6 +31,7 @@ async def test_storage_file_upload_flow(client, activated_user):
 
 
 @pytest.mark.e2e
+@pytest.mark.asyncio
 async def test_storage_file_validation_flow(client, activated_user):
     """Test file upload validation workflow."""
     headers = {"Authorization": f"Bearer {activated_user['access_token']}"}
@@ -69,6 +71,7 @@ async def test_storage_file_validation_flow(client, activated_user):
 
 
 @pytest.mark.e2e
+@pytest.mark.asyncio
 async def test_file_upload_returns_dummy_url(client, activated_user):
     headers = {"Authorization": f"Bearer {activated_user['access_token']}"}
     user_id = activated_user["user_id"]

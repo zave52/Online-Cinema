@@ -2,6 +2,7 @@ import pytest
 
 
 @pytest.mark.e2e
+@pytest.mark.asyncio
 async def test_order_refund_flow(
     client,
     activated_user,
@@ -71,6 +72,7 @@ async def test_order_refund_flow(
 
 
 @pytest.mark.e2e
+@pytest.mark.asyncio
 async def test_order_refund_validation_flow(client, activated_user):
     """Test order refund validation workflow."""
     headers = {"Authorization": f"Bearer {activated_user['access_token']}"}

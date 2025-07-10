@@ -2,6 +2,7 @@ import pytest
 
 
 @pytest.mark.e2e
+@pytest.mark.asyncio
 async def test_movie_rating_flow(client, activated_user, seed_movies):
     """Test complete movie rating workflow."""
     headers = {"Authorization": f"Bearer {activated_user['access_token']}"}
@@ -23,6 +24,7 @@ async def test_movie_rating_flow(client, activated_user, seed_movies):
 
 
 @pytest.mark.e2e
+@pytest.mark.asyncio
 async def test_movie_like_flow(client, activated_user, seed_movies):
     """Test movie like/unlike workflow."""
     headers = {"Authorization": f"Bearer {activated_user['access_token']}"}

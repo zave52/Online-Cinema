@@ -4,22 +4,31 @@ from typing import List
 from pydantic import BaseModel, ConfigDict
 
 from .exapmles.shopping_cart import (
-    shopping_cart_add_movie_schema_example,
+    shopping_cart_add_movie_request_schema_example,
+    shopping_cart_add_movie_response_schema_example,
     shopping_cart_movie_item_schema_example,
     shopping_cart_get_movies_schema_example,
     message_response_schema_example
 )
 
 
-class ShoppingCartAddMovieSchema(BaseModel):
+class ShoppingCartAddMovieRequestSchema(BaseModel):
     movie_id: int
 
     model_config = ConfigDict(
         json_schema_extra={
-            "example": shopping_cart_add_movie_schema_example
+            "example": shopping_cart_add_movie_request_schema_example
         }
     )
 
+class ShoppingCartAddMovieResponseSchema(BaseModel):
+    cart_item_id: int
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": shopping_cart_add_movie_response_schema_example
+        }
+    )
 
 class MessageResponseSchema(BaseModel):
     message: str

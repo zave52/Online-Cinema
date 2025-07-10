@@ -45,7 +45,18 @@ async def get_postgresql_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncPostgresqlSessionLocal() as session:
         yield session
 
+
 @asynccontextmanager
-async def get_postgresql_db_contextmanager() -> AsyncGenerator[AsyncSession, None]:
+async def get_postgresql_db_contextmanager() -> AsyncGenerator[
+    AsyncSession, None]:
+    """
+    Async context manager that provides an async PostgreSQL database session.
+
+    This function can be used in async context management scenarios to ensure
+    proper creation and cleanup of an `AsyncSession` for PostgreSQL operations.
+
+    Yields:
+        AsyncSession: An async database session for PostgreSQL.
+    """
     async with AsyncPostgresqlSessionLocal() as session:
         yield session

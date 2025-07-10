@@ -31,6 +31,7 @@ from database.models.base import Base
 from database.models.movies import MovieModel, CertificationModel
 from database.models.orders import OrderModel, OrderStatusEnum, OrderItemModel
 from main import create_app
+from security.manager import JWTManager
 from tests.doubles.fakes.payments import FakePaymentService
 from tests.doubles.fakes.storage import FakeStorage
 from tests.doubles.stubs.emails import StubEmailSender
@@ -409,3 +410,21 @@ def create_test_image() -> bytes:
     img_bytes = io.BytesIO()
     img.save(img_bytes, format='JPEG')
     return img_bytes.getvalue()
+
+
+@pytest.fixture
+def jwt_manager():
+    return JWTManager(
+        access_secret_key="access_secret",
+        refresh_secret_key="refresh_secret",
+        access_expires_delta=1,
+        refresh_expires_delta=2,
+        algorithm="HS256"
+    )
+
+
+@pytest.fixture
+def email_sender():
+    sender = StubEmailSender()
+    sender.clear_sent_emails()
+    return sender

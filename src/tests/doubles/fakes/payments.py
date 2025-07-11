@@ -91,7 +91,7 @@ class FakePaymentService(PaymentServiceInterface):
 
         intent = self._payment_intents[payment_intent_id]
 
-        if intent["status"] != "succeeded":
+        if intent["status"] != "requires_confirmation":
             raise PaymentError(f"Payment intent status is {intent['status']}")
 
         payment = PaymentModel(

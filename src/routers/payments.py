@@ -727,13 +727,17 @@ async def create_checkout_session(
 )
 async def handle_webhook(
     request: Request,
-    payment_service: PaymentServiceInterface = Depends(get_payment_service)
+    payment_service: PaymentServiceInterface = Depends(get_payment_service),
+    db: AsyncSession = Depends(get_db),
+    email_sender: EmailSenderInterface = Depends(get_email_sender)
 ) -> dict:
     """Handle incoming webhooks from payment service.
 
     Args:
         request (Request): The incoming webhook request.
         payment_service (PaymentServiceInterface): Payment service dependency.
+        db (AsyncSession): Database session dependency.
+        email_sender (EmailSenderInterface): Email sender dependency.
 
     Returns:
         dict: Webhook processing result.
@@ -742,7 +746,12 @@ async def handle_webhook(
     signature = request.headers.get("stripe-signature", "")
 
     try:
-        result = await payment_service.handle_webhook(payload, signature)
+        result = await payment_service.handle_webhook(
+            payload,
+            signature,
+            db,
+            email_sender
+        )
         return result
     except WebhookError as e:
         raise HTTPException(

@@ -2,8 +2,11 @@ from abc import ABC, abstractmethod
 from decimal import Decimal
 from typing import Dict, Any, Optional
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from database.models.orders import OrderModel
 from database.models.payments import PaymentModel, PaymentStatusEnum
+from notifications.interfaces import EmailSenderInterface
 
 
 class PaymentServiceInterface(ABC):
@@ -99,13 +102,17 @@ class PaymentServiceInterface(ABC):
     async def handle_webhook(
         self,
         payload: bytes,
-        signature: str
+        signature: str,
+        db: AsyncSession,
+        email_sender: EmailSenderInterface
     ) -> Dict[str, Any]:
         """Handle webhook events from payment provider.
         
         Args:
             payload (bytes): Raw webhook payload.
             signature (str): Webhook signature for verification.
+            db (AsyncSession): Database session dependency.
+            email_sender (EmailSenderInterface): Email sender dependency.
             
         Returns:
             Dict[str, Any]: Processed webhook event data.

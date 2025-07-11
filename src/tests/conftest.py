@@ -356,6 +356,7 @@ async def seed_movies(db_session) -> list[dict[str, Any]]:
             certification_id=1
         ),
     ]
+    db_session.add_all(movies)
     await db_session.commit()
     for m in movies:
         await db_session.refresh(m)

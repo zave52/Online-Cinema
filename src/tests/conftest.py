@@ -9,7 +9,7 @@ from PIL import Image
 from fastapi import FastAPI, UploadFile
 from httpx import AsyncClient, ASGITransport
 from pydantic import EmailStr
-from sqlalchemy import select, insert
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.dependencies import (
@@ -18,7 +18,7 @@ from config.dependencies import (
     get_payment_service
 )
 from config.settings import get_settings, BaseAppSettings
-from database import get_db_contextmanager, reset_database, RefreshTokenModel
+from database import get_db_contextmanager, reset_database
 from database.models.accounts import UserModel, UserGroupModel, UserGroupEnum
 from database.models.movies import MovieModel, CertificationModel
 from database.models.orders import OrderModel, OrderStatusEnum, OrderItemModel
@@ -283,20 +283,10 @@ async def activated_user(
         user.is_active = True
 
         db_session.add(user)
-        await db_session.flush()
+        await db_session.commit()
         await db_session.refresh(user)
 
-    jwt_refresh_token = jwt_manager.create_refresh_token({"user_id": user.id})
     jwt_access_token = jwt_manager.create_access_token({"user_id": user.id})
-
-    refresh_token = RefreshTokenModel.create(
-        user_id=user.id,
-        minutes_valid=settings.REFRESH_TOKEN_EXPIRE_MINUTES,
-        token=jwt_refresh_token
-    )
-    db_session.add(refresh_token)
-    await db_session.commit()
-    await db_session.refresh(refresh_token)
 
     headers = {"Authorization": f"Bearer {jwt_access_token}"}
 
@@ -305,7 +295,6 @@ async def activated_user(
         "email": user.email,
         "password": user_data["password"],
         "access_token": jwt_access_token,
-        "refresh_token": jwt_refresh_token,
         "headers": headers
     }
 

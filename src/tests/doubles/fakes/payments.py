@@ -15,11 +15,18 @@ class FakePaymentService(PaymentServiceInterface):
     that simulates payment processing without making actual API calls to payment providers.
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        secret_key: str = "sk_test_123",
+        publishable_key: str = "pk_test_123"
+    ):
         """Initialize the fake payment service."""
+        self.secret_key = secret_key
+        self.publishable_key = publishable_key
         self._payment_intents = {}
         self._payment_methods = {}
         self._processed_intents = set()
+        self._refunds = {}
 
     async def create_payment_intent(
         self,
@@ -60,105 +67,6 @@ class FakePaymentService(PaymentServiceInterface):
             "currency": currency
         }
 
-    async def create_payment_method(
-        self,
-        payment_method_type: str = "card",
-        card_number: str = "4242424242424242",
-        exp_month: int = 12,
-        exp_year: int = 2025,
-        cvc: str = "123"
-    ) -> Dict[str, Any]:
-        """Create a fake payment method for testing.
-
-        Args:
-            payment_method_type (str): Type of payment method (default: "card").
-            card_number (str): Card number for testing.
-            exp_month (int): Card expiration month.
-            exp_year (int): Card expiration year.
-            cvc (str): Card CVC code.
-
-        Returns:
-            Dict[str, Any]: Fake payment method data.
-        """
-        method_id = f"pm_test_{uuid4().hex[:16]}"
-
-        brand = "visa"
-        if card_number.startswith("5"):
-            brand = "mastercard"
-        elif card_number.startswith("34") or card_number.startswith("37"):
-            brand = "amex"
-
-        payment_method = {
-            "id": method_id,
-            "type": payment_method_type,
-            "card": {
-                "brand": brand,
-                "last4": card_number[-4:],
-                "exp_month": exp_month,
-                "exp_year": exp_year,
-            }
-        }
-
-        self._payment_methods[method_id] = payment_method
-
-        return payment_method
-
-    async def attach_payment_method_to_intent(
-        self,
-        payment_intent_id: str,
-        payment_method_id: str
-    ) -> Dict[str, Any]:
-        """Attach a payment method to a payment intent.
-
-        Args:
-            payment_intent_id (str): ID of the payment intent.
-            payment_method_id (str): ID of the payment method to attach.
-
-        Returns:
-            Dict[str, Any]: Updated payment intent data.
-
-        Raises:
-            PaymentError: If payment intent or method not found.
-        """
-        if payment_intent_id not in self._payment_intents:
-            raise PaymentError(f"Payment intent {payment_intent_id} not found")
-
-        if payment_method_id not in self._payment_methods:
-            raise PaymentError(f"Payment method {payment_method_id} not found")
-
-        self._payment_intents[payment_intent_id]["payment_method"] = payment_method_id
-        self._payment_intents[payment_intent_id]["status"] = "requires_confirmation"
-
-        return {
-            "id": payment_intent_id,
-            "status": "requires_confirmation",
-            "payment_method": payment_method_id
-        }
-
-    async def retrieve_payment_intent(self, payment_intent_id: str) -> Dict[str, Any]:
-        """Retrieve a fake payment intent.
-
-        Args:
-            payment_intent_id (str): ID of the payment intent.
-
-        Returns:
-            Dict[str, Any]: Payment intent data.
-
-        Raises:
-            PaymentError: If payment intent not found.
-        """
-        if payment_intent_id not in self._payment_intents:
-            raise PaymentError(f"Payment intent {payment_intent_id} not found")
-
-        intent = self._payment_intents[payment_intent_id].copy()
-
-        if payment_intent_id in self._processed_intents:
-            intent["status"] = "succeeded"
-
-        intent["amount"] = Decimal(intent["amount"]) / 100
-
-        return intent
-
     async def process_payment(
         self,
         payment_intent_id: str,
@@ -181,13 +89,10 @@ class FakePaymentService(PaymentServiceInterface):
         if payment_intent_id not in self._payment_intents:
             raise PaymentError(f"Payment intent {payment_intent_id} not found")
 
-        if payment_intent_id in self._processed_intents:
-            raise PaymentError(f"Payment intent {payment_intent_id} already processed")
-
         intent = self._payment_intents[payment_intent_id]
 
-        self._processed_intents.add(payment_intent_id)
-        intent["status"] = "succeeded"
+        if intent["status"] != "succeeded":
+            raise PaymentError(f"Payment intent status is {intent['status']}")
 
         payment = PaymentModel(
             user_id=user_id,
@@ -214,14 +119,7 @@ class FakePaymentService(PaymentServiceInterface):
         if payment_intent_id not in self._payment_intents:
             raise PaymentError(f"Payment intent {payment_intent_id} not found")
 
-        intent = self._payment_intents[payment_intent_id]
-
-        if not intent.get("payment_method"):
-            raise PaymentError("Payment method must be attached before confirmation")
-
-        intent["status"] = "succeeded"
-        self._processed_intents.add(payment_intent_id)
-
+        self._payment_intents[payment_intent_id]["status"] = "succeeded"
         return True
 
     async def cancel_payment(self, payment_intent_id: str) -> bool:
@@ -258,8 +156,19 @@ class FakePaymentService(PaymentServiceInterface):
         Returns:
             Dict[str, Any]: Fake refund data.
         """
+        if not payment.external_payment_id:
+            raise PaymentError("No external payment ID found")
+
         refund_amount = amount or payment.amount
         refund_id = f"re_test_{uuid4().hex[:16]}"
+
+        self._refunds[refund_id] = {
+            "id": refund_id,
+            "payment_intent": payment.external_payment_id,
+            "amount": int(refund_amount * 100),
+            "status": "succeeded",
+            "reason": reason or "requested_by_customer"
+        }
 
         return {
             "id": refund_id,
@@ -282,6 +191,9 @@ class FakePaymentService(PaymentServiceInterface):
         Returns:
             Dict[str, Any]: Processed webhook event data.
         """
+        # In a real scenario, you would parse the payload and signature
+        # to determine the event type and data.
+        # For this fake service, we'll just return a mock response.
         return {
             "status": "processed",
             "event_type": "payment_intent.succeeded",
@@ -340,12 +252,35 @@ class FakePaymentService(PaymentServiceInterface):
             Dict[str, Any]: Fake checkout session data.
         """
         session_id = f"cs_test_{uuid4().hex[:16]}"
+        amount_total = sum(item.price_at_order for item in order.items)
 
         return {
             "id": session_id,
             "url": f"https://checkout.stripe.com/pay/{session_id}",
-            "amount_total": float(sum(item.price_at_order for item in order.items))
+            "amount_total": float(amount_total)
         }
+
+    async def retrieve_payment_intent(
+        self,
+        payment_intent_id: str
+    ) -> Dict[str, Any]:
+        """Retrieve a fake payment intent.
+
+        Args:
+            payment_intent_id (str): ID of the payment intent.
+
+        Returns:
+            Dict[str, Any]: Payment intent data.
+
+        Raises:
+            PaymentError: If payment intent not found.
+        """
+        if payment_intent_id not in self._payment_intents:
+            raise PaymentError(f"Payment intent {payment_intent_id} not found")
+
+        intent = self._payment_intents[payment_intent_id].copy()
+        intent["amount"] = Decimal(intent["amount"]) / 100
+        return intent
 
     async def update_payment_status(
         self,
@@ -383,3 +318,80 @@ class FakePaymentService(PaymentServiceInterface):
             bool: True if signature is valid (always True for fake).
         """
         return True
+
+    def create_payment_method(
+        self,
+        payment_method_type: str = "card",
+        card_number: str = "4242424242424242",
+        exp_month: int = 12,
+        exp_year: int = 2025,
+        cvc: str = "123"
+    ) -> Dict[str, Any]:
+        """Create a fake payment method for testing.
+
+        Args:
+            payment_method_type (str): Type of payment method (default: "card").
+            card_number (str): Card number for testing.
+            exp_month (int): Card expiration month.
+            exp_year (int): Card expiration year.
+            cvc (str): Card CVC code.
+
+        Returns:
+            Dict[str, Any]: Fake payment method data.
+        """
+        method_id = f"pm_test_{uuid4().hex[:16]}"
+
+        brand = "visa"
+        if card_number.startswith("5"):
+            brand = "mastercard"
+        elif card_number.startswith("34") or card_number.startswith("37"):
+            brand = "amex"
+
+        payment_method = {
+            "id": method_id,
+            "type": payment_method_type,
+            "card": {
+                "brand": brand,
+                "last4": card_number[-4:],
+                "exp_month": exp_month,
+                "exp_year": exp_year,
+            }
+        }
+
+        self._payment_methods[method_id] = payment_method
+
+        return payment_method
+
+    def attach_payment_method_to_intent(
+        self,
+        payment_intent_id: str,
+        payment_method_id: str
+    ) -> Dict[str, Any]:
+        """Attach a payment method to a payment intent.
+
+        Args:
+            payment_intent_id (str): ID of the payment intent.
+            payment_method_id (str): ID of the payment method to attach.
+
+        Returns:
+            Dict[str, Any]: Updated payment intent data.
+
+        Raises:
+            PaymentError: If payment intent or method not found.
+        """
+        if payment_intent_id not in self._payment_intents:
+            raise PaymentError(f"Payment intent {payment_intent_id} not found")
+
+        if payment_method_id not in self._payment_methods:
+            raise PaymentError(f"Payment method {payment_method_id} not found")
+
+        self._payment_intents[payment_intent_id][
+            "payment_method"] = payment_method_id
+        self._payment_intents[payment_intent_id][
+            "status"] = "requires_confirmation"
+
+        return {
+            "id": payment_intent_id,
+            "status": "requires_confirmation",
+            "payment_method": payment_method_id
+        }

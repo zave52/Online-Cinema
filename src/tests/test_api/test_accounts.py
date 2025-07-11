@@ -1,38 +1,38 @@
-import uuid
-
 import pytest
 
 
 @pytest.mark.api
 @pytest.mark.asyncio
-async def test_register_success(client, user_data):
+async def test_register_success(client, seed_user_groups):
     """Test successful user registration."""
-    unique_user_data = user_data.copy()
-    unique_user_data["email"] = f"api_test_{uuid.uuid4().hex[:8]}@example.com"
-    unique_user_data["username"] = f"api_test_{uuid.uuid4().hex[:8]}"
+    user_data = {
+        "email": "test@gmail.com",
+        "password": "StrongPassword123!"
+    }
 
     resp = await client.post(
         "/api/v1/accounts/register/",
-        json=unique_user_data
+        json=user_data
     )
     assert resp.status_code == 201
     data = resp.json()
     assert "id" in data
-    assert data["email"] == unique_user_data["email"]
+    assert data["email"] == user_data["email"]
 
 
 @pytest.mark.api
 @pytest.mark.asyncio
-async def test_register_duplicate(client, user_data):
+async def test_register_duplicate(client, seed_user_groups):
     """Test duplicate registration."""
-    unique_user_data = user_data.copy()
-    unique_user_data["email"] = f"api_dup_{uuid.uuid4().hex[:8]}@example.com"
-    unique_user_data["username"] = f"api_dup_{uuid.uuid4().hex[:8]}"
+    user_data = {
+        "email": "test@gmail.com",
+        "password": "StrongPassword123!"
+    }
 
-    await client.post("/api/v1/accounts/register/", json=unique_user_data)
+    await client.post("/api/v1/accounts/register/", json=user_data)
     resp = await client.post(
         "/api/v1/accounts/register/",
-        json=unique_user_data
+        json=user_data
     )
     assert resp.status_code == 409
     assert "detail" in resp.json()
@@ -40,29 +40,13 @@ async def test_register_duplicate(client, user_data):
 
 @pytest.mark.api
 @pytest.mark.asyncio
-async def test_login_success(client, user_data, admin_token):
+async def test_login_success(client, activated_user):
     """Test successful login."""
-    unique_user_data = user_data.copy()
-    unique_user_data["email"] = f"api_login_{uuid.uuid4().hex[:8]}@example.com"
-    unique_user_data["username"] = f"api_login_{uuid.uuid4().hex[:8]}"
-
-    await client.post("/api/v1/accounts/register/", json=unique_user_data)
-
-    admin_headers = {
-        "Authorization": f"Bearer {admin_token}"
-    }
-    activation_data = {"email": unique_user_data["email"]}
-    await client.post(
-        "/api/v1/accounts/admin/users/activate/",
-        json=activation_data,
-        headers=admin_headers
-    )
-
     resp = await client.post(
         "/api/v1/accounts/login/",
         json={
-            "email": unique_user_data["email"],
-            "password": unique_user_data["password"]
+            "email": activated_user["email"],
+            "password": activated_user["password"]
         },
         headers={"Content-Type": "application/json"}
     )
@@ -77,28 +61,12 @@ async def test_login_success(client, user_data, admin_token):
 
 @pytest.mark.api
 @pytest.mark.asyncio
-async def test_login_invalid_password(client, user_data, admin_token):
+async def test_login_invalid_password(client, activated_user):
     """Test login with invalid password."""
-    unique_user_data = user_data.copy()
-    unique_user_data["email"] = (
-        f"api_invalid_{uuid.uuid4().hex[:8]}@example.com"
-    )
-    unique_user_data["username"] = f"api_invalid_{uuid.uuid4().hex[:8]}"
-
-    await client.post("/api/v1/accounts/register/", json=unique_user_data)
-
-    admin_headers = {"Authorization": f"Bearer {admin_token}"}
-    activation_data = {"email": unique_user_data["email"]}
-    await client.post(
-        "/api/v1/accounts/admin/users/activate/",
-        json=activation_data,
-        headers=admin_headers
-    )
-
     resp = await client.post(
         "/api/v1/accounts/login/",
         json={
-            "email": unique_user_data["email"],
+            "email": activated_user["email"],
             "password": "WrongPassword123!"
         },
         headers={"Content-Type": "application/json"}
@@ -124,11 +92,13 @@ async def test_login_nonexistent_user(client):
 
 @pytest.mark.api
 @pytest.mark.asyncio
-async def test_register_invalid_email_format(client, user_data):
+async def test_register_invalid_email_format(client):
     """Test registration with invalid email format."""
-    invalid_data = user_data.copy()
-    invalid_data["email"] = "not-an-email"
-    resp = await client.post("/api/v1/accounts/register/", json=invalid_data)
+    user_data = {
+        "email": "not-an-email",
+        "password": "StrongPassword123!"
+    }
+    resp = await client.post("/api/v1/accounts/register/", json=user_data)
     assert resp.status_code == 422
     error_data = resp.json()
     assert "detail" in error_data
@@ -136,11 +106,13 @@ async def test_register_invalid_email_format(client, user_data):
 
 @pytest.mark.api
 @pytest.mark.asyncio
-async def test_register_weak_password(client, user_data):
+async def test_register_weak_password(client):
     """Test registration with weak password."""
-    weak_data = user_data.copy()
-    weak_data["password"] = "123"
-    resp = await client.post("/api/v1/accounts/register/", json=weak_data)
+    user_data = {
+        "email": "test@gmail.com",
+        "password": "123"
+    }
+    resp = await client.post("/api/v1/accounts/register/", json=user_data)
     assert resp.status_code == 422
     error_data = resp.json()
     assert "detail" in error_data
@@ -158,31 +130,14 @@ async def test_register_missing_fields(client):
 
 @pytest.mark.api
 @pytest.mark.asyncio
-async def test_token_verification_valid(client, user_data, admin_token):
+async def test_token_verification_valid(client, activated_user):
     """Test token verification with valid token."""
-    await client.post("/api/v1/accounts/register/", json=user_data)
-
-    admin_headers = {"Authorization": f"Bearer {admin_token}"}
-    activation_data = {"email": user_data["email"]}
-    await client.post(
-        "/api/v1/accounts/admin/users/activate/",
-        json=activation_data,
-        headers=admin_headers
+    token = activated_user["access_token"]
+    verify_resp = await client.post(
+        "/api/v1/accounts/verify/",
+        json={"access_token": token}
     )
-
-    login_resp = await client.post(
-        "/api/v1/accounts/login/",
-        json={"email": user_data["email"], "password": user_data["password"]},
-        headers={"Content-Type": "application/json"}
-    )
-
-    if login_resp.status_code == 200:
-        token = login_resp.json()["access_token"]
-        verify_resp = await client.post(
-            "/api/v1/accounts/verify/",
-            json={"access_token": token}
-        )
-        assert verify_resp.status_code == 200
+    assert verify_resp.status_code == 200
 
 
 @pytest.mark.api

@@ -15,31 +15,30 @@ async def test_list_movies_success(client):
 
 @pytest.mark.api
 @pytest.mark.asyncio
-async def test_get_movie_by_id_success(client, seed_movies):
+async def test_get_movie_by_id_success(client, seed_user_groups, seed_movies):
     """Test getting movie by ID."""
-    if seed_movies:
-        movie_id = seed_movies[0]["id"]
-        resp = await client.get(f"/api/v1/cinema/movies/{movie_id}/")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "id" in data
-        assert "name" in data
-        assert "year" in data
-        assert "time" in data
-        assert "imdb" in data
-        assert "votes" in data
-        assert "meta_score" in data
-        assert "gross" in data
-        assert "description" in data
-        assert "price" in data
-        assert "genres" in data
-        assert "stars" in data
-        assert "directors" in data
-        assert "certification" in data
-        assert "likes" in data
-        assert "favorites" in data
-        assert "average_rating" in data
-        assert "comments" in data
+    movie_id = seed_movies[0]["id"]
+    resp = await client.get(f"/api/v1/cinema/movies/{movie_id}/")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "id" in data
+    assert "name" in data
+    assert "year" in data
+    assert "time" in data
+    assert "imdb" in data
+    assert "votes" in data
+    assert "meta_score" in data
+    assert "gross" in data
+    assert "description" in data
+    assert "price" in data
+    assert "genres" in data
+    assert "stars" in data
+    assert "directors" in data
+    assert "certification" in data
+    assert "likes" in data
+    assert "favorites" in data
+    assert "average_rating" in data
+    assert "comments" in data
 
 
 @pytest.mark.api
@@ -79,10 +78,8 @@ async def test_create_movie_unauthorized(client):
 
 @pytest.mark.api
 @pytest.mark.asyncio
-async def test_create_movie_invalid_data(client, admin_token):
+async def test_create_movie_invalid_data(client, admin_headers):
     """Test creating movie with invalid data."""
-    headers = {"Authorization": f"Bearer {admin_token}"}
-
     invalid_movies = [
         {},
         {"name": ""},
@@ -95,7 +92,7 @@ async def test_create_movie_invalid_data(client, admin_token):
         resp = await client.post(
             "/api/v1/cinema/movies/",
             json=invalid_data,
-            headers=headers
+            headers=admin_headers
         )
         assert resp.status_code in (400, 422)
 
@@ -104,7 +101,7 @@ async def test_create_movie_invalid_data(client, admin_token):
 @pytest.mark.asyncio
 async def test_movies_pagination(client):
     """Test movies pagination."""
-    resp = await client.get("/api/v1/cinema/movies/?page=1&size=10")
+    resp = await client.get("/api/v1/cinema/movies/?page=1&per_page=10")
     assert resp.status_code == 200
     data = resp.json()
     assert "movies" in data
@@ -151,7 +148,7 @@ async def test_movies_multiple_filters(client):
     """Test combining multiple filters."""
     resp = await client.get(
         "/api/v1/cinema/movies/?year=2024&imdb_min=7&search=action"
-    )  # Added trailing slash
+    )
     assert resp.status_code == 200
 
 
@@ -176,14 +173,12 @@ async def test_delete_movie_unauthorized(client):
 
 @pytest.mark.api
 @pytest.mark.asyncio
-async def test_movies_malformed_json(client, admin_token):
+async def test_movies_malformed_json(client, admin_headers):
     """Test malformed JSON in movie creation."""
-    headers = {"Authorization": f"Bearer {admin_token}"}
-
     resp = await client.post(
         "/api/v1/cinema/movies/",
         data="invalid json",
-        headers=headers
+        headers=admin_headers
     )
     assert resp.status_code in (400, 422)
 

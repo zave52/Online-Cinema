@@ -184,8 +184,12 @@ async def seed_user_groups(
     Fixture to seed user groups into the database for testing.
     Inserts all UserGroupEnum values as groups.
     """
-    groups = [{"name": group.value} for group in UserGroupEnum]
-    await db_session.execute(insert(UserGroupModel).values(groups))
+    groups = [
+        UserGroupModel(name=UserGroupEnum.USER),
+        UserGroupModel(name=UserGroupEnum.MODERATOR),
+        UserGroupModel(name=UserGroupEnum.ADMIN)
+    ]
+    db_session.add_all(groups)
     await db_session.commit()
     yield db_session
 

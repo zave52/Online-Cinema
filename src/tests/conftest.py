@@ -311,6 +311,7 @@ async def user_with_profile(
     activated_user,
     mock_avatar
 ) -> dict[str, Any]:
+    """Create a user with a profile for testing."""
     profile_data = {
         "first_name": "Test",
         "last_name": "User",
@@ -337,6 +338,7 @@ async def user_with_profile(
 
 @pytest_asyncio.fixture(scope="function")
 async def another_user(db_session, settings, jwt_manager) -> dict[str, Any]:
+    """Create another user for testing."""
     user_data = {
         "email": "anotheruser@gmail.com",
         "password": "StrongPass123!"

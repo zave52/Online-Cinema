@@ -13,7 +13,7 @@ from schemas.profiles import (
 )
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def mock_avatar():
     """Fixture for a mock avatar file."""
     img = Image.new("RGB", (10, 10), color="red")

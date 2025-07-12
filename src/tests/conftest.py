@@ -171,7 +171,7 @@ async def client(
 
 
 @pytest_asyncio.fixture(scope="session")
-async def e2e_client():
+async def e2e_client(app: FastAPI) -> AsyncGenerator[AsyncClient, Any]:
     """
     Session-scoped fixture to provide an asynchronous HTTP client for end-to-end testing.
     """
@@ -512,3 +512,13 @@ async def mock_avatar() -> MagicMock:
     mock_file.content_type = "image/png"
     mock_file.file = img_byte_arr
     return mock_file
+
+
+@pytest_asyncio.fixture(scope="function", autouse=True)
+async def clear_mailhog(request, settings):
+    """Clear all messages from MailHog before each test."""
+    if "e2e" in request.keywords:
+        async with AsyncClient() as client:
+            await client.delete(
+                f"http://{settings.MAIL_SERVER}:8025/api/v1/messages"
+            )

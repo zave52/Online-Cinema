@@ -336,6 +336,42 @@ async def user_with_profile(
 
 
 @pytest_asyncio.fixture(scope="function")
+async def another_user(db_session, settings, jwt_manager) -> dict[str, Any]:
+    user_data = {
+        "email": "anotheruser@gmail.com",
+        "password": "StrongPass123!"
+    }
+    stmt = select(UserGroupModel).where(
+        UserGroupModel.name == UserGroupEnum.USER
+    )
+    result = await db_session.execute(stmt)
+    user_group = result.scalars().first()
+
+    user = UserModel.create(
+        email=cast(EmailStr, user_data["email"]),
+        raw_password=user_data["password"],
+        group_id=user_group.id
+    )
+    user.is_active = True
+
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+
+    jwt_access_token = jwt_manager.create_access_token({"user_id": user.id})
+
+    headers = {"Authorization": f"Bearer {jwt_access_token}"}
+
+    return {
+        "user_id": user.id,
+        "email": user.email,
+        "password": user_data["password"],
+        "access_token": jwt_access_token,
+        "headers": headers
+    }
+
+
+@pytest_asyncio.fixture(scope="function")
 async def seed_movies(db_session) -> list[dict[str, Any]]:
     """
     Seed movies into the database for testing.

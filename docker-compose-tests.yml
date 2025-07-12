@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: ./docker/tests/Dockerfile
     working_dir: /usr/src/fastapi
-    command: [ "pytest", "-c", "/usr/src/config/pytest.ini",
+    command: [ "pytest", "-c", "/usr/src/config/pytest.ini", "-m", "e2e",
                "--maxfail=5", "--disable-warnings", "-v", "--tb=short" ]
     env_file:
       - .env.test

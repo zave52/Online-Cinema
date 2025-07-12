@@ -3,27 +3,25 @@ import pytest
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_payment_nonexistent_order(client, activated_user):
+async def test_payment_nonexistent_order(client, activated_user, pending_order):
     """Test payment for non-existent order."""
-    headers = activated_user["headers"]
-
     payment_data = {
         "order_id": 9999,
     }
     resp = await client.post(
         "/api/v1/ecommerce/payments/create-intent/",
         json=payment_data,
-        headers=headers
+        headers=activated_user["headers"]
     )
     assert resp.status_code == 404
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_payment_unauthorized(client):
+async def test_payment_unauthorized(client, pending_order):
     """Test payment without authentication."""
     payment_data = {
-        "order_id": 1,
+        "order_id": pending_order['order_id'],
     }
     resp = await client.post(
         "/api/v1/ecommerce/payments/create-intent/",
@@ -41,19 +39,17 @@ async def test_double_payment_attempt(
     payment_service_fake
 ):
     """Test attempting to pay for the same order twice."""
-    headers = activated_user["headers"]
-
-    payment_intent_data = {"order_id": pending_order.id}
+    payment_intent_data = {"order_id": pending_order["order_id"]}
     intent_resp = await client.post(
         "/api/v1/ecommerce/payments/create-intent/",
         json=payment_intent_data,
-        headers=headers
+        headers=activated_user["headers"]
     )
     assert intent_resp.status_code == 200
     payment_intent_id = intent_resp.json().get("id")
 
-    payment_method = await payment_service_fake.create_payment_method()
-    await payment_service_fake.attach_payment_method_to_intent(
+    payment_method = payment_service_fake.create_payment_method()
+    payment_service_fake.attach_payment_method_to_intent(
         payment_intent_id,
         payment_method["id"]
     )
@@ -62,27 +58,26 @@ async def test_double_payment_attempt(
     resp1 = await client.post(
         "/api/v1/ecommerce/payments/process/",
         json=process_payment_data,
-        headers=headers
+        headers=activated_user["headers"]
     )
     assert resp1.status_code == 200
 
     resp2 = await client.post(
         "/api/v1/ecommerce/payments/process/",
         json=process_payment_data,
-        headers=headers
+        headers=activated_user["headers"]
     )
     assert resp2.status_code == 400
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_payment_missing_fields(client, activated_user):
+async def test_payment_missing_fields(client, activated_user, pending_order):
     """Test payment with missing required fields."""
-    headers = activated_user["headers"]
     resp = await client.post(
         "/api/v1/ecommerce/payments/create-intent/",
         json={},
-        headers=headers
+        headers=activated_user["headers"]
     )
     assert resp.status_code == 422
 
@@ -96,19 +91,17 @@ async def test_payment_success_simulation(
     payment_service_fake
 ):
     """Test successful payment simulation."""
-    headers = activated_user["headers"]
-
-    payment_intent_data = {"order_id": pending_order.id}
+    payment_intent_data = {"order_id": pending_order["order_id"]}
     intent_resp = await client.post(
         "/api/v1/ecommerce/payments/create-intent/",
         json=payment_intent_data,
-        headers=headers
+        headers=activated_user["headers"]
     )
     assert intent_resp.status_code == 200
     payment_intent_id = intent_resp.json().get("id")
 
-    payment_method = await payment_service_fake.create_payment_method()
-    await payment_service_fake.attach_payment_method_to_intent(
+    payment_method = payment_service_fake.create_payment_method()
+    payment_service_fake.attach_payment_method_to_intent(
         payment_intent_id,
         payment_method["id"]
     )
@@ -117,7 +110,7 @@ async def test_payment_success_simulation(
     resp = await client.post(
         "/api/v1/ecommerce/payments/process/",
         json=process_payment_data,
-        headers=headers
+        headers=activated_user["headers"]
     )
     assert resp.status_code == 200
 
@@ -131,9 +124,10 @@ async def test_payment_status_check(
     payment_service_fake
 ):
     """Test checking payments status."""
-    headers = activated_user["headers"]
-
-    resp = await client.get("/api/v1/ecommerce/payments/", headers=headers)
+    resp = await client.get(
+        "/api/v1/ecommerce/payments/",
+        headers=activated_user["headers"]
+    )
     assert resp.status_code == 200
 
 
@@ -141,9 +135,10 @@ async def test_payment_status_check(
 @pytest.mark.asyncio
 async def test_payment_list_user_payments(client, activated_user):
     """Test listing user's payments."""
-    headers = activated_user["headers"]
-
-    resp = await client.get("/api/v1/ecommerce/payments/", headers=headers)
+    resp = await client.get(
+        "/api/v1/ecommerce/payments/",
+        headers=activated_user["headers"]
+    )
     assert resp.status_code == 200
 
     payments = resp.json()
@@ -154,7 +149,11 @@ async def test_payment_list_user_payments(client, activated_user):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_payment_webhook_simulation(client):
+async def test_payment_webhook_simulation(
+    client,
+    activated_user,
+    pending_order
+):
     """Test payment webhook endpoint."""
     webhook_data = {
         "event_type": "payment.succeeded",
@@ -172,10 +171,12 @@ async def test_payment_webhook_simulation(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_payment_sql_injection_attempt(client, activated_user):
+async def test_payment_sql_injection_attempt(
+    client,
+    activated_user,
+    pending_order
+):
     """Test SQL injection attempt in payment data."""
-    headers = activated_user["headers"]
-
     malicious_payment = {
         "order_id": "1; DROP TABLE payments; --",
     }
@@ -183,17 +184,15 @@ async def test_payment_sql_injection_attempt(client, activated_user):
     resp = await client.post(
         "/api/v1/ecommerce/payments/create-intent/",
         json=malicious_payment,
-        headers=headers
+        headers=activated_user["headers"]
     )
     assert resp.status_code == 422
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_payment_negative_order_id(client, activated_user):
+async def test_payment_negative_order_id(client, activated_user, pending_order):
     """Test payment with negative order ID."""
-    headers = activated_user["headers"]
-
     negative_payment = {
         "order_id": -1,
     }
@@ -201,6 +200,6 @@ async def test_payment_negative_order_id(client, activated_user):
     resp = await client.post(
         "/api/v1/ecommerce/payments/create-intent/",
         json=negative_payment,
-        headers=headers
+        headers=activated_user["headers"]
     )
     assert resp.status_code == 404

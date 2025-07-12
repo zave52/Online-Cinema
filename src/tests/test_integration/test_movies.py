@@ -2,10 +2,12 @@ import asyncio
 
 import pytest
 
+from tests.conftest import admin_headers
+
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_list_movies_empty(client):
+async def test_list_movies_empty(client, seed_movies):
     """Test listing movies when database has movies."""
     response = await client.get("/api/v1/cinema/movies/")
     assert response.status_code == 200
@@ -17,9 +19,8 @@ async def test_list_movies_empty(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_create_and_list_movies(client, admin_token):
+async def test_create_and_list_movies(client, admin_headers):
     """Test creating and listing movies with admin privileges."""
-    headers = {"Authorization": f"Bearer {admin_token}"}
     movie_data = {
         "name": "Test Movie",
         "year": 2022,
@@ -38,7 +39,7 @@ async def test_create_and_list_movies(client, admin_token):
     create_resp = await client.post(
         "/api/v1/cinema/movies/",
         json=movie_data,
-        headers=headers
+        headers=admin_headers
     )
     assert create_resp.status_code == 201
 
@@ -50,7 +51,7 @@ async def test_create_and_list_movies(client, admin_token):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_movie_not_found(client):
+async def test_movie_not_found(client, seed_movies):
     """Test getting non-existent movie."""
     resp = await client.get("/api/v1/cinema/movies/9999/")
     assert resp.status_code == 404
@@ -58,20 +59,19 @@ async def test_movie_not_found(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_create_movie_missing_fields(client, admin_token):
+async def test_create_movie_missing_fields(client, admin_headers):
     """Test creating movie with missing required fields."""
-    headers = {"Authorization": f"Bearer {admin_token}"}
     resp = await client.post(
         "/api/v1/cinema/movies/",
         json={"name": "Incomplete Movie"},
-        headers=headers
+        headers=admin_headers
     )
     assert resp.status_code == 422
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_filter_movies_no_results(client):
+async def test_filter_movies_no_results(client, seed_movies):
     """Test filtering movies with no results."""
     resp = await client.get("/api/v1/cinema/movies/?genre=NonExistentGenre")
     assert resp.status_code == 200
@@ -81,7 +81,7 @@ async def test_filter_movies_no_results(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_get_movie_invalid_id_format(client):
+async def test_get_movie_invalid_id_format(client, seed_movies):
     """Test getting movie with invalid ID format."""
     resp = await client.get("/api/v1/cinema/movies/not-an-id/")
     assert resp.status_code == 422
@@ -138,7 +138,7 @@ async def test_movies_invalid_pagination_params(client, page, per_page):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_movies_invalid_query_types(client):
+async def test_movies_invalid_query_types(client, seed_movies):
     """Test movies list with invalid query parameter types."""
     resp = await client.get("/api/v1/cinema/movies/?page=abc&per_page=xyz")
     assert resp.status_code == 422
@@ -146,7 +146,7 @@ async def test_movies_invalid_query_types(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_movies_sort_by_year(client):
+async def test_movies_sort_by_year(client, seed_movies):
     """Test movies list sorted by year."""
     resp = await client.get("/api/v1/cinema/movies/?sort_by=year")
     assert resp.status_code == 200
@@ -154,7 +154,7 @@ async def test_movies_sort_by_year(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_movies_sort_by_imdb(client):
+async def test_movies_sort_by_imdb(client, seed_movies):
     """Test movies list sorted by IMDB rating."""
     resp = await client.get("/api/v1/cinema/movies/?sort_by=imdb")
     assert resp.status_code == 200
@@ -162,7 +162,7 @@ async def test_movies_sort_by_imdb(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_movies_sort_invalid_field(client):
+async def test_movies_sort_invalid_field(client, seed_movies):
     """Test movies list sorted by invalid field."""
     resp = await client.get("/api/v1/cinema/movies/?sort_by=invalid_field")
     assert resp.status_code == 200
@@ -170,7 +170,7 @@ async def test_movies_sort_invalid_field(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_movies_filter_by_year(client):
+async def test_movies_filter_by_year(client, seed_movies):
     """Test movies list filtered by year."""
     resp = await client.get("/api/v1/cinema/movies/?year=2020")
     assert resp.status_code == 200
@@ -178,7 +178,7 @@ async def test_movies_filter_by_year(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_movies_filter_by_year_range(client):
+async def test_movies_filter_by_year_range(client, seed_movies):
     """Test movies list filtered by year range."""
     resp = await client.get(
         "/api/v1/cinema/movies/?year_from=2020&year_to=2023"
@@ -188,7 +188,7 @@ async def test_movies_filter_by_year_range(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_movies_filter_by_imdb_rating(client):
+async def test_movies_filter_by_imdb_rating(client, seed_movies):
     """Test movies list filtered by IMDB rating."""
     resp = await client.get("/api/v1/cinema/movies/?imdb_min=7.0")
     assert resp.status_code == 200
@@ -196,7 +196,7 @@ async def test_movies_filter_by_imdb_rating(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_movies_filter_by_price_range(client):
+async def test_movies_filter_by_price_range(client, seed_movies):
     """Test movies list filtered by price range."""
     resp = await client.get(
         "/api/v1/cinema/movies/?price_min=5.0&price_max=15.0"
@@ -206,7 +206,7 @@ async def test_movies_filter_by_price_range(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_movies_search_by_name(client):
+async def test_movies_search_by_name(client, seed_movies):
     """Test movies list with name search."""
     resp = await client.get("/api/v1/cinema/movies/?search=Action")
     assert resp.status_code == 200
@@ -214,7 +214,7 @@ async def test_movies_search_by_name(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_movies_search_case_insensitive(client):
+async def test_movies_search_case_insensitive(client, seed_movies):
     """Test movies list with case insensitive search."""
     resp = await client.get("/api/v1/cinema/movies/?search=ACTION")
     assert resp.status_code == 200
@@ -222,7 +222,7 @@ async def test_movies_search_case_insensitive(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_movies_search_partial_match(client):
+async def test_movies_search_partial_match(client, seed_movies):
     """Test movies list with partial match search."""
     resp = await client.get("/api/v1/cinema/movies/?search=Act")
     assert resp.status_code == 200
@@ -254,49 +254,36 @@ async def test_create_movie_unauthorized(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_create_movie_invalid_data_types(client, user_data):
+async def test_create_movie_invalid_data_types(client, admin_headers):
     """Test creating movie with invalid data types."""
-    await client.post("/api/v1/accounts/register/", json=user_data)
-    login_resp = await client.post(
-        "/api/v1/accounts/login/",
-        json={"email": user_data["email"], "password": user_data["password"]},
-        headers={"Content-Type": "application/json"}
+    invalid_movie_data = {
+        "name": 123,
+        "year": "not_a_year",
+        "time": -10,
+        "imdb": "invalid_rating",
+        "votes": -100,
+        "description": None,
+        "price": "free",
+        "meta_score": 50,
+        "gross": 5,
+        "certification": 1,
+        "genres": ["Test Genre"],
+        "stars": ["Test Star"],
+        "directors": ["Test Director"]
+    }
+
+    resp = await client.post(
+        "/api/v1/cinema/movies/",
+        json=invalid_movie_data,
+        headers=admin_headers
     )
-
-    if login_resp.status_code == 200:
-        token = login_resp.json()["access_token"]
-        headers = {"Authorization": f"Bearer {token}"}
-
-        invalid_movie_data = {
-            "name": 123,
-            "year": "not_a_year",
-            "time": -10,
-            "imdb": "invalid_rating",
-            "votes": -100,
-            "description": None,
-            "price": "free",
-            "meta_score": 50,
-            "gross": 5,
-            "certification": 1,
-            "genres": ["Test Genre"],
-            "stars": ["Test Star"],
-            "directors": ["Test Director"]
-        }
-
-        resp = await client.post(
-            "/api/v1/cinema/movies/",
-            json=invalid_movie_data,
-            headers=headers
-        )
-        assert resp.status_code == 422
+    assert resp.status_code == 422
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_create_movie_boundary_values(client, admin_token):
+async def test_create_movie_boundary_values(client, admin_headers):
     """Test creating movie with boundary values."""
-    headers = {"Authorization": f"Bearer {admin_token}"}
-
     boundary_movie_data = {
         "name": "A" * 1000,
         "year": 1900,
@@ -316,77 +303,50 @@ async def test_create_movie_boundary_values(client, admin_token):
     resp = await client.post(
         "/api/v1/cinema/movies/",
         json=boundary_movie_data,
-        headers=headers
+        headers=admin_headers
     )
     assert resp.status_code == 422
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_update_movie_success(client, admin_token, seed_movies):
+async def test_update_movie_success(client, admin_headers, seed_movies):
     """Test successful movie update."""
-    headers = {"Authorization": f"Bearer {admin_token}"}
-
-    movie_id = seed_movies[0]["id"]
+    movie_data = seed_movies[0]
     update_data = {
         "name": "Updated Movie Name",
         "description": "Updated description"
     }
 
     resp = await client.patch(
-        f"/api/v1/cinema/movies/{movie_id}/",
+        f"/api/v1/cinema/movies/{movie_data['id']}/",
         json=update_data,
-        headers=headers
+        headers=admin_headers
     )
     assert resp.status_code == 200
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_update_movie_not_found(client, admin_token):
+async def test_update_movie_not_found(client, admin_headers, seed_movies):
     """Test updating non-existent movie."""
-    headers = {"Authorization": f"Bearer {admin_token}"}
-
     update_data = {"name": "Should Not Update"}
     resp = await client.patch(
         "/api/v1/cinema/movies/9999/",
         json=update_data,
-        headers=headers
+        headers=admin_headers
     )
     assert resp.status_code == 404
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_delete_movie_success(client, admin_token, seed_movies):
+async def test_delete_movie_success(client, admin_headers, seed_movies):
     """Test successful movie deletion."""
-    headers = {"Authorization": f"Bearer {admin_token}"}
-
-    movie_data = {
-        "name": "Test Movie",
-        "year": 2010,
-        "time": 120,
-        "imdb": 8.5,
-        "votes": 1000,
-        "description": "Test movie",
-        "price": 9.99,
-        "meta_score": 50,
-        "gross": 5,
-        "certification": "G",
-        "genres": ["Test Genre"],
-        "stars": ["Test Star"],
-        "directors": ["Test Director"]
-    }
-    movie_resp = await client.post(
-        "/api/v1/cinema/movies/",
-        json=movie_data,
-        headers=headers
-    )
-
-    movie_id = movie_resp.json()["id"]
+    movie_data = seed_movies[0]
     resp = await client.delete(
-        f"/api/v1/cinema/movies/{movie_id}/",
-        headers=headers
+        f"/api/v1/cinema/movies/{movie_data['id']}/",
+        headers=admin_headers
     )
     assert resp.status_code == 200
 
@@ -395,14 +355,14 @@ async def test_delete_movie_success(client, admin_token, seed_movies):
 @pytest.mark.asyncio
 async def test_delete_movie_unauthorized(client, seed_movies):
     """Test deleting movie without authentication."""
-    movie_id = seed_movies[0]["id"]
-    resp = await client.delete(f"/api/v1/cinema/movies/{movie_id}/")
+    movie_data = seed_movies[0]
+    resp = await client.delete(f"/api/v1/cinema/movies/{movie_data['id']}/")
     assert resp.status_code == 403
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_movies_concurrent_access(client):
+async def test_movies_concurrent_access(client, seed_movies):
     """Test concurrent access to movies endpoint."""
     tasks = [
         client.get("/api/v1/cinema/movies/")
@@ -419,7 +379,7 @@ async def test_movies_concurrent_access(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_movies_sql_injection_attempt(client):
+async def test_movies_sql_injection_attempt(client, seed_movies):
     """Test SQL injection attempt in movies search."""
     malicious_search = "'; DROP TABLE movies; --"
     resp = await client.get(f"/api/v1/cinema/movies/?search={malicious_search}")
@@ -428,7 +388,7 @@ async def test_movies_sql_injection_attempt(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_movies_xss_prevention(client):
+async def test_movies_xss_prevention(client, seed_movies):
     """Test XSS prevention in movie responses."""
     xss_payload = "<script>alert('xss')</script>"
     resp = await client.get(f"/api/v1/cinema/movies/?search={xss_payload}")
@@ -440,10 +400,8 @@ async def test_movies_xss_prevention(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_movies_large_request_payload(client, admin_token):
+async def test_movies_large_request_payload(client, admin_headers):
     """Test handling of large request payload."""
-    headers = {"Authorization": f"Bearer {admin_token}"}
-
     large_movie_data = {
         "name": "Test Movie",
         "year": 2020,
@@ -463,7 +421,7 @@ async def test_movies_large_request_payload(client, admin_token):
     resp = await client.post(
         "/api/v1/cinema/movies/",
         json=large_movie_data,
-        headers=headers
+        headers=admin_headers
     )
 
     assert resp.status_code == 201
@@ -471,7 +429,7 @@ async def test_movies_large_request_payload(client, admin_token):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_movies_invalid_http_methods(client):
+async def test_movies_invalid_http_methods(client, seed_movies):
     """Test invalid HTTP methods on movies endpoint."""
     resp = await client.patch("/api/v1/cinema/movies/")
     assert resp.status_code == 405
@@ -479,28 +437,23 @@ async def test_movies_invalid_http_methods(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_movies_content_type_validation(client, admin_token):
+async def test_movies_content_type_validation(client, admin_headers):
     """Test content type validation for movie creation."""
-    headers = {
-        "Authorization": f"Bearer {admin_token}",
-        "Content-Type": "text/plain"
-    }
-
+    admin_headers["Content-Type"] = "text/plain"
     movie_data = "not json data"
+
     resp = await client.post(
         "/api/v1/cinema/movies/",
         data=movie_data,
-        headers=headers
+        headers=admin_headers
     )
     assert resp.status_code == 422
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_movie_filtering_integration(client, admin_token):
+async def test_movie_filtering_integration(client, admin_headers):
     """Test movie filtering integration."""
-    headers = {"Authorization": f"Bearer {admin_token}"}
-
     movie_data_1 = {
         "name": "Action Movie Test",
         "year": 2023,
@@ -536,14 +489,14 @@ async def test_movie_filtering_integration(client, admin_token):
     action_resp = await client.post(
         "/api/v1/cinema/movies/",
         json=movie_data_1,
-        headers=headers
+        headers=admin_headers
     )
     assert action_resp.status_code == 201
 
     comedy_resp = await client.post(
         "/api/v1/cinema/movies/",
         json=movie_data_2,
-        headers=headers
+        headers=admin_headers
     )
     assert comedy_resp.status_code == 201
 
@@ -567,9 +520,7 @@ async def test_movie_filtering_integration(client, admin_token):
     movies = resp.json()["movies"]
     assert len(movies) > 0
     assert all(
-        any(
-            genre["name"] == "Action"
-            for genre in m["genres"]
-        ) and m["imdb"] >= 7.0
+        any(genre["name"] == "Action" for genre in m["genres"])
+        and m["imdb"] >= 7.0
         for m in movies
     )

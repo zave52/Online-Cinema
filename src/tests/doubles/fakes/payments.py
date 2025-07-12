@@ -180,7 +180,9 @@ class FakePaymentService(PaymentServiceInterface):
     async def handle_webhook(
         self,
         payload: bytes,
-        signature: str
+        signature: str,
+        db: Any,
+        email_sender: Any
     ) -> Dict[str, Any]:
         """Handle fake webhook events.
 

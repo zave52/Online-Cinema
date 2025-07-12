@@ -1,5 +1,6 @@
 import io
 import os
+from datetime import date
 from decimal import Decimal
 from typing import AsyncGenerator, Any, cast
 from unittest.mock import MagicMock
@@ -18,7 +19,12 @@ from config.dependencies import (
     get_payment_service
 )
 from config.settings import get_settings, BaseAppSettings
-from database import get_db_contextmanager, reset_database
+from database import (
+    get_db_contextmanager,
+    reset_database,
+    UserProfileModel,
+    GenderEnum
+)
 from database.models.accounts import UserModel, UserGroupModel, UserGroupEnum
 from database.models.movies import MovieModel, CertificationModel
 from database.models.orders import OrderModel, OrderStatusEnum, OrderItemModel
@@ -297,6 +303,36 @@ async def activated_user(
         "access_token": jwt_access_token,
         "headers": headers
     }
+
+
+@pytest_asyncio.fixture(scope="function")
+async def user_with_profile(
+    db_session,
+    activated_user,
+    mock_avatar
+) -> dict[str, Any]:
+    profile_data = {
+        "first_name": "Test",
+        "last_name": "User",
+        "gender": GenderEnum.MAN,
+        "date_of_birth": date(1990, 1, 1),
+        "info": "Test user"
+    }
+
+    profile = UserProfileModel(
+        user_id=activated_user["user_id"],
+        first_name=profile_data["first_name"],
+        last_name=profile_data["last_name"],
+        gender=profile_data["gender"],
+        avatar=mock_avatar.file.read(),
+        date_of_birth=profile_data["date_of_birth"],
+        info=profile_data["info"]
+    )
+    db_session.add(profile)
+    await db_session.commit()
+    await db_session.refresh(profile)
+
+    return activated_user
 
 
 @pytest_asyncio.fixture(scope="function")

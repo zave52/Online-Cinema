@@ -316,7 +316,7 @@ async def test_refund_confirmation_email(
 
 
 @pytest.mark.e2e
-@pytest.mark.order(4)
+@pytest.mark.order(7)
 @pytest.mark.asyncio
 async def test_comment_reply_notification(
     e2e_client,
@@ -405,7 +405,7 @@ async def test_comment_reply_notification(
 
 
 @pytest.mark.e2e
-@pytest.mark.order(5)
+@pytest.mark.order(8)
 @pytest.mark.asyncio
 async def test_payment_confirmation_notification(
     e2e_client,

@@ -283,21 +283,22 @@ async def resend_activation_token(
             }
         },
         400: {
-            "description": "Invalid or expired activation token",
+            "description": "Invalid or expired activation token or user already active",
             "content": {
                 "application/json": {
-                    "example": {
-                        "detail": "Invalid or expired activation token."
-                    }
-                }
-            }
-        },
-        400: {
-            "description": "User account already active",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "User account is already active."
+                    "examples": {
+                        "invalid_token": {
+                            "summary": "Invalid Token",
+                            "value": {
+                                "detail": "Invalid or expired activation token."
+                            }
+                        },
+                        "already_active": {
+                            "summary": "Already Active",
+                            "value": {
+                                "detail": "User account is already active."
+                            }
+                        }
                     }
                 }
             }
@@ -778,21 +779,18 @@ async def login_user(
             }
         },
         401: {
-            "description": "Invalid or mismatched tokens",
+            "description": "Invalid credentials or user not found/inactive",
             "content": {
                 "application/json": {
-                    "example": {
-                        "detail": "Invalid or mismatched tokens"
-                    }
-                }
-            }
-        },
-        401: {
-            "description": "User not found or inactive",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "User not found or inactive"
+                    "examples": {
+                        "invalid_tokens": {
+                            "summary": "Invalid Tokens",
+                            "value": {"detail": "Invalid or mismatched tokens"}
+                        },
+                        "not_found": {
+                            "summary": "User Not Found",
+                            "value": {"detail": "User not found or inactive"}
+                        }
                     }
                 }
             }
@@ -1164,21 +1162,23 @@ async def change_user_group(
     description="Manually activate a user account. Only accessible by admins.",
     responses={
         200: {
-            "description": "User activated successfully",
+            "description": "User activated successfully or already active",
             "content": {
                 "application/json": {
-                    "example": {
-                        "message": "User account for user@example.com has been manually activated."
-                    }
-                }
-            }
-        },
-        200: {
-            "description": "User already active",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "message": "User account for user@example.com is already active."
+                    "examples": {
+                        "activated": {
+                            "summary": "User Activated",
+                            "value": {
+                                "message": "User account for user@example.com "
+                                           "has been manually activated."
+                            }
+                        },
+                        "already_active": {
+                            "summary": "Already Active",
+                            "value": {
+                                "message": "User account for user@example.com is already active."
+                            }
+                        }
                     }
                 }
             }

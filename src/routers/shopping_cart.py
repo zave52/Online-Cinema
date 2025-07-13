@@ -71,18 +71,15 @@ moderator_and_admin = RoleChecker(
             "description": "Movie already in cart or already purchased",
             "content": {
                 "application/json": {
-                    "example": {
-                        "detail": "Movie is already in the cart."
-                    }
-                }
-            }
-        },
-        409: {
-            "description": "Movie already purchased",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "Movie has already been purchased."
+                    "examples": {
+                        "in_cart": {
+                            "summary": "Already in Cart",
+                            "value": {"detail": "Movie is already in the cart."}
+                        },
+                        "purchased": {
+                            "summary": "Already Purchased",
+                            "value": {"detail": "Movie has already been purchased."}
+                        }
                     }
                 }
             }

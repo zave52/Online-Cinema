@@ -169,7 +169,7 @@ async def test_create_order_schema_fields_and_types(
         headers=activated_user["headers"]
     )
     assert cart_resp.status_code == 200
-    cart_item_id = cart_resp.json().get("id")
+    cart_item_id = cart_resp.json()["cart_item_id"]
 
     order_data = {"cart_item_ids": [cart_item_id]}
     resp = await client.post(
@@ -180,7 +180,7 @@ async def test_create_order_schema_fields_and_types(
     order = resp.json()
     assert isinstance(order["id"], int)
     assert isinstance(order["user_id"], int)
-    assert isinstance(order["total_price"], (int, float))
+    assert isinstance(order["total_amount"], str)
     assert "created_at" in order
 
 

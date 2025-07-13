@@ -211,7 +211,7 @@ async def get_movies(
 
     stmt = stmt.offset(offset).limit(per_page)
     result = await db.execute(stmt)
-    movies: Sequence[MovieModel] = result.scalars().all()
+    movies = result.scalars().all()
 
     movie_list = [MovieListItemSchema.model_validate(movie) for movie in movies]
 
@@ -350,7 +350,7 @@ async def get_purchased_movies(
 
     stmt = stmt.offset(offset).limit(per_page)
     result = await db.execute(stmt)
-    movies: Sequence[MovieModel] = result.scalars().all()
+    movies = result.scalars().all()
 
     movie_list = [MovieListItemSchema.model_validate(movie) for movie in movies]
 
@@ -612,7 +612,7 @@ async def create_movie(
         )
     )
     result = await db.execute(existing_stmt)
-    existing_movie: MovieModel = result.scalars().first()
+    existing_movie: MovieModel | None = result.scalars().first()
 
     if existing_movie:
         raise HTTPException(

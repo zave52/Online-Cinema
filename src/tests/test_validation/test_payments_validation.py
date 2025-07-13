@@ -14,8 +14,7 @@ from schemas.payments import (
     ProcessPaymentRequestSchema,
     RefundPaymentSchema,
     CheckoutSessionRequestSchema,
-    CheckoutSessionResponseSchema,
-    MessageResponseSchema,
+    CheckoutSessionResponseSchema
 )
 
 
@@ -162,11 +161,3 @@ class TestCheckoutSessionResponseSchema:
         schema = CheckoutSessionResponseSchema(**data)
         assert schema.id == "cs_123"
         assert schema.amount_total == Decimal("99.99")
-
-
-@pytest.mark.validation
-class TestMessageResponseSchema:
-    def test_valid_message(self):
-        data = {"message": "Operation successful"}
-        schema = MessageResponseSchema(**data)
-        assert schema.message == "Operation successful"

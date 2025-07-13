@@ -333,7 +333,7 @@ async def delete_comment(
         )
     )
     result = await db.execute(comment_stmt)
-    comment: CommentModel = result.scalars().first()
+    comment: CommentModel | None = result.scalars().first()
 
     if not comment:
         raise HTTPException(

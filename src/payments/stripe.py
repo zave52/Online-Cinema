@@ -188,7 +188,7 @@ class StripePaymentService(PaymentServiceInterface):
             if reason:
                 refund_data["reason"] = reason
 
-            refund = stripe.Refund.create(**refund_data) # type: ignore
+            refund = stripe.Refund.create(**refund_data)  # type: ignore
 
             return {
                 "id": refund.id,
@@ -405,7 +405,7 @@ class StripePaymentService(PaymentServiceInterface):
 
             session = stripe.checkout.Session.create(
                 payment_method_types=["card"],
-                line_items=line_items, # type: ignore
+                line_items=line_items,  # type: ignore
                 mode="payment",
                 success_url=success_url,
                 cancel_url=cancel_url,

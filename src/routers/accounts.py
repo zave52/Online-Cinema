@@ -227,19 +227,18 @@ async def resend_activation_token(
 
     stmt = select(UserModel).where(UserModel.email == data.email)
     result = await db.execute(stmt)
-    user: UserModel = result.scalars().first()
+    user: UserModel | None = result.scalars().first()
 
     if not user or user.is_active:
         return standard_response
 
-    stmt = (
-        delete(ActivationTokenModel)
-        .where(ActivationTokenModel.user_id == user.id)
-    )
+    if user:
+        await db.execute(
+            delete(ActivationTokenModel)
+            .where(ActivationTokenModel.user_id == user.id)
+        )
 
     try:
-        await db.execute(stmt)
-
         new_activation_token = ActivationTokenModel(user_id=user.id)
         db.add(new_activation_token)
         await db.commit()
@@ -333,7 +332,7 @@ async def activate_account(
         )
     )
     result = await db.execute(stmt)
-    token_record: ActivationTokenModel = result.scalars().first()
+    token_record: ActivationTokenModel | None = result.scalars().first()
 
     if not token_record or token_record.is_expired():
         if token_record:
@@ -408,18 +407,18 @@ async def request_password_reset_token(
     """
     stmt = select(UserModel).where(UserModel.email == data.email)
     result = await db.execute(stmt)
-    user: UserModel = result.scalars().first()
+    user: UserModel | None = result.scalars().first()
 
     if not user or not user.is_active:
         return MessageResponseSchema(
             message="If you are registered, you will receive an email with instructions."
         )
 
-    stmt = (
-        delete(PasswordResetTokenModel)
-        .where(PasswordResetTokenModel.user_id == user.id)
-    )
-    await db.execute(stmt)
+    if user:
+        await db.execute(
+            delete(PasswordResetTokenModel)
+            .where(PasswordResetTokenModel.user_id == user.id)
+        )
 
     reset_token = PasswordResetTokenModel(user_id=user.id)
     db.add(reset_token)
@@ -498,7 +497,7 @@ async def reset_password(
     """
     stmt = select(UserModel).where(UserModel.email == data.email)
     result = await db.execute(stmt)
-    user: UserModel = result.scalars().first()
+    user: UserModel | None = result.scalars().first()
 
     if not user or not user.is_active:
         raise HTTPException(
@@ -511,7 +510,7 @@ async def reset_password(
         .where(PasswordResetTokenModel.user_id == user.id)
     )
     result = await db.execute(stmt)
-    token_record: PasswordResetTokenModel = result.scalars().first()
+    token_record: PasswordResetTokenModel | None = result.scalars().first()
 
     if not token_record or token_record.token != data.token or token_record.is_expired():
         if token_record:
@@ -721,7 +720,7 @@ async def login_user(
     """
     stmt = select(UserModel).where(UserModel.email == data.email)
     result = await db.execute(stmt)
-    user: UserModel = result.scalars().first()
+    user: UserModel | None = result.scalars().first()
 
     if not user or not user.verify_password(data.password):
         raise HTTPException(
@@ -847,7 +846,7 @@ async def logout_user(
         .where(UserModel.id == access_token_user_id)
     )
     result = await db.execute(stmt_user)
-    user: UserModel = result.scalars().first()
+    user: UserModel | None = result.scalars().first()
 
     if not user or not user.is_active:
         raise HTTPException(
@@ -860,7 +859,7 @@ async def logout_user(
         .where(RefreshTokenModel.token == data.refresh_token)
     )
     result = await db.execute(stmt_refresh_token)
-    refresh_token_record: RefreshTokenModel = result.scalars().first()
+    refresh_token_record: RefreshTokenModel | None = result.scalars().first()
 
     if not refresh_token_record:
         return MessageResponseSchema(
@@ -959,7 +958,7 @@ async def refresh_access_token(
         RefreshTokenModel.token == data.refresh_token
     )
     result = await db.execute(stmt)
-    refresh_token_record: RefreshTokenModel = result.scalars().first()
+    refresh_token_record: RefreshTokenModel | None = result.scalars().first()
 
     if not refresh_token_record:
         raise HTTPException(
@@ -1032,7 +1031,7 @@ async def verify_access_token(
 
         stmt = select(UserModel).where(UserModel.id == user_id)
         result = await db.execute(stmt)
-        user: UserModel = result.scalars().first()
+        user: UserModel | None = result.scalars().first()
 
         if not user or not user.is_active:
             raise BaseSecurityError
@@ -1114,7 +1113,7 @@ async def change_user_group(
     """
     stmt = select(UserModel).where(UserModel.id == user_id)
     result = await db.execute(stmt)
-    target_user: UserModel = result.scalars().first()
+    target_user: UserModel | None = result.scalars().first()
 
     if not target_user:
         raise HTTPException(
@@ -1124,7 +1123,7 @@ async def change_user_group(
 
     stmt = select(UserGroupModel).where(UserGroupModel.name == data.group_name)
     result = await db.execute(stmt)
-    target_group: UserGroupModel = result.scalars().first()
+    target_group: UserGroupModel | None = result.scalars().first()
 
     if not target_group:
         raise HTTPException(
@@ -1248,7 +1247,7 @@ async def admin_activate_user(
     """
     stmt = select(UserModel).where(UserModel.email == data.email)
     result = await db.execute(stmt)
-    target_user: UserModel = result.scalars().first()
+    target_user: UserModel | None = result.scalars().first()
 
     if not target_user:
         raise HTTPException(
@@ -1262,11 +1261,11 @@ async def admin_activate_user(
         )
 
     try:
-        stmt = (
-            delete(ActivationTokenModel)
-            .where(ActivationTokenModel.user_id == target_user.id)
-        )
-        await db.execute(stmt)
+        if target_user:
+            await db.execute(
+                delete(ActivationTokenModel)
+                .where(ActivationTokenModel.user_id == target_user.id)
+            )
 
         target_user.is_active = True
         await db.commit()

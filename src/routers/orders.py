@@ -362,7 +362,7 @@ async def get_user_orders(
 
     order_stmt = order_stmt.offset(offset).limit(per_page)
     result = await db.execute(order_stmt)
-    orders: Sequence[OrderModel] = result.scalars().all()
+    orders = result.scalars().all()
 
     order_list = [OrderSchema.model_validate(order) for order in orders]
     total_pages = (total_items + per_page - 1) // per_page
@@ -554,7 +554,7 @@ async def cancel_order(
         )
     )
     result = await db.execute(stmt)
-    order: OrderModel = result.scalars().first()
+    order: OrderModel | None = result.scalars().first()
 
     if not order:
         raise HTTPException(
@@ -711,7 +711,7 @@ async def refund_order(
         )
     )
     result = await db.execute(payment_stmt)
-    payment: PaymentModel = result.scalars().first()
+    payment: PaymentModel | None = result.scalars().first()
 
     if not payment:
         raise HTTPException(
@@ -737,10 +737,11 @@ async def refund_order(
         order_items = result.scalars().all()
 
         movie_ids_to_remove = {item.movie_id for item in order_items}
-        user_with_purchased.purchased = [
-            movie for movie in user_with_purchased.purchased
-            if movie.id not in movie_ids_to_remove
-        ]
+        if user_with_purchased:
+            user_with_purchased.purchased = [
+                movie for movie in user_with_purchased.purchased
+                if movie.id not in movie_ids_to_remove
+            ]
 
         await db.commit()
     except PaymentError as e:
@@ -753,7 +754,7 @@ async def refund_order(
             email_sender.send_refund_confirmation_email,
             user.email,
             order_id,
-            refund_data.get("amount", data.amount)
+            data.amount or Decimal(0)
         )
 
     return MessageResponseSchema(
@@ -907,7 +908,7 @@ async def get_all_orders(
 
     stmt = stmt.offset(offset).limit(per_page)
     result = await db.execute(stmt)
-    orders: Sequence[OrderModel] = result.scalars().all()
+    orders = result.scalars().all()
 
     order_list = [OrderSchema.model_validate(order) for order in orders]
     total_pages = (total_items + per_page - 1) // per_page

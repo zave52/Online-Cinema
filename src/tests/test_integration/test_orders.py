@@ -157,7 +157,7 @@ async def test_create_valid_order(client, activated_user, seed_movies):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_order_schema_fields_and_types(
+async def test_create_order_schema_fields_and_types(
     client,
     activated_user,
     seed_movies
@@ -219,7 +219,7 @@ async def test_update_order_invalid(client, activated_user, pending_order):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_order_schema_fields_and_types(
+async def test_get_order_schema_fields_and_types(
     client,
     activated_user,
     pending_order

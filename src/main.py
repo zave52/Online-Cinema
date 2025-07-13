@@ -146,21 +146,6 @@ def create_app() -> FastAPI:
         tags=["payments"]
     )
 
-    return app
-
-
-app = create_app()
-
-
-def custom_openapi():
-    """Generate custom OpenAPI schema with security definitions and detailed documentation.
-
-    Returns:
-        dict: Custom OpenAPI schema
-    """
-    if app.openapi_schema:
-        return app.openapi_schema
-
     openapi_schema = get_openapi(
         title=app.title,
         version=app.version,
@@ -178,10 +163,11 @@ def custom_openapi():
     }
 
     app.openapi_schema = openapi_schema
-    return app.openapi_schema
+
+    return app
 
 
-app.openapi = custom_openapi
+app = create_app()
 
 
 @app.get("/docs", include_in_schema=False)

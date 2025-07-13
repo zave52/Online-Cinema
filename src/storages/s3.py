@@ -1,5 +1,5 @@
-import aioboto3
-from botocore.exceptions import (
+import aioboto3  # type: ignore
+from botocore.exceptions import (  # type: ignore
     HTTPClientError,
     NoCredentialsError,
     BotoCoreError

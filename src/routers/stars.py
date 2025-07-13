@@ -116,7 +116,7 @@ async def get_stars(
 
     stmt = stmt.offset(offset).limit(per_page)
     result = await db.execute(stmt)
-    stars: Sequence[StarModel] = result.scalars().all()
+    stars = result.scalars().all()
 
     star_list = [StarSchema.model_validate(star) for star in stars]
 

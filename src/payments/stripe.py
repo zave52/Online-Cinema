@@ -183,12 +183,12 @@ class StripePaymentService(PaymentServiceInterface):
             }
 
             if amount:
-                refund_data["amount"] = int(amount * 100)
+                refund_data["amount"] = str(int(amount * 100))
 
             if reason:
                 refund_data["reason"] = reason
 
-            refund = stripe.Refund.create(**refund_data)
+            refund = stripe.Refund.create(**refund_data) # type: ignore
 
             return {
                 "id": refund.id,
@@ -405,7 +405,7 @@ class StripePaymentService(PaymentServiceInterface):
 
             session = stripe.checkout.Session.create(
                 payment_method_types=["card"],
-                line_items=line_items,
+                line_items=line_items, # type: ignore
                 mode="payment",
                 success_url=success_url,
                 cancel_url=cancel_url,
@@ -417,7 +417,7 @@ class StripePaymentService(PaymentServiceInterface):
 
             amount_total = session.amount_total
             if amount_total is not None:
-                amount_total = amount_total / 100
+                amount_total = int(amount_total / 100)
 
             return {
                 "id": session.id,
@@ -475,7 +475,7 @@ class StripePaymentService(PaymentServiceInterface):
         """
         payment.status = new_status
         if external_payment_id:
-            payment.external_payment_id = hash(external_payment_id) % (2 ** 31)
+            payment.external_payment_id = str(hash(external_payment_id) % (2 ** 31))
         return payment
 
     async def verify_webhook_signature(

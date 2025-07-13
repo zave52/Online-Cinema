@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 
 @pytest.mark.e2e
 @pytest.mark.order(9)
+@pytest.mark.asyncio
 async def test_avatar_upload_and_verification(
     e2e_client,
     e2e_db_session,

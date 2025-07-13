@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+from typing import AsyncGenerator, cast
 
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import (
@@ -8,9 +8,9 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker
 )
 
-from config.settings import get_settings
+from config.settings import get_settings, Settings
 
-settings = get_settings()
+settings = cast(Settings, get_settings())
 
 POSTGRESQL_DATABASE_URL = (
     f"postgresql+asyncpg://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@"

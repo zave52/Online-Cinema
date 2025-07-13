@@ -107,7 +107,7 @@ async def rate_movie(
         )
     )
     result = await db.execute(rate_stmt)
-    existing_rate: RateMovieModel = result.scalars().first()
+    existing_rate: RateMovieModel | None = result.scalars().first()
 
     if existing_rate:
         previous_rate = existing_rate.rate
@@ -196,7 +196,7 @@ async def delete_rate(
         )
     )
     result = await db.execute(rate_stmt)
-    rate: RateMovieModel = result.scalars().first()
+    rate: RateMovieModel | None = result.scalars().first()
 
     if not rate:
         raise HTTPException(

@@ -41,7 +41,7 @@ moderator_and_admin = RoleChecker(
             "content": {
                 "application/json": {
                     "example": {
-                        "catr_item_id": 1
+                        "cart_item_id": 1
                     }
                 }
             }

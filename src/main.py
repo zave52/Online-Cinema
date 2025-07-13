@@ -27,7 +27,7 @@ security = HTTPBearer(auto_error=False)
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application with OpenAPI documentation.
-    
+
     Returns:
         FastAPI: Configured FastAPI application instance
     """
@@ -35,10 +35,10 @@ def create_app() -> FastAPI:
         title="Online Cinema API",
         description="""
         # Online Cinema API Documentation
-        
+
         ## Overview
         This API provides comprehensive functionality for an online cinema platform, including user management, movie catalog, shopping cart, orders, and payment processing.
-        
+
         ## Features
         - **User Management**: Registration, authentication, profile management
         - **Movie Catalog**: Browse movies, view details, search and filter
@@ -46,16 +46,13 @@ def create_app() -> FastAPI:
         - **Orders**: Create and manage movie purchases
         - **Payments**: Secure payment processing with Stripe integration
         - **Admin Functions**: User management and system administration
-        
+
         ## Authentication
         The API uses JWT (JSON Web Tokens) for authentication. Most endpoints require a valid access token in the Authorization header.
-        
-        ## Rate Limiting
-        API endpoints are subject to rate limiting to ensure fair usage and system stability.
-        
+
         ## Error Handling
         The API returns standardized error responses with appropriate HTTP status codes and detailed error messages.
-        
+
         ## Versioning
         This is version 1.0 of the API. All endpoints are prefixed with `/api/v1/`.
         """,
@@ -78,7 +75,6 @@ def create_app() -> FastAPI:
         redoc_url=None,
     )
 
-    # Include all routers
     api_version_index = "/api/v1"
 
     app.include_router(
@@ -247,7 +243,7 @@ async def get_redoc_documentation(
 )
 async def health_check():
     """Check API health status.
-    
+
     Returns:
         dict: Health status information
     """

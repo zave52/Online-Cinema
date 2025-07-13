@@ -11,11 +11,11 @@ from storages.interfaces import S3StorageInterface
 
 class S3Storage(S3StorageInterface):
     """S3-compatible storage implementation for file operations.
-    
+
     This class provides asynchronous file upload and URL generation
     capabilities for S3-compatible storage services. It handles
     connection management, error handling, and file operations.
-    
+
     Attributes:
         _access_key (str): S3 access key for authentication
         _secret_key (str): S3 secret key for authentication
@@ -32,13 +32,13 @@ class S3Storage(S3StorageInterface):
         bucket_name: str
     ) -> None:
         """Initialize S3 storage with connection parameters.
-        
+
         Args:
             access_key: S3 access key for authentication
             secret_key: S3 secret key for authentication
             endpoint_url: S3 endpoint URL (e.g., https://s3.amazonaws.com)
             bucket_name: S3 bucket name where files will be stored
-            
+
         Example:
             ```python
             storage = S3Storage(
@@ -65,27 +65,27 @@ class S3Storage(S3StorageInterface):
         file_data: bytes | bytearray
     ) -> None:
         """Upload a file to S3 storage.
-        
+
         This method uploads file data to the configured S3 bucket with
         the specified file name. It handles connection errors and upload
         failures with appropriate exception handling.
-        
+
         Args:
             file_name: Name of the file to upload (e.g., "movie_poster.jpg")
             file_data: Binary data of the file to upload
-            
+
         Raises:
             S3ConnectionError: When connection to S3 storage fails
             S3FileUploadError: When file upload operation fails
-            
+
         Example:
             ```python
             with open("poster.jpg", "rb") as f:
                 image_data = f.read()
-            
+
             await storage.upload_file("movies/poster_123.jpg", image_data)
             ```
-            
+
         Note:
             Files are uploaded with Content-Type "image/jpeg" by default.
             For other file types, consider extending this method to accept
@@ -112,23 +112,23 @@ class S3Storage(S3StorageInterface):
 
     async def get_file_url(self, file_name: str) -> str:
         """Generate a URL for accessing an uploaded file.
-        
+
         This method constructs a direct URL to access a file stored
         in the S3 bucket. The URL format follows the pattern:
         {endpoint_url}/{bucket_name}/{file_name}
-        
+
         Args:
             file_name: Name of the file to generate URL for
-            
+
         Returns:
             Complete URL string for accessing the file
-            
+
         Example:
             ```python
             url = await storage.get_file_url("movies/poster_123.jpg")
             # Returns: "https://s3.amazonaws.com/my-bucket/movies/poster_123.jpg"
             ```
-            
+
         Note:
             This method generates direct URLs. For production use,
             consider implementing signed URLs for security or using

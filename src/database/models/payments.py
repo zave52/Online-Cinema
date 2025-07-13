@@ -20,7 +20,7 @@ from database.models.orders import OrderModel, OrderItemModel
 
 class PaymentStatusEnum(Enum):
     """Enumeration for payment status values.
-    
+
     Defines the possible states a payment can be in:
     - SUCCESSFUL: Payment was completed successfully
     - CANCELED: Payment was canceled
@@ -33,7 +33,7 @@ class PaymentStatusEnum(Enum):
 
 class PaymentModel(Base):
     """Model representing payment transactions.
-    
+
     This model stores payment information including status, amount,
     creation time, external payment ID, and relationships to users,
     orders, and payment items.
@@ -92,7 +92,7 @@ class PaymentModel(Base):
 
 class PaymentItemModel(Base):
     """Model representing individual items within a payment.
-    
+
     This model stores information about each order item in a payment,
     including the price at the time of payment and relationships to
     the payment and order item.

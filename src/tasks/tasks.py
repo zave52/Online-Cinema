@@ -14,7 +14,7 @@ from database.models.accounts import (
 @async_task()
 async def delete_expires_activation_tokens() -> None:
     """Delete expired activation tokens from the database.
-    
+
     This task removes all activation tokens that have passed their
     expiration time, helping to keep the database clean and secure.
     """
@@ -31,7 +31,7 @@ async def delete_expires_activation_tokens() -> None:
 @async_task()
 async def delete_expires_password_reset_tokens() -> None:
     """Delete expired password reset tokens from the database.
-    
+
     This task removes all password reset tokens that have passed their
     expiration time, helping to keep the database clean and secure.
     """
@@ -50,7 +50,7 @@ async def delete_expires_password_reset_tokens() -> None:
 @async_task()
 async def delete_expires_refresh_tokens() -> None:
     """Delete expired refresh tokens from the database.
-    
+
     This task removes all refresh tokens that have passed their
     expiration time, helping to keep the database clean and secure.
     """

@@ -28,13 +28,13 @@ def get_jwt_manager(
     settings: BaseAppSettings = Depends(get_settings)
 ) -> JWTManagerInterface:
     """Get JWT manager instance with application settings.
-    
+
     Creates and returns a JWT manager configured with the application's
     secret keys, token expiration times, and signing algorithm.
-    
+
     Args:
         settings (BaseAppSettings): Application settings containing JWT configuration.
-        
+
     Returns:
         JWTManagerInterface: Configured JWT manager instance.
     """
@@ -51,16 +51,16 @@ async def get_token(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
 ) -> str:
     """Extract JWT token from HTTP Authorization header.
-    
+
     Validates that the request contains a Bearer token in the Authorization header
     and returns the token string.
-    
+
     Args:
         credentials (HTTPAuthorizationCredentials): The HTTP authorization credentials.
-        
+
     Returns:
         str: The JWT token from the Authorization header.
-        
+
     Raises:
         HTTPException: If no credentials are provided (401 Unauthorized).
     """
@@ -78,17 +78,17 @@ async def get_current_user_id(
     jwt_manager: JWTManagerInterface = Depends(get_jwt_manager)
 ) -> int:
     """Get the current user ID from JWT token.
-    
+
     Decodes the JWT token and extracts the user ID. Handles token expiration
     and validation errors by raising appropriate HTTP exceptions.
-    
+
     Args:
         token (str): The JWT token to decode.
         jwt_manager (JWTManagerInterface): JWT manager for token decoding.
-        
+
     Returns:
         int: The user ID from the decoded token.
-        
+
     Raises:
         HTTPException: If token is expired or invalid (401 Unauthorized).
     """
@@ -121,17 +121,17 @@ async def get_current_user(
     session: AsyncSession = Depends(get_db)
 ) -> UserModel:
     """Get the current authenticated user from database.
-    
+
     Retrieves the user from the database using the user ID from the JWT token.
     Includes the user's group information for authorization purposes.
-    
+
     Args:
         user_id (int): The user ID from the JWT token.
         session (AsyncSession): Database session for querying user data.
-        
+
     Returns:
         UserModel: The authenticated user with group information.
-        
+
     Raises:
         HTTPException: If user is not found (401 Unauthorized).
     """
@@ -153,14 +153,14 @@ async def get_current_user(
 
 class RoleChecker:
     """Role-based access control checker.
-    
+
     This class provides role-based authorization by checking if the current
     user belongs to one of the allowed user groups.
     """
-    
+
     def __init__(self, allowed_groups: list[UserGroupEnum]):
         """Initialize the role checker with allowed groups.
-        
+
         Args:
             allowed_groups (list[UserGroupEnum]): List of user groups that are
                 allowed to access the protected resource.
@@ -169,10 +169,10 @@ class RoleChecker:
 
     def __call__(self, user: UserModel = Depends(get_current_user)):
         """Check if the current user has the required role.
-        
+
         Args:
             user (UserModel): The current authenticated user.
-            
+
         Raises:
             HTTPException: If user doesn't have required privileges (403 Forbidden).
         """
@@ -187,13 +187,13 @@ def get_email_sender(
     settings: BaseAppSettings = Depends(get_settings)
 ) -> EmailSenderInterface:
     """Get email sender instance with application settings.
-    
+
     Creates and returns an email sender configured with the application's
     email server settings and template directory.
-    
+
     Args:
         settings (BaseAppSettings): Application settings containing email configuration.
-        
+
     Returns:
         EmailSenderInterface: Configured email sender instance.
     """
@@ -216,13 +216,13 @@ def get_s3_storage(
     settings: BaseAppSettings = Depends(get_settings)
 ) -> S3StorageInterface:
     """Get S3 storage instance with application settings.
-    
+
     Creates and returns an S3 storage client configured with the application's
     storage settings including access keys, endpoint, and bucket name.
-    
+
     Args:
         settings (BaseAppSettings): Application settings containing S3 configuration.
-        
+
     Returns:
         S3StorageInterface: Configured S3 storage instance.
     """
@@ -239,14 +239,14 @@ async def get_or_create_cart(
     db: AsyncSession = Depends(get_db)
 ) -> CartModel:
     """Get or create a shopping cart for the current user.
-    
+
     Retrieves the user's existing shopping cart from the database. If no cart
     exists, creates a new one and returns it.
-    
+
     Args:
         user_id (int): The current user's ID.
         db (AsyncSession): Database session for cart operations.
-        
+
     Returns:
         CartModel: The user's shopping cart (existing or newly created).
     """
@@ -267,13 +267,13 @@ def get_payment_service(
     settings: BaseAppSettings = Depends(get_settings)
 ) -> PaymentServiceInterface:
     """Get payment service instance with application settings.
-    
+
     Creates and returns a Stripe payment service configured with the application's
     Stripe API keys.
-    
+
     Args:
         settings (BaseAppSettings): Application settings containing Stripe configuration.
-        
+
     Returns:
         PaymentServiceInterface: Configured Stripe payment service instance.
     """

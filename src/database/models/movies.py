@@ -76,7 +76,7 @@ movie_director_association = Table(
 
 class GenreModel(Base):
     """Model representing movie genres.
-    
+
     This model stores different movie genres that can be associated
     with movies through a many-to-many relationship.
     """
@@ -99,7 +99,7 @@ class GenreModel(Base):
 
 class StarModel(Base):
     """Model representing movie stars/actors.
-    
+
     This model stores information about movie stars that can be associated
     with movies through a many-to-many relationship.
     """
@@ -122,7 +122,7 @@ class StarModel(Base):
 
 class DirectorModel(Base):
     """Model representing movie directors.
-    
+
     This model stores information about movie directors that can be associated
     with movies through a many-to-many relationship.
     """
@@ -145,7 +145,7 @@ class DirectorModel(Base):
 
 class CertificationModel(Base):
     """Model representing movie certifications/ratings.
-    
+
     This model stores different movie certifications (e.g., G, PG, R)
     that can be associated with movies.
     """
@@ -171,7 +171,7 @@ class CertificationModel(Base):
 
 class MovieModel(Base):
     """Model representing movies in the cinema system.
-    
+
     This is the main model for movies, containing all movie information
     including title, year, duration, ratings, price, and relationships
     to genres, stars, directors, and user interactions.
@@ -268,7 +268,7 @@ class MovieModel(Base):
 
 class LikeModel(Base):
     """Model representing user likes for movies.
-    
+
     This model tracks which users have liked which movies,
     creating a many-to-many relationship between users and movies.
     """
@@ -303,7 +303,7 @@ class LikeModel(Base):
 
 class CommentModel(Base):
     """Model representing user comments on movies.
-    
+
     This model stores user comments on movies, supporting nested replies
     through a self-referencing relationship.
     """
@@ -354,7 +354,7 @@ class CommentModel(Base):
 
 class FavoriteMovieModel(Base):
     """Model representing user favorite movies.
-    
+
     This model tracks which movies users have marked as favorites,
     creating a many-to-many relationship between users and movies.
     """
@@ -389,7 +389,7 @@ class FavoriteMovieModel(Base):
 
 class RateMovieModel(Base):
     """Model representing user ratings for movies.
-    
+
     This model tracks user ratings (1-10 scale) for movies,
     creating a many-to-many relationship between users and movies.
     """

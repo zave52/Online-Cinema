@@ -34,11 +34,11 @@ sync_postgresql_engine = create_engine(sync_database_url, echo=False)
 
 async def get_postgresql_db() -> AsyncGenerator[AsyncSession, None]:
     """Get an async PostgreSQL database session.
-    
+
     This function provides a dependency injection function for FastAPI to
     get database sessions. It uses async context management to ensure
     proper session cleanup.
-    
+
     Yields:
         AsyncSession: An async database session for PostgreSQL operations.
     """

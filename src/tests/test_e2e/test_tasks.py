@@ -49,16 +49,9 @@ async def test_delete_expired_activation_tokens(
     e2e_db_session.add(expired_token)
     await e2e_db_session.commit()
 
-    result = await e2e_db_session.execute(
-        select(ActivationTokenModel).where(
-            ActivationTokenModel.token == "expired_token"
-        )
-    )
-    print(result.scalars().all())
-
     monkeypatch.setattr("tasks.tasks.AsyncSessionLocal", lambda: e2e_db_session)
 
-    await delete_expires_activation_tokens()
+    await delete_expires_activation_tokens.aio()
 
     result = await e2e_db_session.execute(
         select(ActivationTokenModel).where(
@@ -96,16 +89,9 @@ async def test_delete_expired_password_reset_tokens(
     e2e_db_session.add(expired_token)
     await e2e_db_session.commit()
 
-    result = await e2e_db_session.execute(
-        select(PasswordResetTokenModel).where(
-            PasswordResetTokenModel.token == "expired_token"
-        )
-    )
-    print(result.scalars().all())
-
     monkeypatch.setattr("tasks.tasks.AsyncSessionLocal", lambda: e2e_db_session)
 
-    await delete_expires_password_reset_tokens()
+    await delete_expires_password_reset_tokens.aio()
 
     result = await e2e_db_session.execute(
         select(PasswordResetTokenModel).where(
@@ -145,7 +131,7 @@ async def test_delete_expired_refresh_tokens(
 
     monkeypatch.setattr("tasks.tasks.AsyncSessionLocal", lambda: e2e_db_session)
 
-    await delete_expires_refresh_tokens()
+    await delete_expires_refresh_tokens.aio()
 
     result = await e2e_db_session.execute(
         select(RefreshTokenModel).where(

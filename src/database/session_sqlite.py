@@ -23,11 +23,11 @@ AsyncSQLiteSessionLocal = async_sessionmaker(
 
 async def get_sqlite_db() -> AsyncGenerator[AsyncSession, None]:
     """Get an async SQLite database session.
-    
+
     This function provides a dependency injection function for FastAPI to
     get database sessions. It uses async context management to ensure
     proper session cleanup.
-    
+
     Yields:
         AsyncSession: An async database session for SQLite operations.
     """

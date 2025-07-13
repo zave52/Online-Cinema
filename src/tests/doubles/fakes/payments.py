@@ -23,10 +23,10 @@ class FakePaymentService(PaymentServiceInterface):
         """Initialize the fake payment service."""
         self.secret_key = secret_key
         self.publishable_key = publishable_key
-        self._payment_intents = {}
-        self._payment_methods = {}
-        self._processed_intents = set()
-        self._refunds = {}
+        self._payment_intents: dict[str, Any] = {}
+        self._payment_methods: dict[str, Any] = {}
+        self._processed_intents: set[str] = set()
+        self._refunds: dict[str, Any] = {}
 
     async def create_payment_intent(
         self,
@@ -224,7 +224,7 @@ class FakePaymentService(PaymentServiceInterface):
         elif intent["status"] == "canceled":
             return PaymentStatusEnum.CANCELED
         else:
-            return PaymentStatusEnum.PENDING
+            return PaymentStatusEnum.REFUNDED
 
     async def validate_payment_method(self, payment_method_id: str) -> bool:
         """Validate a fake payment method.

@@ -145,9 +145,11 @@ async def get_genres(
     total_pages = (total_items + per_page - 1) // per_page
 
     return GenreListSchema(
-        genres=genre_list,
+        genres=[GenreSchema.model_validate(genre) for genre in genre_list],
         prev_page=f"/cinema/genres/?page={page - 1}&per_page={per_page}" if page > 1 else None,
-        next_page=f"/cinema/genres/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        next_page=(
+            f"/cinema/genres/?page={page + 1}&per_page={per_page}" if page < total_pages else None
+        ),
         total_pages=total_pages,
         total_items=total_items
     )
@@ -158,7 +160,8 @@ async def get_genres(
     response_model=GenreWithMovieCountSchema,
     status_code=status.HTTP_200_OK,
     summary="Get genre by ID",
-    description="Retrieve detailed information about a specific genre by its ID. Only moderators and admins can access.",
+    description="Retrieve detailed information about a specific genre by its ID. "
+                "Only moderators and admins can access.",
     responses={
         200: {
             "description": "Genre details returned successfully",
@@ -212,7 +215,7 @@ async def get_genre_by_id(
 ) -> GenreWithMovieCountSchema:
     stmt = select(GenreModel).where(GenreModel.id == genre_id)
     result = await db.execute(stmt)
-    genre: GenreModel = result.scalars().first()
+    genre: GenreModel | None = result.scalars().first()
 
     if not genre:
         raise HTTPException(
@@ -329,7 +332,8 @@ async def create_genre(
     response_model=GenreSchema,
     status_code=status.HTTP_200_OK,
     summary="Update genre",
-    description="Update an existing genre's information. Only moderators and admins can perform this action.",
+    description="Update an existing genre's information. "
+                "Only moderators and admins can perform this action.",
     responses={
         200: {
             "description": "Genre updated successfully",
@@ -409,7 +413,7 @@ async def update_genre(
 ) -> GenreSchema:
     stmt = select(GenreModel).where(GenreModel.id == genre_id)
     result = await db.execute(stmt)
-    genre: GenreModel = result.scalars().first()
+    genre: GenreModel | None = result.scalars().first()
 
     if not genre:
         raise HTTPException(
@@ -436,7 +440,8 @@ async def update_genre(
     "/genres/{genre_id}/",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete genre",
-    description="Delete a genre from the database. Only moderators and admins can perform this action.",
+    description="Delete a genre from the database. "
+                "Only moderators and admins can perform this action.",
     responses={
         204: {
             "description": "Genre deleted successfully"

@@ -20,7 +20,7 @@ from database.models.movies import MovieModel
 
 class OrderStatusEnum(Enum):
     """Enumeration for order status values.
-    
+
     Defines the possible states an order can be in:
     - PENDING: Order created but not yet paid
     - PAID: Order has been successfully paid
@@ -33,7 +33,7 @@ class OrderStatusEnum(Enum):
 
 class OrderModel(Base):
     """Model representing user orders.
-    
+
     This model stores order information including status, creation time,
     total amount, and relationships to users, order items, and payments.
     """
@@ -84,7 +84,7 @@ class OrderModel(Base):
 
 class OrderItemModel(Base):
     """Model representing individual items within an order.
-    
+
     This model stores information about each movie item in an order,
     including the price at the time of order and relationships to
     the order, movie, and payment items.

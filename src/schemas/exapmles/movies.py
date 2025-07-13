@@ -9,7 +9,9 @@ movie_item_schema_example: Dict[str, Any] = {
     "votes": 1895412,
     "meta_score": 73.0,
     "gross": 171479930.0,
-    "description": "A computer hacker learns from mysterious rebels about the true nature of his reality and his role in the war against its controllers.",
+    "description": "A computer hacker learns from mysterious rebels about the "
+                   "true nature of his reality and his role in the war against "
+                   "its controllers.",
     "price": "9.99",
     "genres": [
         {"id": 1, "name": "Action"},
@@ -29,7 +31,10 @@ movie_list_response_schema_example: Dict[str, Any] = {
                 {"id": 1, "name": "Action"},
                 {"id": 3, "name": "Thriller"}
             ],
-            "description": "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O."
+            "description": "A thief who steals corporate secrets through the "
+                           "use of dream-sharing technology is given the "
+                           "inverse task of planting an idea into "
+                           "the mind of a C.E.O."
         }
     ],
     "prev_page": "/api/v1/cinema/movies/?page=1&per_page=10",
@@ -190,7 +195,8 @@ certification_schema_example: Dict[str, Any] = {
 
 comment_schema_example: Dict[str, Any] = {
     "id": 1,
-    "content": "This movie was absolutely fantastic! The plot twists were unexpected and the acting was superb.",
+    "content": "This movie was absolutely fantastic! "
+               "The plot twists were unexpected and the acting was superb.",
     "created_at": "2024-01-15T10:30:00Z",
     "parent_id": None
 }

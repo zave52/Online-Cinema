@@ -14,7 +14,8 @@ profile_update_request_schema_example: Dict[str, Any] = {
     "last_name": "Smith",
     "gender": "man",
     "date_of_birth": "1990-05-15",
-    "info": "Updated bio: Movie enthusiast and film critic. Love watching sci-fi and action movies. Also enjoy documentaries.",
+    "info": "Updated bio: Movie enthusiast and film critic. Love watching "
+            "sci-fi and action movies. Also enjoy documentaries.",
     "avatar": "new_avatar_file_upload"
 }
 

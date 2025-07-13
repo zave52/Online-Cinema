@@ -39,14 +39,13 @@ from tests.doubles.stubs.emails import StubEmailSender
 
 
 @pytest_asyncio.fixture(scope="session")
-def app() -> FastAPI:
+async def app() -> AsyncGenerator[FastAPI, None]:
     """
     Session-scoped fixture to create and return a FastAPI app instance for testing.
     Sets the environment variable to 'testing' before app creation.
     """
     os.environ["ENVIRONMENT"] = "testing"
-    app = create_app()
-    return app
+    yield create_app()
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -491,11 +490,11 @@ async def pending_order(
 
     return {
         "order_id": order.id,
-        "total_amount": order.total_amount,
+        "total_amount": str(order.total_amount),
         "order_item1_id": order_item1.id,
-        "order_item1_price": order_item1.price_at_order,
+        "order_item1_price": str(order_item1.price_at_order),
         "order_item2_id": order_item2.id,
-        "order_item2_price": order_item2.price_at_order,
+        "order_item2_price": str(order_item2.price_at_order),
     }
 
 

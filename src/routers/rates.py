@@ -21,7 +21,8 @@ router = APIRouter()
     response_model=MessageResponseSchema,
     status_code=status.HTTP_200_OK,
     summary="Rate movie",
-    description="Rate a movie with a score from 1 to 10. If already rated, updates the existing rating.",
+    description="Rate a movie with a score from 1 to 10. "
+                "If already rated, updates the existing rating.",
     responses={
         200: {
             "description": "Movie rated successfully",
@@ -106,7 +107,7 @@ async def rate_movie(
         )
     )
     result = await db.execute(rate_stmt)
-    existing_rate: RateMovieModel = result.scalars().first()
+    existing_rate: RateMovieModel | None = result.scalars().first()
 
     if existing_rate:
         previous_rate = existing_rate.rate
@@ -195,7 +196,7 @@ async def delete_rate(
         )
     )
     result = await db.execute(rate_stmt)
-    rate: RateMovieModel = result.scalars().first()
+    rate: RateMovieModel | None = result.scalars().first()
 
     if not rate:
         raise HTTPException(

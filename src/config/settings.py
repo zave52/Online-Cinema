@@ -9,7 +9,7 @@ from pydantic_settings import BaseSettings
 
 class BaseAppSettings(BaseSettings):
     """Base application settings configuration.
-    
+
     This class contains all the core configuration settings for the Online Cinema
     application, including JWT tokens, email settings, S3 storage, and Stripe
     payment configuration. It inherits from Pydantic's BaseSettings for
@@ -54,7 +54,7 @@ class BaseAppSettings(BaseSettings):
     @property
     def S3_STORAGE_ENDPOINT(self) -> str:
         """Get the complete S3 storage endpoint URL.
-        
+
         Returns:
             str: The full S3 storage endpoint URL combining host and port.
         """
@@ -66,7 +66,7 @@ class BaseAppSettings(BaseSettings):
 
 class Settings(BaseAppSettings):
     """Production settings configuration.
-    
+
     This class inherits from BaseAppSettings and is used for production
     environment configuration. It can be extended with production-specific
     settings if needed.
@@ -80,7 +80,7 @@ class Settings(BaseAppSettings):
 
 class TestingSettings(BaseAppSettings):
     """Development settings configuration.
-    
+
     This class inherits from BaseAppSettings and is used for development
     environment configuration. It can be extended with development-specific
     settings if needed.
@@ -90,7 +90,7 @@ class TestingSettings(BaseAppSettings):
 
 class CelerySettings(BaseSettings):
     """Celery background task configuration.
-    
+
     This class contains all the configuration settings for Celery background
     tasks, including broker URL, result backend, task imports, and scheduled
     task definitions.
@@ -109,12 +109,12 @@ class CelerySettings(BaseSettings):
     @property
     def beat_schedule(self) -> Dict[str, Any]:
         """Get the Celery beat schedule configuration.
-        
+
         Defines periodic tasks that run automatically:
         - Daily cleanup of expired activation tokens
         - Daily cleanup of expired password reset tokens
         - Daily cleanup of expired refresh tokens
-        
+
         Returns:
             Dict[str, Any]: Dictionary containing scheduled task configurations.
         """
@@ -136,11 +136,11 @@ class CelerySettings(BaseSettings):
 
 def get_settings() -> BaseAppSettings:
     """Return the settings instance based on the ENVIRONMENT variable.
-    
+
     If the ENVIRONMENT environment variable is set to 'testing', this function returns
     an instance of TestingSettings. For any other value (including when unset), it returns
     an instance of Settings.
-    
+
     Returns:
         BaseAppSettings: The settings instance appropriate for the current environment.
     """

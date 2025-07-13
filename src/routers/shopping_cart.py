@@ -19,7 +19,8 @@ from schemas.shopping_cart import (
     MessageResponseSchema,
     ShoppingCartAddMovieRequestSchema,
     ShoppingCartAddMovieResponseSchema,
-    ShoppingCartGetMoviesSchema
+    ShoppingCartGetMoviesSchema,
+    ShoppingCartMovieItemSchema
 )
 
 router = APIRouter()
@@ -34,14 +35,15 @@ moderator_and_admin = RoleChecker(
     response_model=ShoppingCartAddMovieResponseSchema,
     status_code=status.HTTP_200_OK,
     summary="Add movie to cart",
-    description="Add a movie to the user's shopping cart. Validates that the movie is not already purchased.",
+    description="Add a movie to the user's shopping cart. "
+                "Validates that the movie is not already purchased.",
     responses={
         200: {
             "description": "Movie added to cart successfully",
             "content": {
                 "application/json": {
                     "example": {
-                        "catr_item_id": 1
+                        "cart_item_id": 1
                     }
                 }
             }
@@ -70,18 +72,15 @@ moderator_and_admin = RoleChecker(
             "description": "Movie already in cart or already purchased",
             "content": {
                 "application/json": {
-                    "example": {
-                        "detail": "Movie is already in the cart."
-                    }
-                }
-            }
-        },
-        409: {
-            "description": "Movie already purchased",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "Movie has already been purchased."
+                    "examples": {
+                        "in_cart": {
+                            "summary": "Already in Cart",
+                            "value": {"detail": "Movie is already in the cart."}
+                        },
+                        "purchased": {
+                            "summary": "Already Purchased",
+                            "value": {"detail": "Movie has already been purchased."}
+                        }
                     }
                 }
             }
@@ -126,8 +125,7 @@ async def add_movie_to_cart(
         CartItemModel
     ).outerjoin(
         CartItemModel,
-        (CartItemModel.movie_id == MovieModel.id) &
-        (CartItemModel.cart_id == cart.id)
+        (CartItemModel.movie_id == MovieModel.id) & (CartItemModel.cart_id == cart.id)
     ).where(MovieModel.id == data.movie_id)
 
     result = await db.execute(combined_stmt)
@@ -318,7 +316,7 @@ async def get_shopping_cart_movies(
     result = await db.execute(stmt)
     items_with_movies = result.all()
 
-    movie_items = []
+    movie_items: list[ShoppingCartMovieItemSchema] = []
     for cart_item, movie in items_with_movies:
         movie_dict = {
             "cart_item_id": cart_item.id,
@@ -327,7 +325,7 @@ async def get_shopping_cart_movies(
             "price": movie.price,
             "genres": [genre.name for genre in movie.genres]
         }
-        movie_items.append(movie_dict)
+        movie_items.append(ShoppingCartMovieItemSchema(**movie_dict))
 
     return ShoppingCartGetMoviesSchema(
         total_items=len(movie_items),
@@ -341,7 +339,8 @@ async def get_shopping_cart_movies(
     status_code=status.HTTP_200_OK,
     tags=["cart", "moderator"],
     summary="Get cart by ID (Admin)",
-    description="Retrieve shopping cart contents by cart ID. Only moderators and admins can access.",
+    description="Retrieve shopping cart contents by cart ID. "
+                "Only moderators and admins can access.",
     responses={
         200: {
             "description": "Shopping cart contents returned successfully",
@@ -436,7 +435,7 @@ async def get_shopping_cart_movies_by_id(
     result = await db.execute(items_stmt)
     items_with_movies = result.all()
 
-    movie_items = []
+    movie_items: list[ShoppingCartMovieItemSchema] = []
     for cart_item, movie in items_with_movies:
         movie_dict = {
             "cart_item_id": cart_item.id,
@@ -445,7 +444,7 @@ async def get_shopping_cart_movies_by_id(
             "price": movie.price,
             "genres": [genre.name for genre in movie.genres]
         }
-        movie_items.append(movie_dict)
+        movie_items.append(ShoppingCartMovieItemSchema(**movie_dict))
 
     return ShoppingCartGetMoviesSchema(
         total_items=len(movie_items),
@@ -489,11 +488,6 @@ async def clear_shopping_cart(
     Returns:
         None
     """
-    stmt = select(CartItemModel).where(CartItemModel.cart_id == cart.id)
-    result = await db.execute(stmt)
-    if not result.scalars().first():
-        return
-
     stmt = delete(CartItemModel).where(CartItemModel.cart_id == cart.id)
     await db.execute(stmt)
     await db.commit()

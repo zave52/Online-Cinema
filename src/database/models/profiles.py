@@ -10,7 +10,7 @@ from database.models.base import Base
 
 class UserProfileModel(Base):
     """Model representing user profile information.
-    
+
     This model stores additional user profile data including personal
     information like name, avatar, gender, date of birth, and bio.
     Has a one-to-one relationship with the user model.

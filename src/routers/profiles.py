@@ -1,4 +1,5 @@
 from typing import cast
+from datetime import date
 
 from fastapi import APIRouter, status, Depends, HTTPException
 from pydantic import HttpUrl
@@ -177,16 +178,16 @@ async def create_profile(
     await db.commit()
     await db.refresh(new_profile)
 
-    avatar_url = await s3_storage.get_file_url(new_profile.avatar)
+    avatar_url = await s3_storage.get_file_url(new_profile.avatar or '')
 
     return ProfileResponseSchema(
         id=new_profile.id,
         user_id=new_profile.user_id,
-        first_name=new_profile.first_name,
-        last_name=new_profile.last_name,
+        first_name=new_profile.first_name or "",
+        last_name=new_profile.last_name or "",
         gender=str(new_profile.gender),
-        date_of_birth=new_profile.date_of_birth,
-        info=new_profile.info,
+        date_of_birth=new_profile.date_of_birth if new_profile.date_of_birth else date.today(),
+        info=new_profile.info or "",
         avatar=cast(HttpUrl, avatar_url)
     )
 
@@ -196,7 +197,8 @@ async def create_profile(
     response_model=ProfileRetrieveSchema,
     status_code=status.HTTP_200_OK,
     summary="Get user profile",
-    description="Retrieve a user's profile. Users can only view their own profile unless they are admin.",
+    description="Retrieve a user's profile. "
+                "Users can only view their own profile unless they are admin.",
     responses={
         200: {
             "description": "Profile retrieved successfully",
@@ -272,7 +274,7 @@ async def get_user_profile(
             .where(UserModel.id == current_user.id)
         )
         result = await db.execute(stmt)
-        user_group: UserGroupModel = result.scalars().first()
+        user_group: UserGroupModel | None = result.scalars().first()
 
         if not user_group or user_group.name != UserGroupEnum.ADMIN:
             raise HTTPException(
@@ -286,7 +288,7 @@ async def get_user_profile(
         .where(UserModel.id == user_id)
     )
     result = await db.execute(stmt)
-    user_profile: UserProfileModel = result.scalars().first()
+    user_profile: UserProfileModel | None = result.scalars().first()
 
     if not user_profile:
         raise HTTPException(
@@ -294,17 +296,17 @@ async def get_user_profile(
             detail="Profile for this user not found."
         )
 
-    avatar_url = await s3_storage.get_file_url(file_name=user_profile.avatar)
+    avatar_url = await s3_storage.get_file_url(file_name=user_profile.avatar or "")
 
     return ProfileRetrieveSchema(
         id=user_profile.id,
         user_id=user_profile.user_id,
         email=cast(str, user_profile.user.email),
-        first_name=user_profile.first_name,
-        last_name=user_profile.last_name,
+        first_name=user_profile.first_name or "",
+        last_name=user_profile.last_name or "",
         gender=cast(str, user_profile.gender),
-        info=user_profile.info,
-        date_of_birth=user_profile.date_of_birth,
+        info=user_profile.info or "",
+        date_of_birth=user_profile.date_of_birth if user_profile.date_of_birth else date.today(),
         avatar=cast(HttpUrl, avatar_url)
     )
 
@@ -314,7 +316,8 @@ async def get_user_profile(
     response_model=ProfileResponseSchema,
     status_code=status.HTTP_200_OK,
     summary="Update user profile",
-    description="Update a user's profile completely. Users can only update their own profile unless they are admin.",
+    description="Update a user's profile completely. "
+                "Users can only update their own profile unless they are admin.",
     responses={
         200: {
             "description": "Profile updated successfully",
@@ -419,7 +422,7 @@ async def update_profile(
             .where(UserModel.id == current_user.id)
         )
         result = await db.execute(stmt)
-        user_group: UserGroupModel = result.scalars().first()
+        user_group: UserGroupModel | None = result.scalars().first()
 
         if not user_group or user_group.name != UserGroupEnum.ADMIN:
             raise HTTPException(
@@ -432,7 +435,7 @@ async def update_profile(
         .where(UserProfileModel.user_id == user_id)
     )
     result = await db.execute(stmt)
-    profile: UserProfileModel = result.scalars().first()
+    profile: UserProfileModel | None = result.scalars().first()
 
     if not profile:
         raise HTTPException(
@@ -466,16 +469,16 @@ async def update_profile(
     await db.commit()
     await db.refresh(profile)
 
-    avatar_url = await s3_storage.get_file_url(profile.avatar)
+    avatar_url = await s3_storage.get_file_url(profile.avatar or "")
 
     return ProfileResponseSchema(
         id=profile.id,
         user_id=profile.user_id,
-        first_name=profile.first_name,
-        last_name=profile.last_name,
+        first_name=profile.first_name or "",
+        last_name=profile.last_name or "",
         gender=str(profile.gender),
-        date_of_birth=profile.date_of_birth,
-        info=profile.info,
+        date_of_birth=profile.date_of_birth if profile.date_of_birth else date.today(),
+        info=profile.info or "",
         avatar=cast(HttpUrl, avatar_url)
     )
 
@@ -485,7 +488,8 @@ async def update_profile(
     response_model=ProfileResponseSchema,
     status_code=status.HTTP_200_OK,
     summary="Patch user profile",
-    description="Partially update a user's profile. Users can only update their own profile unless they are admin.",
+    description="Partially update a user's profile. "
+                "Users can only update their own profile unless they are admin.",
     responses={
         200: {
             "description": "Profile patched successfully",
@@ -590,7 +594,7 @@ async def patch_profile(
             .where(UserModel.id == current_user.id)
         )
         result = await db.execute(stmt)
-        user_group: UserGroupModel = result.scalars().first()
+        user_group: UserGroupModel | None = result.scalars().first()
 
         if not user_group or user_group.name != UserGroupEnum.ADMIN:
             raise HTTPException(
@@ -603,7 +607,7 @@ async def patch_profile(
         .where(UserProfileModel.user_id == user_id)
     )
     result = await db.execute(stmt)
-    profile: UserProfileModel = result.scalars().first()
+    profile: UserProfileModel | None = result.scalars().first()
 
     if not profile:
         raise HTTPException(
@@ -646,15 +650,15 @@ async def patch_profile(
     await db.commit()
     await db.refresh(profile)
 
-    avatar_url = await s3_storage.get_file_url(profile.avatar)
+    avatar_url = await s3_storage.get_file_url(profile.avatar or "")
 
     return ProfileResponseSchema(
         id=profile.id,
         user_id=profile.user_id,
-        first_name=profile.first_name,
-        last_name=profile.last_name,
+        first_name=profile.first_name or "",
+        last_name=profile.last_name or "",
         gender=str(profile.gender),
-        date_of_birth=profile.date_of_birth,
-        info=profile.info,
+        date_of_birth=profile.date_of_birth if profile.date_of_birth else date.today(),
+        info=profile.info or "",
         avatar=cast(HttpUrl, avatar_url)
     )

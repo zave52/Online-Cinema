@@ -21,6 +21,7 @@ class ShoppingCartAddMovieRequestSchema(BaseModel):
         }
     )
 
+
 class ShoppingCartAddMovieResponseSchema(BaseModel):
     cart_item_id: int
 
@@ -29,6 +30,7 @@ class ShoppingCartAddMovieResponseSchema(BaseModel):
             "example": shopping_cart_add_movie_response_schema_example
         }
     )
+
 
 class MessageResponseSchema(BaseModel):
     message: str

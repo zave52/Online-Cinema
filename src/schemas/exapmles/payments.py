@@ -100,15 +100,15 @@ payment_intent_response_schema_example: Dict[str, Any] = {
     "currency": "usd"
 }
 
-process_payment_schema_example: Dict[str, Any] = {
+process_payment_request_schema_example: Dict[str, Any] = {
     "payment_intent_id": "pi_1234567890abcdef"
+}
+
+process_payment_response_schema_example: Dict[str, Any] = {
+    "payment_id": 1
 }
 
 refund_payment_schema_example: Dict[str, Any] = {
     "amount": "29.97",
     "reason": "Customer requested refund"
-}
-
-message_response_schema_example: Dict[str, Any] = {
-    "message": "Payment processed successfully"
 }

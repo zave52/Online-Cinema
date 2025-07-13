@@ -53,7 +53,8 @@ admin_only = RoleChecker([UserGroupEnum.ADMIN])
     response_model=UserRegistrationResponseSchema,
     status_code=status.HTTP_201_CREATED,
     summary="Register a new user",
-    description="Register a new user with email and password. Sends an activation email with a token.",
+    description="Register a new user with email and password. "
+                "Sends an activation email with a token.",
     responses={
         201: {
             "description": "User successfully registered",
@@ -156,7 +157,10 @@ async def register_user(
             detail="An error occurred during user creation."
         ) from e
     else:
-        activation_link = f"{settings.BASE_URL}/activate/?email={new_user.email}&token={activation_token.token}"
+        activation_link = (
+            f"{settings.BASE_URL}/activate/"
+            f"?email={new_user.email}&token={activation_token.token}"
+        )
 
         background_tasks.add_task(
             email_sender.send_activation_email,
@@ -179,7 +183,8 @@ async def register_user(
             "content": {
                 "application/json": {
                     "example": {
-                        "message": "If your account exists and is not activated, you will receive an email with instructions."
+                        "message": "If your account exists and is not activated, "
+                                   "you will receive an email with instructions."
                     }
                 }
             }
@@ -216,24 +221,24 @@ async def resend_activation_token(
         MessageResponseSchema: Standard message response.
     """
     standard_response = MessageResponseSchema(
-        message="If your account exists and is not activated, you will receive an email with instructions."
+        message="If your account exists and is not activated, "
+                "you will receive an email with instructions."
     )
 
     stmt = select(UserModel).where(UserModel.email == data.email)
     result = await db.execute(stmt)
-    user: UserModel = result.scalars().first()
+    user: UserModel | None = result.scalars().first()
 
     if not user or user.is_active:
         return standard_response
 
-    stmt = (
-        delete(ActivationTokenModel)
-        .where(ActivationTokenModel.user_id == user.id)
-    )
+    if user:
+        await db.execute(
+            delete(ActivationTokenModel)
+            .where(ActivationTokenModel.user_id == user.id)
+        )
 
     try:
-        await db.execute(stmt)
-
         new_activation_token = ActivationTokenModel(user_id=user.id)
         db.add(new_activation_token)
         await db.commit()
@@ -245,7 +250,10 @@ async def resend_activation_token(
             detail="An error occurred during resending activation token."
         )
     else:
-        activation_link = f"{settings.BASE_URL}/activate/?email={user.email}&token={new_activation_token.token}"
+        activation_link = (
+            f"{settings.BASE_URL}/activate/"
+            f"?email={user.email}&token={new_activation_token.token}"
+        )
 
         background_tasks.add_task(
             email_sender.send_activation_email,
@@ -274,21 +282,22 @@ async def resend_activation_token(
             }
         },
         400: {
-            "description": "Invalid or expired activation token",
+            "description": "Invalid or expired activation token or user already active",
             "content": {
                 "application/json": {
-                    "example": {
-                        "detail": "Invalid or expired activation token."
-                    }
-                }
-            }
-        },
-        400: {
-            "description": "User account already active",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "User account is already active."
+                    "examples": {
+                        "invalid_token": {
+                            "summary": "Invalid Token",
+                            "value": {
+                                "detail": "Invalid or expired activation token."
+                            }
+                        },
+                        "already_active": {
+                            "summary": "Already Active",
+                            "value": {
+                                "detail": "User account is already active."
+                            }
+                        }
                     }
                 }
             }
@@ -323,7 +332,7 @@ async def activate_account(
         )
     )
     result = await db.execute(stmt)
-    token_record: ActivationTokenModel = result.scalars().first()
+    token_record: ActivationTokenModel | None = result.scalars().first()
 
     if not token_record or token_record.is_expired():
         if token_record:
@@ -369,7 +378,8 @@ async def activate_account(
             "content": {
                 "application/json": {
                     "example": {
-                        "message": "If you are registered, you will receive an email with instructions."
+                        "message": "If you are registered, "
+                                   "you will receive an email with instructions."
                     }
                 }
             }
@@ -397,18 +407,18 @@ async def request_password_reset_token(
     """
     stmt = select(UserModel).where(UserModel.email == data.email)
     result = await db.execute(stmt)
-    user: UserModel = result.scalars().first()
+    user: UserModel | None = result.scalars().first()
 
     if not user or not user.is_active:
         return MessageResponseSchema(
             message="If you are registered, you will receive an email with instructions."
         )
 
-    stmt = (
-        delete(PasswordResetTokenModel)
-        .where(PasswordResetTokenModel.user_id == user.id)
-    )
-    await db.execute(stmt)
+    if user:
+        await db.execute(
+            delete(PasswordResetTokenModel)
+            .where(PasswordResetTokenModel.user_id == user.id)
+        )
 
     reset_token = PasswordResetTokenModel(user_id=user.id)
     db.add(reset_token)
@@ -487,7 +497,7 @@ async def reset_password(
     """
     stmt = select(UserModel).where(UserModel.email == data.email)
     result = await db.execute(stmt)
-    user: UserModel = result.scalars().first()
+    user: UserModel | None = result.scalars().first()
 
     if not user or not user.is_active:
         raise HTTPException(
@@ -500,7 +510,7 @@ async def reset_password(
         .where(PasswordResetTokenModel.user_id == user.id)
     )
     result = await db.execute(stmt)
-    token_record: PasswordResetTokenModel = result.scalars().first()
+    token_record: PasswordResetTokenModel | None = result.scalars().first()
 
     if not token_record or token_record.token != data.token or token_record.is_expired():
         if token_record:
@@ -683,7 +693,8 @@ async def change_password(
             "content": {
                 "application/json": {
                     "example": {
-                        "detail": "Account is not activated. Please check your email for activation link."
+                        "detail": "Account is not activated. "
+                                  "Please check your email for activation link."
                     }
                 }
             }
@@ -709,7 +720,7 @@ async def login_user(
     """
     stmt = select(UserModel).where(UserModel.email == data.email)
     result = await db.execute(stmt)
-    user: UserModel = result.scalars().first()
+    user: UserModel | None = result.scalars().first()
 
     if not user or not user.verify_password(data.password):
         raise HTTPException(
@@ -767,21 +778,18 @@ async def login_user(
             }
         },
         401: {
-            "description": "Invalid or mismatched tokens",
+            "description": "Invalid credentials or user not found/inactive",
             "content": {
                 "application/json": {
-                    "example": {
-                        "detail": "Invalid or mismatched tokens"
-                    }
-                }
-            }
-        },
-        401: {
-            "description": "User not found or inactive",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "User not found or inactive"
+                    "examples": {
+                        "invalid_tokens": {
+                            "summary": "Invalid Tokens",
+                            "value": {"detail": "Invalid or mismatched tokens"}
+                        },
+                        "not_found": {
+                            "summary": "User Not Found",
+                            "value": {"detail": "User not found or inactive"}
+                        }
                     }
                 }
             }
@@ -838,7 +846,7 @@ async def logout_user(
         .where(UserModel.id == access_token_user_id)
     )
     result = await db.execute(stmt_user)
-    user: UserModel = result.scalars().first()
+    user: UserModel | None = result.scalars().first()
 
     if not user or not user.is_active:
         raise HTTPException(
@@ -851,7 +859,7 @@ async def logout_user(
         .where(RefreshTokenModel.token == data.refresh_token)
     )
     result = await db.execute(stmt_refresh_token)
-    refresh_token_record: RefreshTokenModel = result.scalars().first()
+    refresh_token_record: RefreshTokenModel | None = result.scalars().first()
 
     if not refresh_token_record:
         return MessageResponseSchema(
@@ -950,7 +958,7 @@ async def refresh_access_token(
         RefreshTokenModel.token == data.refresh_token
     )
     result = await db.execute(stmt)
-    refresh_token_record: RefreshTokenModel = result.scalars().first()
+    refresh_token_record: RefreshTokenModel | None = result.scalars().first()
 
     if not refresh_token_record:
         raise HTTPException(
@@ -1023,7 +1031,7 @@ async def verify_access_token(
 
         stmt = select(UserModel).where(UserModel.id == user_id)
         result = await db.execute(stmt)
-        user: UserModel = result.scalars().first()
+        user: UserModel | None = result.scalars().first()
 
         if not user or not user.is_active:
             raise BaseSecurityError
@@ -1105,7 +1113,7 @@ async def change_user_group(
     """
     stmt = select(UserModel).where(UserModel.id == user_id)
     result = await db.execute(stmt)
-    target_user: UserModel = result.scalars().first()
+    target_user: UserModel | None = result.scalars().first()
 
     if not target_user:
         raise HTTPException(
@@ -1115,7 +1123,7 @@ async def change_user_group(
 
     stmt = select(UserGroupModel).where(UserGroupModel.name == data.group_name)
     result = await db.execute(stmt)
-    target_group: UserGroupModel = result.scalars().first()
+    target_group: UserGroupModel | None = result.scalars().first()
 
     if not target_group:
         raise HTTPException(
@@ -1153,21 +1161,23 @@ async def change_user_group(
     description="Manually activate a user account. Only accessible by admins.",
     responses={
         200: {
-            "description": "User activated successfully",
+            "description": "User activated successfully or already active",
             "content": {
                 "application/json": {
-                    "example": {
-                        "message": "User account for user@example.com has been manually activated."
-                    }
-                }
-            }
-        },
-        200: {
-            "description": "User already active",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "message": "User account for user@example.com is already active."
+                    "examples": {
+                        "activated": {
+                            "summary": "User Activated",
+                            "value": {
+                                "message": "User account for user@example.com "
+                                           "has been manually activated."
+                            }
+                        },
+                        "already_active": {
+                            "summary": "Already Active",
+                            "value": {
+                                "message": "User account for user@example.com is already active."
+                            }
+                        }
                     }
                 }
             }
@@ -1237,7 +1247,7 @@ async def admin_activate_user(
     """
     stmt = select(UserModel).where(UserModel.email == data.email)
     result = await db.execute(stmt)
-    target_user: UserModel = result.scalars().first()
+    target_user: UserModel | None = result.scalars().first()
 
     if not target_user:
         raise HTTPException(
@@ -1251,11 +1261,11 @@ async def admin_activate_user(
         )
 
     try:
-        stmt = (
-            delete(ActivationTokenModel)
-            .where(ActivationTokenModel.user_id == target_user.id)
-        )
-        await db.execute(stmt)
+        if target_user:
+            await db.execute(
+                delete(ActivationTokenModel)
+                .where(ActivationTokenModel.user_id == target_user.id)
+            )
 
         target_user.is_active = True
         await db.commit()

@@ -30,7 +30,8 @@ moderator_and_admin = RoleChecker(
     response_model=DirectorListSchema,
     status_code=status.HTTP_200_OK,
     summary="List directors",
-    description="Get a paginated list of all movie directors. Only moderators and admins can access.",
+    description="Get a paginated list of all movie directors. "
+                "Only moderators and admins can access.",
     responses={
         200: {
             "description": "List of directors returned successfully",
@@ -116,7 +117,7 @@ async def get_directors(
 
     stmt = stmt.offset(offset).limit(per_page)
     result = await db.execute(stmt)
-    directors: Sequence[DirectorModel] = result.scalars().all()
+    directors = result.scalars().all()
 
     director_list = [
         DirectorSchema.model_validate(director) for director in directors
@@ -127,7 +128,10 @@ async def get_directors(
     return DirectorListSchema(
         directors=director_list,
         prev_page=f"/cinema/directors/?page={page - 1}&per_page={per_page}" if page > 1 else None,
-        next_page=f"/cinema/directors/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        next_page=(
+            f"/cinema/directors/?page={page + 1}"
+            f"&per_page={per_page}" if page < total_pages else None
+        ),
         total_pages=total_pages,
         total_items=total_items
     )
@@ -138,7 +142,8 @@ async def get_directors(
     response_model=DirectorSchema,
     status_code=status.HTTP_200_OK,
     summary="Get director by ID",
-    description="Retrieve detailed information about a specific director by their ID. Only moderators and admins can access.",
+    description="Retrieve detailed information about a specific director by their ID. "
+                "Only moderators and admins can access.",
     responses={
         200: {
             "description": "Director details returned successfully",
@@ -297,7 +302,8 @@ async def create_director(
     response_model=DirectorSchema,
     status_code=status.HTTP_200_OK,
     summary="Update director",
-    description="Update an existing director's information. Only moderators and admins can perform this action.",
+    description="Update an existing director's information. "
+                "Only moderators and admins can perform this action.",
     responses={
         200: {
             "description": "Director updated successfully",
@@ -404,7 +410,8 @@ async def update_director(
     "/directors/{director_id}/",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete director",
-    description="Delete a director from the database. Only moderators and admins can perform this action.",
+    description="Delete a director from the database. "
+                "Only moderators and admins can perform this action.",
     responses={
         204: {
             "description": "Director deleted successfully"

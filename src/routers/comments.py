@@ -260,7 +260,8 @@ async def reply_to_comment(
     "/movies/{movie_id}/comments/{comment_id}/",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete comment",
-    description="Delete a comment from a movie. Users can only delete their own comments unless they are admin/moderator.",
+    description="Delete a comment from a movie. "
+                "Users can only delete their own comments unless they are admin/moderator.",
     responses={
         204: {
             "description": "Comment deleted successfully"
@@ -332,7 +333,7 @@ async def delete_comment(
         )
     )
     result = await db.execute(comment_stmt)
-    comment: CommentModel = result.scalars().first()
+    comment: CommentModel | None = result.scalars().first()
 
     if not comment:
         raise HTTPException(

@@ -11,10 +11,11 @@ from .exapmles.payments import (
     payment_list_schema_example,
     create_payment_intent_schema_example,
     payment_intent_response_schema_example,
-    process_payment_schema_example,
-    refund_payment_schema_example,
-    message_response_schema_example
+    process_payment_request_schema_example,
+    process_payment_response_schema_example,
+    refund_payment_schema_example
 )
+
 
 class PaymentItemSchema(BaseModel):
     id: int
@@ -60,6 +61,7 @@ class PaymentListSchema(BaseModel):
         }
     )
 
+
 class CreatePaymentIntentSchema(BaseModel):
     order_id: int
 
@@ -68,6 +70,7 @@ class CreatePaymentIntentSchema(BaseModel):
             "example": create_payment_intent_schema_example
         }
     )
+
 
 class PaymentIntentResponseSchema(BaseModel):
     id: str
@@ -81,14 +84,26 @@ class PaymentIntentResponseSchema(BaseModel):
         }
     )
 
-class ProcessPaymentSchema(BaseModel):
+
+class ProcessPaymentRequestSchema(BaseModel):
     payment_intent_id: str
 
     model_config = ConfigDict(
         json_schema_extra={
-            "example": process_payment_schema_example
+            "example": process_payment_request_schema_example
         }
     )
+
+
+class ProcessPaymentResponseSchema(BaseModel):
+    payment_id: int
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": process_payment_response_schema_example
+        }
+    )
+
 
 class RefundPaymentSchema(BaseModel):
     amount: Optional[Decimal] = None
@@ -100,6 +115,7 @@ class RefundPaymentSchema(BaseModel):
         }
     )
 
+
 class CheckoutSessionRequestSchema(BaseModel):
     order_id: int
     success_url: str
@@ -110,13 +126,3 @@ class CheckoutSessionResponseSchema(BaseModel):
     id: str
     url: str
     amount_total: Optional[Decimal]
-
-
-class MessageResponseSchema(BaseModel):
-    message: str
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": message_response_schema_example
-        }
-    )

@@ -11,7 +11,7 @@ from database.models.movies import MovieModel
 
 class CartModel(Base):
     """Model representing user shopping carts.
-    
+
     This model stores shopping cart information for users, with a one-to-one
     relationship to users and one-to-many relationship to cart items.
     """
@@ -43,7 +43,7 @@ class CartModel(Base):
 
 class CartItemModel(Base):
     """Model representing individual items in a shopping cart.
-    
+
     This model stores information about each movie item in a user's cart,
     including when it was added and relationships to the cart and movie.
     """

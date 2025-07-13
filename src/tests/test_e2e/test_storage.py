@@ -1,7 +1,7 @@
 import base64
 from io import BytesIO
 
-import aioboto3
+import aioboto3  # type: ignore
 import httpx
 import pytest
 from PIL import Image

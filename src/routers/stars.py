@@ -116,7 +116,7 @@ async def get_stars(
 
     stmt = stmt.offset(offset).limit(per_page)
     result = await db.execute(stmt)
-    stars: Sequence[StarModel] = result.scalars().all()
+    stars = result.scalars().all()
 
     star_list = [StarSchema.model_validate(star) for star in stars]
 
@@ -125,7 +125,9 @@ async def get_stars(
     return StarListSchema(
         stars=star_list,
         prev_page=f"/cinema/stars/?page={page - 1}&per_page={per_page}" if page > 1 else None,
-        next_page=f"/cinema/stars/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        next_page=(
+            f"/cinema/stars/?page={page + 1}&per_page={per_page}" if page < total_pages else None
+        ),
         total_pages=total_pages,
         total_items=total_items
     )
@@ -136,7 +138,8 @@ async def get_stars(
     response_model=StarSchema,
     status_code=status.HTTP_200_OK,
     summary="Get star by ID",
-    description="Retrieve detailed information about a specific star by their ID. Only moderators and admins can access.",
+    description="Retrieve detailed information about a specific star by their ID. "
+                "Only moderators and admins can access.",
     responses={
         200: {
             "description": "Star details returned successfully",
@@ -295,7 +298,8 @@ async def create_star(
     response_model=StarSchema,
     status_code=status.HTTP_200_OK,
     summary="Update star",
-    description="Update an existing star's information. Only moderators and admins can perform this action.",
+    description="Update an existing star's information. "
+                "Only moderators and admins can perform this action.",
     responses={
         200: {
             "description": "Star updated successfully",
@@ -402,7 +406,8 @@ async def update_star(
     "/stars/{star_id}/",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete star",
-    description="Delete a star from the database. Only moderators and admins can perform this action.",
+    description="Delete a star from the database. "
+                "Only moderators and admins can perform this action.",
     responses={
         204: {
             "description": "Star deleted successfully"

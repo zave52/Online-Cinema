@@ -6,20 +6,20 @@ from email_validator import EmailNotValidError
 
 def validate_password_strength(password: str) -> str:
     """Validate password strength requirements.
-    
+
     Checks that the password meets minimum security requirements:
     - At least 8 characters long
     - Contains at least one uppercase letter
     - Contains at least one lowercase letter
     - Contains at least one digit
     - Contains at least one special character
-    
+
     Args:
         password (str): The password to validate.
-        
+
     Returns:
         str: The validated password.
-        
+
     Raises:
         ValueError: If the password doesn't meet strength requirements.
     """
@@ -38,15 +38,15 @@ def validate_password_strength(password: str) -> str:
 
 def validate_email(user_email: str) -> str:
     """Validate and normalize email address.
-    
+
     Uses email-validator library to validate email format and normalize it.
-    
+
     Args:
         user_email (str): The email address to validate.
-        
+
     Returns:
         str: The normalized email address.
-        
+
     Raises:
         ValueError: If the email address is invalid.
     """

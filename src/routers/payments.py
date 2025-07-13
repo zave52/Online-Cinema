@@ -27,12 +27,11 @@ from payments.interfaces import PaymentServiceInterface
 from schemas.payments import (
     PaymentIntentResponseSchema,
     CreatePaymentIntentSchema,
-    MessageResponseSchema,
-    ProcessPaymentSchema,
+    ProcessPaymentRequestSchema,
     PaymentListSchema,
     PaymentSchema,
     CheckoutSessionRequestSchema,
-    CheckoutSessionResponseSchema
+    CheckoutSessionResponseSchema, ProcessPaymentResponseSchema
 )
 
 router = APIRouter()
@@ -47,7 +46,8 @@ moderator_and_admin = RoleChecker(
     response_model=PaymentIntentResponseSchema,
     status_code=status.HTTP_200_OK,
     summary="Create payment intent",
-    description="Create a payment intent for a pending order. This is the first step in the payment process.",
+    description="Create a payment intent for a pending order. "
+                "This is the first step in the payment process.",
     responses={
         200: {
             "description": "Payment intent created successfully",
@@ -136,7 +136,7 @@ async def create_payment_intent(
         )
     )
     result = await db.execute(stmt)
-    order: OrderModel = result.scalars().first()
+    order: OrderModel | None = result.scalars().first()
 
     if not order:
         raise HTTPException(
@@ -150,16 +150,16 @@ async def create_payment_intent(
             detail="Order is not on pending status."
         )
 
-    total_amount = sum(item.price_at_order for item in order.items)
+    total_amount = sum(item.price_at_order for item in order.items) if order.items else Decimal(0)
 
-    if order.total_amount != total_amount:
-        order.total_amount = total_amount
+    if order.total_amount is not None and order.total_amount != total_amount:
+        order.total_amount = Decimal(total_amount)
         await db.commit()
 
     try:
         intend_data = await payment_service.create_payment_intent(
             order=order,
-            amount=Decimal(order.total_amount)
+            amount=Decimal(order.total_amount if order.total_amount is not None else 0)
         )
     except PaymentError as e:
         raise HTTPException(
@@ -177,17 +177,18 @@ async def create_payment_intent(
 
 @router.post(
     "/payments/process/",
-    response_model=MessageResponseSchema,
+    response_model=ProcessPaymentResponseSchema,
     status_code=status.HTTP_200_OK,
     summary="Process payment",
-    description="Process a payment using a payment intent. Updates order status and adds movies to user's purchased list.",
+    description="Process a payment using a payment intent. "
+                "Updates order status and adds movies to user's purchased list.",
     responses={
         200: {
             "description": "Payment processed successfully",
             "content": {
                 "application/json": {
                     "example": {
-                        "message": "Payment processed successfully. Movies have been added to your library."
+                        "payment_id": 1
                     }
                 }
             }
@@ -241,17 +242,17 @@ async def create_payment_intent(
     }
 )
 async def process_payment(
-    data: ProcessPaymentSchema,
+    data: ProcessPaymentRequestSchema,
     background_tasks: BackgroundTasks,
     user: UserModel = Depends(get_current_user),
     payment_service: PaymentServiceInterface = Depends(get_payment_service),
     email_sender: EmailSenderInterface = Depends(get_email_sender),
     db: AsyncSession = Depends(get_db)
-) -> MessageResponseSchema:
+) -> ProcessPaymentResponseSchema:
     """Process a payment using a payment intent.
 
     Args:
-        data (ProcessPaymentSchema): Payment processing data.
+        data (ProcessPaymentRequestSchema): Payment processing data.
         background_tasks (BackgroundTasks): FastAPI background tasks.
         user (UserModel): The current authenticated user.
         payment_service (PaymentServiceInterface): Payment service dependency.
@@ -259,7 +260,7 @@ async def process_payment(
         db (AsyncSession): Database session dependency.
 
     Returns:
-        MessageResponseSchema: Success message.
+        ProcessPaymentResponseSchema: payment id.
     """
     try:
         intent_data = await payment_service.retrieve_payment_intent(
@@ -284,7 +285,7 @@ async def process_payment(
         )
     )
     result = await db.execute(stmt)
-    order: OrderModel = result.scalars().first()
+    order: OrderModel | None = result.scalars().first()
 
     if not order:
         raise HTTPException(
@@ -347,9 +348,7 @@ async def process_payment(
             payment.amount
         )
 
-    return MessageResponseSchema(
-        message=f"Payment processed successfully. Payment ID: {payment.id}"
-    )
+    return ProcessPaymentResponseSchema(payment_id=payment.id)
 
 
 @router.get(
@@ -467,7 +466,7 @@ async def get_user_payments(
 
     stmt = stmt.offset(offset).limit(per_page)
     result = await db.execute(stmt)
-    payments: Sequence[PaymentModel] = result.scalars().all()
+    payments = result.scalars().all()
 
     payment_list = [
         PaymentSchema.model_validate(payment) for payment in payments
@@ -476,8 +475,10 @@ async def get_user_payments(
 
     return PaymentListSchema(
         payments=payment_list,
-        prev_page=f"/ecommerce/payments/?page={page - 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page > 1 else None,
-        next_page=f"/ecommerce/payments/?page={page + 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page < total_pages else None,
+        prev_page=f"/ecommerce/payments/?page={page - 1}&per_page={per_page}"
+                  f"{f'&sort_by={sort_by}' if sort_by else ''}" if page > 1 else None,
+        next_page=f"/ecommerce/payments/?page={page + 1}&per_page={per_page}"
+                  f"{f'&sort_by={sort_by}' if sort_by else ''}" if page < total_pages else None,
         total_pages=total_pages,
         total_items=total_items
     )
@@ -573,7 +574,8 @@ async def get_payment_by_id(
     response_model=CheckoutSessionResponseSchema,
     status_code=status.HTTP_200_OK,
     summary="Create checkout session",
-    description="Create a checkout session for a pending order. Used for redirect-based payment flows.",
+    description="Create a checkout session for a pending order. "
+                "Used for redirect-based payment flows.",
     responses={
         200: {
             "description": "Checkout session created successfully",
@@ -700,7 +702,8 @@ async def create_checkout_session(
     "/payments/webhook/",
     status_code=status.HTTP_200_OK,
     summary="Handle payment webhook",
-    description="Handle incoming webhooks from payment service (e.g., Stripe). Processes payment status updates.",
+    description="Handle incoming webhooks from payment service (e.g., Stripe). "
+                "Processes payment status updates.",
     responses={
         200: {
             "description": "Webhook processed successfully",
@@ -766,7 +769,8 @@ async def handle_webhook(
     status_code=status.HTTP_200_OK,
     tags=["payments", "moderator"],
     summary="List all payments (Admin)",
-    description="Get a paginated list of all payments with filtering options. Only moderators and admins can access.",
+    description="Get a paginated list of all payments with filtering options. "
+                "Only moderators and admins can access.",
     responses={
         200: {
             "description": "List of payments returned successfully",
@@ -900,7 +904,7 @@ async def get_all_payments(
 
     stmt = stmt.offset(offset).limit(per_page)
     result = await db.execute(stmt)
-    payments: Sequence[PaymentModel] = result.scalars().all()
+    payments: Sequence[int] = result.scalars().all()
 
     payment_list = [
         PaymentSchema.model_validate(payment) for payment in payments
@@ -909,8 +913,16 @@ async def get_all_payments(
 
     return PaymentListSchema(
         payments=payment_list,
-        prev_page=f"/ecommerce/admin/orders/?page={page - 1}&per_page={per_page}{f'&user_id={user_id}' if user_id else ''}{f'&status_filter={status_filter}' if status_filter else ''}{f'&date_from={date_from}' if date_from else ''}{f'&date_to={date_to}' if date_to else ''}" if page > 1 else None,
-        next_page=f"/ecommerce/admin/orders/?page={page + 1}&per_page={per_page}{f'&user_id={user_id}' if user_id else ''}{f'&status_filter={status_filter}' if status_filter else ''}{f'&date_from={date_from}' if date_from else ''}{f'&date_to={date_to}' if date_to else ''}" if page < total_pages else None,
+        prev_page=f"/ecommerce/admin/orders/?page={page - 1}&per_page={per_page}"
+                  f"{f'&user_id={user_id}' if user_id else ''}"
+                  f"{f'&status_filter={status_filter}' if status_filter else ''}"
+                  f"{f'&date_from={date_from}' if date_from else ''}"
+                  f"{f'&date_to={date_to}' if date_to else ''}" if page > 1 else None,
+        next_page=f"/ecommerce/admin/orders/?page={page + 1}&per_page={per_page}"
+                  f"{f'&user_id={user_id}' if user_id else ''}"
+                  f"{f'&status_filter={status_filter}' if status_filter else ''}"
+                  f"{f'&date_from={date_from}' if date_from else ''}"
+                  f"{f'&date_to={date_to}' if date_to else ''}" if page < total_pages else None,
         total_pages=total_pages,
         total_items=total_items
     )

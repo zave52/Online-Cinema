@@ -157,7 +157,7 @@ async def test_create_valid_order(client, activated_user, seed_movies):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_order_schema_fields_and_types(
+async def test_create_order_schema_fields_and_types(
     client,
     activated_user,
     seed_movies
@@ -168,8 +168,8 @@ async def test_order_schema_fields_and_types(
         json=cart_item_data,
         headers=activated_user["headers"]
     )
-    assert cart_resp.status_code == 201
-    cart_item_id = cart_resp.json().get("id")
+    assert cart_resp.status_code == 200
+    cart_item_id = cart_resp.json()["cart_item_id"]
 
     order_data = {"cart_item_ids": [cart_item_id]}
     resp = await client.post(
@@ -180,7 +180,7 @@ async def test_order_schema_fields_and_types(
     order = resp.json()
     assert isinstance(order["id"], int)
     assert isinstance(order["user_id"], int)
-    assert isinstance(order["total_price"], (int, float))
+    assert isinstance(order["total_amount"], str)
     assert "created_at" in order
 
 
@@ -219,7 +219,7 @@ async def test_update_order_invalid(client, activated_user, pending_order):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_order_schema_fields_and_types(
+async def test_get_order_schema_fields_and_types(
     client,
     activated_user,
     pending_order

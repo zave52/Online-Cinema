@@ -11,11 +11,10 @@ from schemas.payments import (
     PaymentListSchema,
     CreatePaymentIntentSchema,
     PaymentIntentResponseSchema,
-    ProcessPaymentSchema,
+    ProcessPaymentRequestSchema,
     RefundPaymentSchema,
     CheckoutSessionRequestSchema,
-    CheckoutSessionResponseSchema,
-    MessageResponseSchema,
+    CheckoutSessionResponseSchema
 )
 
 
@@ -119,7 +118,7 @@ class TestPaymentIntentResponseSchema:
 class TestProcessPaymentSchema:
     def test_valid_process_payment(self):
         data = {"payment_intent_id": "pi_123"}
-        schema = ProcessPaymentSchema(**data)
+        schema = ProcessPaymentRequestSchema(**data)
         assert schema.payment_intent_id == "pi_123"
 
 
@@ -162,11 +161,3 @@ class TestCheckoutSessionResponseSchema:
         schema = CheckoutSessionResponseSchema(**data)
         assert schema.id == "cs_123"
         assert schema.amount_total == Decimal("99.99")
-
-
-@pytest.mark.validation
-class TestMessageResponseSchema:
-    def test_valid_message(self):
-        data = {"message": "Operation successful"}
-        schema = MessageResponseSchema(**data)
-        assert schema.message == "Operation successful"

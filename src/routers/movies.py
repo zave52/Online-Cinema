@@ -211,7 +211,7 @@ async def get_movies(
 
     stmt = stmt.offset(offset).limit(per_page)
     result = await db.execute(stmt)
-    movies: Sequence[MovieModel] = result.scalars().all()
+    movies = result.scalars().all()
 
     movie_list = [MovieListItemSchema.model_validate(movie) for movie in movies]
 
@@ -219,8 +219,20 @@ async def get_movies(
 
     return MovieListResponseSchema(
         movies=movie_list,
-        prev_page=f"/cinema/movies/?page={page - 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}{f'&search={search}' if search else ''}{f'&year_from={year_from}' if year_from else ''}{f'&year_to={year_to}' if year_to else ''}{f'&imdb_min={imdb_min}' if imdb_min else ''}{f'&genre={genre}' if genre else ''}" if page > 1 else None,
-        next_page=f"/cinema/movies/?page={page + 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}{f'&search={search}' if search else ''}{f'&year_from={year_from}' if year_from else ''}{f'&year_to={year_to}' if year_to else ''}{f'&imdb_min={imdb_min}' if imdb_min else ''}{f'&genre={genre}' if genre else ''}" if page < total_pages else None,
+        prev_page=f"/cinema/movies/?page={page - 1}&per_page={per_page}"
+                  f"{f'&sort_by={sort_by}' if sort_by else ''}"
+                  f"{f'&search={search}' if search else ''}"
+                  f"{f'&year_from={year_from}' if year_from else ''}"
+                  f"{f'&year_to={year_to}' if year_to else ''}"
+                  f"{f'&imdb_min={imdb_min}' if imdb_min else ''}"
+                  f"{f'&genre={genre}' if genre else ''}" if page > 1 else None,
+        next_page=f"/cinema/movies/?page={page + 1}&per_page={per_page}"
+                  f"{f'&sort_by={sort_by}' if sort_by else ''}"
+                  f"{f'&search={search}' if search else ''}"
+                  f"{f'&year_from={year_from}' if year_from else ''}"
+                  f"{f'&year_to={year_to}' if year_to else ''}"
+                  f"{f'&imdb_min={imdb_min}' if imdb_min else ''}"
+                  f"{f'&genre={genre}' if genre else ''}" if page < total_pages else None,
         total_pages=total_pages,
         total_items=total_items
     )
@@ -338,7 +350,7 @@ async def get_purchased_movies(
 
     stmt = stmt.offset(offset).limit(per_page)
     result = await db.execute(stmt)
-    movies: Sequence[MovieModel] = result.scalars().all()
+    movies = result.scalars().all()
 
     movie_list = [MovieListItemSchema.model_validate(movie) for movie in movies]
 
@@ -346,8 +358,10 @@ async def get_purchased_movies(
 
     return MovieListResponseSchema(
         movies=movie_list,
-        prev_page=f"/cinema/movies/purchased/?page={page - 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page > 1 else None,
-        next_page=f"/cinema/movies/purchased/?page={page + 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page < total_pages else None,
+        prev_page=f"/cinema/movies/purchased/?page={page - 1}&per_page={per_page}"
+                  f"{f'&sort_by={sort_by}' if sort_by else ''}" if page > 1 else None,
+        next_page=f"/cinema/movies/purchased/?page={page + 1}&per_page={per_page}"
+                  f"{f'&sort_by={sort_by}' if sort_by else ''}" if page < total_pages else None,
         total_pages=total_pages,
         total_items=total_items
     )
@@ -598,7 +612,7 @@ async def create_movie(
         )
     )
     result = await db.execute(existing_stmt)
-    existing_movie: MovieModel = result.scalars().first()
+    existing_movie: MovieModel | None = result.scalars().first()
 
     if existing_movie:
         raise HTTPException(
@@ -699,7 +713,8 @@ async def create_movie(
     status_code=status.HTTP_200_OK,
     tags=["movies", "moderator"],
     summary="Update movie",
-    description="Update an existing movie's information. Only moderators and admins can perform this action.",
+    description="Update an existing movie's information. "
+                "Only moderators and admins can perform this action.",
     responses={
         200: {
             "description": "Movie updated successfully",
@@ -888,7 +903,8 @@ async def update_movie(
     "/movies/{movie_id}/",
     tags=["movies", "moderator"],
     summary="Delete movie",
-    description="Delete a movie from the database. Only moderators and admins can perform this action.",
+    description="Delete a movie from the database. "
+                "Only moderators and admins can perform this action.",
     responses={
         200: {
             "description": "Movie deleted successfully",
@@ -988,7 +1004,8 @@ async def delete_movie(
 
     if cart_count > 0:
         return MessageResponseSchema(
-            message=f"Movie deleted successfully. Note: It was in {cart_count} users' carts and has been removed."
+            message=f"Movie deleted successfully. "
+                    f"Note: It was in {cart_count} users' carts and has been removed."
         )
 
     return None

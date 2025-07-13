@@ -142,7 +142,7 @@ async def get_liked_movies(
 
     stmt = stmt.offset(offset).limit(per_page)
     result = await db.execute(stmt)
-    movies: Sequence[MovieModel] = result.scalars().all()
+    movies = result.scalars().all()
 
     movie_list = [MovieListItemSchema.model_validate(movie) for movie in movies]
 
@@ -150,8 +150,10 @@ async def get_liked_movies(
 
     return MovieListResponseSchema(
         movies=movie_list,
-        prev_page=f"/cinema/movies/likes/?page={page - 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page > 1 else None,
-        next_page=f"/cinema/movies/likes/?page={page + 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page < total_pages else None,
+        prev_page=f"/cinema/movies/likes/?page={page - 1}&per_page={per_page}"
+                  f"{f'&sort_by={sort_by}' if sort_by else ''}" if page > 1 else None,
+        next_page=f"/cinema/movies/likes/?page={page + 1}&per_page={per_page}"
+                  f"{f'&sort_by={sort_by}' if sort_by else ''}" if page < total_pages else None,
         total_pages=total_pages,
         total_items=total_items
     )

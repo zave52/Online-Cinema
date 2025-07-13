@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+from typing import AsyncGenerator, cast
 
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import (
@@ -8,9 +8,9 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker
 )
 
-from config.settings import get_settings
+from config.settings import get_settings, Settings
 
-settings = get_settings()
+settings = cast(Settings, get_settings())
 
 POSTGRESQL_DATABASE_URL = (
     f"postgresql+asyncpg://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@"
@@ -34,11 +34,11 @@ sync_postgresql_engine = create_engine(sync_database_url, echo=False)
 
 async def get_postgresql_db() -> AsyncGenerator[AsyncSession, None]:
     """Get an async PostgreSQL database session.
-    
+
     This function provides a dependency injection function for FastAPI to
     get database sessions. It uses async context management to ensure
     proper session cleanup.
-    
+
     Yields:
         AsyncSession: An async database session for PostgreSQL operations.
     """
@@ -47,8 +47,8 @@ async def get_postgresql_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 @asynccontextmanager
-async def get_postgresql_db_contextmanager() -> AsyncGenerator[
-    AsyncSession, None]:
+async def get_postgresql_db_contextmanager(
+) -> AsyncGenerator[AsyncSession, None]:
     """
     Async context manager that provides an async PostgreSQL database session.
 

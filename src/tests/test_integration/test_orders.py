@@ -168,7 +168,7 @@ async def test_create_order_schema_fields_and_types(
         json=cart_item_data,
         headers=activated_user["headers"]
     )
-    assert cart_resp.status_code == 201
+    assert cart_resp.status_code == 200
     cart_item_id = cart_resp.json().get("id")
 
     order_data = {"cart_item_ids": [cart_item_id]}

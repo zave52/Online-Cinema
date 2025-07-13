@@ -28,11 +28,11 @@ from schemas.payments import (
     PaymentIntentResponseSchema,
     CreatePaymentIntentSchema,
     MessageResponseSchema,
-    ProcessPaymentSchema,
+    ProcessPaymentRequestSchema,
     PaymentListSchema,
     PaymentSchema,
     CheckoutSessionRequestSchema,
-    CheckoutSessionResponseSchema
+    CheckoutSessionResponseSchema, ProcessPaymentResponseSchema
 )
 
 router = APIRouter()
@@ -177,7 +177,7 @@ async def create_payment_intent(
 
 @router.post(
     "/payments/process/",
-    response_model=MessageResponseSchema,
+    response_model=ProcessPaymentResponseSchema,
     status_code=status.HTTP_200_OK,
     summary="Process payment",
     description="Process a payment using a payment intent. Updates order status and adds movies to user's purchased list.",
@@ -187,7 +187,7 @@ async def create_payment_intent(
             "content": {
                 "application/json": {
                     "example": {
-                        "message": "Payment processed successfully. Movies have been added to your library."
+                        "payment_id": 1
                     }
                 }
             }
@@ -241,17 +241,17 @@ async def create_payment_intent(
     }
 )
 async def process_payment(
-    data: ProcessPaymentSchema,
+    data: ProcessPaymentRequestSchema,
     background_tasks: BackgroundTasks,
     user: UserModel = Depends(get_current_user),
     payment_service: PaymentServiceInterface = Depends(get_payment_service),
     email_sender: EmailSenderInterface = Depends(get_email_sender),
     db: AsyncSession = Depends(get_db)
-) -> MessageResponseSchema:
+) -> ProcessPaymentResponseSchema:
     """Process a payment using a payment intent.
 
     Args:
-        data (ProcessPaymentSchema): Payment processing data.
+        data (ProcessPaymentRequestSchema): Payment processing data.
         background_tasks (BackgroundTasks): FastAPI background tasks.
         user (UserModel): The current authenticated user.
         payment_service (PaymentServiceInterface): Payment service dependency.
@@ -259,7 +259,7 @@ async def process_payment(
         db (AsyncSession): Database session dependency.
 
     Returns:
-        MessageResponseSchema: Success message.
+        ProcessPaymentResponseSchema: payment id.
     """
     try:
         intent_data = await payment_service.retrieve_payment_intent(
@@ -347,9 +347,7 @@ async def process_payment(
             payment.amount
         )
 
-    return MessageResponseSchema(
-        message=f"Payment processed successfully. Payment ID: {payment.id}"
-    )
+    return ProcessPaymentResponseSchema(payment_id=payment.id)
 
 
 @router.get(

@@ -11,7 +11,7 @@ from schemas.payments import (
     PaymentListSchema,
     CreatePaymentIntentSchema,
     PaymentIntentResponseSchema,
-    ProcessPaymentSchema,
+    ProcessPaymentRequestSchema,
     RefundPaymentSchema,
     CheckoutSessionRequestSchema,
     CheckoutSessionResponseSchema,
@@ -119,7 +119,7 @@ class TestPaymentIntentResponseSchema:
 class TestProcessPaymentSchema:
     def test_valid_process_payment(self):
         data = {"payment_intent_id": "pi_123"}
-        schema = ProcessPaymentSchema(**data)
+        schema = ProcessPaymentRequestSchema(**data)
         assert schema.payment_intent_id == "pi_123"
 
 

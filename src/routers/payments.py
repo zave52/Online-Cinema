@@ -136,7 +136,7 @@ async def create_payment_intent(
         )
     )
     result = await db.execute(stmt)
-    order: OrderModel = result.scalars().first()
+    order: OrderModel | None = result.scalars().first()
 
     if not order:
         raise HTTPException(
@@ -150,16 +150,16 @@ async def create_payment_intent(
             detail="Order is not on pending status."
         )
 
-    total_amount = sum(item.price_at_order for item in order.items)
+    total_amount = sum(item.price_at_order for item in order.items) if order.items else Decimal(0)
 
-    if order.total_amount != total_amount:
-        order.total_amount = total_amount
+    if order.total_amount is not None and order.total_amount != total_amount:
+        order.total_amount = Decimal(total_amount)
         await db.commit()
 
     try:
         intend_data = await payment_service.create_payment_intent(
             order=order,
-            amount=Decimal(order.total_amount)
+            amount=Decimal(order.total_amount if order.total_amount is not None else 0)
         )
     except PaymentError as e:
         raise HTTPException(
@@ -285,7 +285,7 @@ async def process_payment(
         )
     )
     result = await db.execute(stmt)
-    order: OrderModel = result.scalars().first()
+    order: OrderModel | None = result.scalars().first()
 
     if not order:
         raise HTTPException(
@@ -466,7 +466,7 @@ async def get_user_payments(
 
     stmt = stmt.offset(offset).limit(per_page)
     result = await db.execute(stmt)
-    payments: Sequence[PaymentModel] = result.scalars().all()
+    payments = result.scalars().all()
 
     payment_list = [
         PaymentSchema.model_validate(payment) for payment in payments
@@ -904,7 +904,7 @@ async def get_all_payments(
 
     stmt = stmt.offset(offset).limit(per_page)
     result = await db.execute(stmt)
-    payments: Sequence[PaymentModel] = result.scalars().all()
+    payments: Sequence[int] = result.scalars().all()
 
     payment_list = [
         PaymentSchema.model_validate(payment) for payment in payments

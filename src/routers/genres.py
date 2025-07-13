@@ -145,7 +145,7 @@ async def get_genres(
     total_pages = (total_items + per_page - 1) // per_page
 
     return GenreListSchema(
-        genres=genre_list,
+        genres=[GenreSchema.model_validate(genre) for genre in genre_list],
         prev_page=f"/cinema/genres/?page={page - 1}&per_page={per_page}" if page > 1 else None,
         next_page=(
             f"/cinema/genres/?page={page + 1}&per_page={per_page}" if page < total_pages else None
@@ -215,7 +215,7 @@ async def get_genre_by_id(
 ) -> GenreWithMovieCountSchema:
     stmt = select(GenreModel).where(GenreModel.id == genre_id)
     result = await db.execute(stmt)
-    genre: GenreModel = result.scalars().first()
+    genre: GenreModel | None = result.scalars().first()
 
     if not genre:
         raise HTTPException(
@@ -413,7 +413,7 @@ async def update_genre(
 ) -> GenreSchema:
     stmt = select(GenreModel).where(GenreModel.id == genre_id)
     result = await db.execute(stmt)
-    genre: GenreModel = result.scalars().first()
+    genre: GenreModel | None = result.scalars().first()
 
     if not genre:
         raise HTTPException(

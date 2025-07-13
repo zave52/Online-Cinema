@@ -17,6 +17,7 @@ from .exapmles.payments import (
     message_response_schema_example
 )
 
+
 class PaymentItemSchema(BaseModel):
     id: int
     order_item_id: int
@@ -61,6 +62,7 @@ class PaymentListSchema(BaseModel):
         }
     )
 
+
 class CreatePaymentIntentSchema(BaseModel):
     order_id: int
 
@@ -69,6 +71,7 @@ class CreatePaymentIntentSchema(BaseModel):
             "example": create_payment_intent_schema_example
         }
     )
+
 
 class PaymentIntentResponseSchema(BaseModel):
     id: str
@@ -82,6 +85,7 @@ class PaymentIntentResponseSchema(BaseModel):
         }
     )
 
+
 class ProcessPaymentRequestSchema(BaseModel):
     payment_intent_id: str
 
@@ -90,6 +94,7 @@ class ProcessPaymentRequestSchema(BaseModel):
             "example": process_payment_request_schema_example
         }
     )
+
 
 class ProcessPaymentResponseSchema(BaseModel):
     payment_id: int
@@ -100,6 +105,7 @@ class ProcessPaymentResponseSchema(BaseModel):
         }
     )
 
+
 class RefundPaymentSchema(BaseModel):
     amount: Optional[Decimal] = None
     reason: Optional[str] = None
@@ -109,6 +115,7 @@ class RefundPaymentSchema(BaseModel):
             "example": refund_payment_schema_example
         }
     )
+
 
 class CheckoutSessionRequestSchema(BaseModel):
     order_id: int

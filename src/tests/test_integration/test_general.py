@@ -3,21 +3,21 @@ import pytest
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_invalid_http_method(client):
+async def test_invalid_http_method(client, seed_user_groups):
     resp = await client.put("/api/v1/accounts/register/", json={})
     assert resp.status_code == 405
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_invalid_missing_fields(client):
+async def test_invalid_missing_fields(client, seed_user_groups):
     resp = await client.post("/api/v1/accounts/register/", json={})
     assert resp.status_code == 422
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_unauthorized_access(client):
+async def test_unauthorized_access(client, activated_user):
     resp = await client.get("/api/v1/ecommerce/orders/")
     assert resp.status_code == 403
 
@@ -26,24 +26,23 @@ async def test_unauthorized_access(client):
 @pytest.mark.asyncio
 async def test_forbidden_access(client, activated_user):
     """Test that a normal user cannot access an admin/moderator-only endpoint."""
-    headers = activated_user["headers"]
     resp = await client.get(
         "/api/v1/ecommerce/admin/payments/",
-        headers=headers
+        headers=activated_user["headers"]
     )
     assert resp.status_code == 403
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_error_handling_not_found(client):
+async def test_error_handling_not_found(client, seed_user_groups):
     resp = await client.get("/api/v1/nonexistent-endpoint/")
     assert resp.status_code == 404
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_advanced_search_filter(client, activated_user):
+async def test_advanced_search_filter(client, seed_movies):
     """Test advanced search and filtering capabilities"""
     resp = await client.get(
         "/api/v1/cinema/movies/?year_from=2020&year_to=2023&imdb_min=7&genre=Action"
@@ -66,7 +65,7 @@ async def test_advanced_search_filter(client, activated_user):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_error_message_format_general(client):
+async def test_error_message_format_general(client, seed_user_groups):
     resp = await client.post("/api/v1/accounts/register/", json={})
     assert resp.status_code == 422
     data = resp.json()
@@ -77,9 +76,8 @@ async def test_error_message_format_general(client):
 @pytest.mark.asyncio
 async def test_permissions_forbidden_access(client, activated_user):
     """Test that a normal user cannot access an admin/moderator-only endpoint (permissions check)."""
-    headers = activated_user["headers"]
     resp = await client.get(
         "/api/v1/ecommerce/admin/payments/",
-        headers=headers
+        headers=activated_user["headers"]
     )
     assert resp.status_code == 403

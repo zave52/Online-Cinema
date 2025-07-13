@@ -1,102 +1,75 @@
 from decimal import Decimal
-from typing import List, Dict, Any
+
 from pydantic import EmailStr
 
+from notifications.interfaces import EmailSenderInterface
 
-class StubEmailSender:
+
+class StubEmailSender(EmailSenderInterface):
     """Stub implementation of EmailSender for testing.
 
     This class captures all email sending calls for verification in tests.
     """
-
-    def __init__(self):
-        """Initialize the stub with empty sent emails list."""
-        self.sent_emails: List[Dict[str, Any]] = []
-        self.call_count = 0
-
-    def clear_sent_emails(self) -> None:
-        """Clear the list of sent emails."""
-        self.sent_emails.clear()
-        self.call_count = 0
-
-    def get_sent_emails(self) -> List[Dict[str, Any]]:
-        """Get all sent emails."""
-        return self.sent_emails.copy()
-
-    def get_sent_emails_by_recipient(self, email: str) -> List[Dict[str, Any]]:
-        """Get sent emails for a specific recipient."""
-        return [email_data for email_data in self.sent_emails
-                if email_data.get('recipient') == email]
-
-    def get_sent_emails_by_type(self, email_type: str) -> List[Dict[str, Any]]:
-        """Get sent emails by type."""
-        return [email_data for email_data in self.sent_emails
-                if email_data.get('type') == email_type]
 
     async def send_activation_email(
         self,
         email: EmailStr,
         activation_link: str
     ) -> None:
-        """Record activation email sending."""
-        self.call_count += 1
-        self.sent_emails.append({
-            'type': 'activation',
-            'recipient': str(email),
-            'activation_link': activation_link,
-            'subject': 'Account Activation'
-        })
+        """Sends an activation email to the user.
+
+        Args:
+            email: The recipient's email address.
+            activation_link: The link to activate the user's account.
+        """
+        pass
 
     async def send_activation_complete_email(
         self,
         email: EmailStr,
         login_link: str
     ) -> None:
-        """Record activation complete email sending."""
-        self.call_count += 1
-        self.sent_emails.append({
-            'type': 'activation_complete',
-            'recipient': str(email),
-            'login_link': login_link,
-            'subject': 'Account Activation Successfully'
-        })
+        """Sends an email confirming successful account activation.
+
+        Args:
+            email: The recipient's email address.
+            login_link: The link to the login page.
+        """
+        pass
 
     async def send_password_reset_email(
         self,
         email: EmailStr,
         password_reset_link: str
     ) -> None:
-        """Record password reset email sending."""
-        self.call_count += 1
-        self.sent_emails.append({
-            'type': 'password_reset',
-            'recipient': str(email),
-            'reset_link': password_reset_link,
-            'subject': 'Password Reset Request'
-        })
+        """Sends a password reset email to the user.
+
+        Args:
+            email: The recipient's email address.
+            password_reset_link: The link to reset the user's password.
+        """
+        pass
 
     async def send_password_reset_complete_email(
         self,
         email: EmailStr,
         login_link: str
     ) -> None:
-        """Record password reset complete email sending."""
-        self.call_count += 1
-        self.sent_emails.append({
-            'type': 'password_reset_complete',
-            'recipient': str(email),
-            'login_link': login_link,
-            'subject': 'Password Reset Complete'
-        })
+        """Sends an email confirming successful password reset.
+
+        Args:
+            email: The recipient's email address.
+            login_link: The link to the login page.
+        """
+        pass
 
     async def send_password_changed_email(self, email: EmailStr) -> None:
-        """Record password changed email sending."""
-        self.call_count += 1
-        self.sent_emails.append({
-            'type': 'password_changed',
-            'recipient': str(email),
-            'subject': 'Password Change Successfully'
-        })
+        """Sends an email confirming that the user's password has been changed.
+
+        Args:
+            email: The recipient's email address.
+        """
+        pass
 
     async def send_comment_reply_notification_email(
         self,
@@ -105,16 +78,15 @@ class StubEmailSender:
         reply_text: str,
         reply_author: EmailStr
     ) -> None:
-        """Record comment reply notification email sending."""
-        self.call_count += 1
-        self.sent_emails.append({
-            'type': 'comment_reply',
-            'recipient': str(email),
-            'comment_id': comment_id,
-            'reply_text': reply_text,
-            'reply_author': str(reply_author),
-            'subject': 'New Reply to Your Comment'
-        })
+        """Sends an email notifying the user about a reply to their comment.
+
+        Args:
+            email: The recipient's email address.
+            comment_id: The ID of the comment that was replied to.
+            reply_text: The text of the reply.
+            reply_author: The email address of the reply author.
+        """
+        pass
 
     async def send_refund_confirmation_email(
         self,
@@ -122,15 +94,14 @@ class StubEmailSender:
         order_id: int,
         amount: Decimal
     ) -> None:
-        """Record refund confirmation email sending."""
-        self.call_count += 1
-        self.sent_emails.append({
-            'type': 'refund_confirmation',
-            'recipient': str(email),
-            'order_id': order_id,
-            'amount': str(amount),
-            'subject': 'Refund Confirmation'
-        })
+        """Sends an email confirming a refund.
+
+        Args:
+            email: The recipient's email address.
+            order_id: The ID of the refunded order.
+            amount: The refunded amount.
+        """
+        pass
 
     async def send_payment_confirmation_email(
         self,
@@ -138,12 +109,11 @@ class StubEmailSender:
         order_id: int,
         amount: Decimal
     ) -> None:
-        """Record payment confirmation email sending."""
-        self.call_count += 1
-        self.sent_emails.append({
-            'type': 'payment_confirmation',
-            'recipient': str(email),
-            'order_id': order_id,
-            'amount': str(amount),
-            'subject': 'Payment Confirmation'
-        })
+        """Sends an email confirming a successful payment.
+
+        Args:
+            email: The recipient's email address.
+            order_id: The ID of the paid order.
+            amount: The paid amount.
+        """
+        pass

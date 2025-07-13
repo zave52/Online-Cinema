@@ -13,17 +13,53 @@ The module exports:
 """
 import os
 
+from database.models.accounts import (
+    purchased_movies_association,
+    UserGroupEnum,
+    GenderEnum,
+    UserGroupModel,
+    UserModel,
+    ActivationTokenModel,
+    PasswordResetTokenModel,
+    RefreshTokenModel
+)
+from database.models.base import Base
+from database.models.movies import (
+    movie_genre_association,
+    movie_star_association,
+    movie_director_association,
+    GenreModel,
+    StarModel,
+    DirectorModel,
+    CertificationModel,
+    MovieModel,
+    LikeModel,
+    CommentModel,
+    FavoriteMovieModel,
+    RateMovieModel
+)
+from database.models.orders import OrderStatusEnum, OrderModel, OrderItemModel
+from database.models.payments import (
+    PaymentStatusEnum,
+    PaymentModel,
+    PaymentItemModel
+)
+from database.models.profiles import UserProfileModel
+from database.models.shopping_cart import CartModel, CartItemModel
+
 environment = os.getenv("ENVIRONMENT", "developing")
 
 if environment == "developing":
     from database.session_postgresql import (
-    get_postgresql_db as get_db,
-    AsyncPostgresqlSessionLocal as AsyncSessionLocal,
-    get_postgresql_db_contextmanager as get_db_contextmanager,
-    sync_postgresql_engine as sync_db_engine
+        get_postgresql_db as get_db,
+        AsyncPostgresqlSessionLocal as AsyncSessionLocal,
+        get_postgresql_db_contextmanager as get_db_contextmanager,
+        sync_postgresql_engine as sync_db_engine
     )
 else:
     from .session_sqlite import (
         get_sqlite_db as get_db,
-        AsyncSQLiteSessionLocal as AsyncSessionLocal
+        AsyncSQLiteSessionLocal as AsyncSessionLocal,
+        get_sqlite_db_contextmanager as get_db_contextmanager,
+        reset_sqlite_database as reset_database
     )

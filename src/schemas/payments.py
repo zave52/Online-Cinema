@@ -13,8 +13,7 @@ from .exapmles.payments import (
     payment_intent_response_schema_example,
     process_payment_request_schema_example,
     process_payment_response_schema_example,
-    refund_payment_schema_example,
-    message_response_schema_example
+    refund_payment_schema_example
 )
 
 
@@ -127,13 +126,3 @@ class CheckoutSessionResponseSchema(BaseModel):
     id: str
     url: str
     amount_total: Optional[Decimal]
-
-
-class MessageResponseSchema(BaseModel):
-    message: str
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": message_response_schema_example
-        }
-    )

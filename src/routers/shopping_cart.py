@@ -124,8 +124,7 @@ async def add_movie_to_cart(
         CartItemModel
     ).outerjoin(
         CartItemModel,
-        (CartItemModel.movie_id == MovieModel.id) &
-        (CartItemModel.cart_id == cart.id)
+        (CartItemModel.movie_id == MovieModel.id) & (CartItemModel.cart_id == cart.id)
     ).where(MovieModel.id == data.movie_id)
 
     result = await db.execute(combined_stmt)

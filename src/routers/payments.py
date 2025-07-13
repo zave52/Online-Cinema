@@ -27,7 +27,6 @@ from payments.interfaces import PaymentServiceInterface
 from schemas.payments import (
     PaymentIntentResponseSchema,
     CreatePaymentIntentSchema,
-    MessageResponseSchema,
     ProcessPaymentRequestSchema,
     PaymentListSchema,
     PaymentSchema,

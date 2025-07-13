@@ -112,7 +112,3 @@ refund_payment_schema_example: Dict[str, Any] = {
     "amount": "29.97",
     "reason": "Customer requested refund"
 }
-
-message_response_schema_example: Dict[str, Any] = {
-    "message": "Payment processed successfully"
-}

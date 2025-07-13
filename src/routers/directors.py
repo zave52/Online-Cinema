@@ -117,7 +117,7 @@ async def get_directors(
 
     stmt = stmt.offset(offset).limit(per_page)
     result = await db.execute(stmt)
-    directors: Sequence[DirectorModel] = result.scalars().all()
+    directors = result.scalars().all()
 
     director_list = [
         DirectorSchema.model_validate(director) for director in directors

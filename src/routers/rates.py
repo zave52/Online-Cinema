@@ -21,7 +21,8 @@ router = APIRouter()
     response_model=MessageResponseSchema,
     status_code=status.HTTP_200_OK,
     summary="Rate movie",
-    description="Rate a movie with a score from 1 to 10. If already rated, updates the existing rating.",
+    description="Rate a movie with a score from 1 to 10. "
+                "If already rated, updates the existing rating.",
     responses={
         200: {
             "description": "Movie rated successfully",

@@ -47,7 +47,8 @@ moderator_and_admin = RoleChecker(
     response_model=PaymentIntentResponseSchema,
     status_code=status.HTTP_200_OK,
     summary="Create payment intent",
-    description="Create a payment intent for a pending order. This is the first step in the payment process.",
+    description="Create a payment intent for a pending order. "
+                "This is the first step in the payment process.",
     responses={
         200: {
             "description": "Payment intent created successfully",
@@ -180,7 +181,8 @@ async def create_payment_intent(
     response_model=ProcessPaymentResponseSchema,
     status_code=status.HTTP_200_OK,
     summary="Process payment",
-    description="Process a payment using a payment intent. Updates order status and adds movies to user's purchased list.",
+    description="Process a payment using a payment intent. "
+                "Updates order status and adds movies to user's purchased list.",
     responses={
         200: {
             "description": "Payment processed successfully",
@@ -474,8 +476,10 @@ async def get_user_payments(
 
     return PaymentListSchema(
         payments=payment_list,
-        prev_page=f"/ecommerce/payments/?page={page - 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page > 1 else None,
-        next_page=f"/ecommerce/payments/?page={page + 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page < total_pages else None,
+        prev_page=f"/ecommerce/payments/?page={page - 1}&per_page={per_page}"
+                  f"{f'&sort_by={sort_by}' if sort_by else ''}" if page > 1 else None,
+        next_page=f"/ecommerce/payments/?page={page + 1}&per_page={per_page}"
+                  f"{f'&sort_by={sort_by}' if sort_by else ''}" if page < total_pages else None,
         total_pages=total_pages,
         total_items=total_items
     )
@@ -571,7 +575,8 @@ async def get_payment_by_id(
     response_model=CheckoutSessionResponseSchema,
     status_code=status.HTTP_200_OK,
     summary="Create checkout session",
-    description="Create a checkout session for a pending order. Used for redirect-based payment flows.",
+    description="Create a checkout session for a pending order. "
+                "Used for redirect-based payment flows.",
     responses={
         200: {
             "description": "Checkout session created successfully",
@@ -698,7 +703,8 @@ async def create_checkout_session(
     "/payments/webhook/",
     status_code=status.HTTP_200_OK,
     summary="Handle payment webhook",
-    description="Handle incoming webhooks from payment service (e.g., Stripe). Processes payment status updates.",
+    description="Handle incoming webhooks from payment service (e.g., Stripe). "
+                "Processes payment status updates.",
     responses={
         200: {
             "description": "Webhook processed successfully",
@@ -764,7 +770,8 @@ async def handle_webhook(
     status_code=status.HTTP_200_OK,
     tags=["payments", "moderator"],
     summary="List all payments (Admin)",
-    description="Get a paginated list of all payments with filtering options. Only moderators and admins can access.",
+    description="Get a paginated list of all payments with filtering options. "
+                "Only moderators and admins can access.",
     responses={
         200: {
             "description": "List of payments returned successfully",
@@ -907,8 +914,16 @@ async def get_all_payments(
 
     return PaymentListSchema(
         payments=payment_list,
-        prev_page=f"/ecommerce/admin/orders/?page={page - 1}&per_page={per_page}{f'&user_id={user_id}' if user_id else ''}{f'&status_filter={status_filter}' if status_filter else ''}{f'&date_from={date_from}' if date_from else ''}{f'&date_to={date_to}' if date_to else ''}" if page > 1 else None,
-        next_page=f"/ecommerce/admin/orders/?page={page + 1}&per_page={per_page}{f'&user_id={user_id}' if user_id else ''}{f'&status_filter={status_filter}' if status_filter else ''}{f'&date_from={date_from}' if date_from else ''}{f'&date_to={date_to}' if date_to else ''}" if page < total_pages else None,
+        prev_page=f"/ecommerce/admin/orders/?page={page - 1}&per_page={per_page}"
+                  f"{f'&user_id={user_id}' if user_id else ''}"
+                  f"{f'&status_filter={status_filter}' if status_filter else ''}"
+                  f"{f'&date_from={date_from}' if date_from else ''}"
+                  f"{f'&date_to={date_to}' if date_to else ''}" if page > 1 else None,
+        next_page=f"/ecommerce/admin/orders/?page={page + 1}&per_page={per_page}"
+                  f"{f'&user_id={user_id}' if user_id else ''}"
+                  f"{f'&status_filter={status_filter}' if status_filter else ''}"
+                  f"{f'&date_from={date_from}' if date_from else ''}"
+                  f"{f'&date_to={date_to}' if date_to else ''}" if page < total_pages else None,
         total_pages=total_pages,
         total_items=total_items
     )

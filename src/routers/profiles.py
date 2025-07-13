@@ -196,7 +196,8 @@ async def create_profile(
     response_model=ProfileRetrieveSchema,
     status_code=status.HTTP_200_OK,
     summary="Get user profile",
-    description="Retrieve a user's profile. Users can only view their own profile unless they are admin.",
+    description="Retrieve a user's profile. "
+                "Users can only view their own profile unless they are admin.",
     responses={
         200: {
             "description": "Profile retrieved successfully",
@@ -314,7 +315,8 @@ async def get_user_profile(
     response_model=ProfileResponseSchema,
     status_code=status.HTTP_200_OK,
     summary="Update user profile",
-    description="Update a user's profile completely. Users can only update their own profile unless they are admin.",
+    description="Update a user's profile completely. "
+                "Users can only update their own profile unless they are admin.",
     responses={
         200: {
             "description": "Profile updated successfully",
@@ -485,7 +487,8 @@ async def update_profile(
     response_model=ProfileResponseSchema,
     status_code=status.HTTP_200_OK,
     summary="Patch user profile",
-    description="Partially update a user's profile. Users can only update their own profile unless they are admin.",
+    description="Partially update a user's profile. "
+                "Users can only update their own profile unless they are admin.",
     responses={
         200: {
             "description": "Profile patched successfully",

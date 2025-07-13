@@ -360,7 +360,7 @@ class StripePaymentService(PaymentServiceInterface):
             bool: True if payment method is valid and exists.
         """
         try:
-            payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
+            stripe.PaymentMethod.retrieve(payment_method_id)
             return True
         except Exception:
             return False
@@ -437,7 +437,8 @@ class StripePaymentService(PaymentServiceInterface):
             payment_intent_id (str): ID of the payment intent.
 
         Returns:
-            Dict[str, Any]: Payment intent details including id, status, amount, currency, and metadata.
+            Dict[str, Any]: Payment intent details including id,
+                            status, amount, currency, and metadata.
 
         Raises:
             PaymentError: If payment intent retrieval fails.

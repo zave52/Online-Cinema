@@ -34,7 +34,8 @@ moderator_and_admin = RoleChecker(
     response_model=ShoppingCartAddMovieResponseSchema,
     status_code=status.HTTP_200_OK,
     summary="Add movie to cart",
-    description="Add a movie to the user's shopping cart. Validates that the movie is not already purchased.",
+    description="Add a movie to the user's shopping cart. "
+                "Validates that the movie is not already purchased.",
     responses={
         200: {
             "description": "Movie added to cart successfully",
@@ -341,7 +342,8 @@ async def get_shopping_cart_movies(
     status_code=status.HTTP_200_OK,
     tags=["cart", "moderator"],
     summary="Get cart by ID (Admin)",
-    description="Retrieve shopping cart contents by cart ID. Only moderators and admins can access.",
+    description="Retrieve shopping cart contents by cart ID. "
+                "Only moderators and admins can access.",
     responses={
         200: {
             "description": "Shopping cart contents returned successfully",

@@ -47,8 +47,8 @@ async def get_postgresql_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 @asynccontextmanager
-async def get_postgresql_db_contextmanager() -> AsyncGenerator[
-    AsyncSession, None]:
+async def get_postgresql_db_contextmanager(
+) -> AsyncGenerator[AsyncSession, None]:
     """
     Async context manager that provides an async PostgreSQL database session.
 

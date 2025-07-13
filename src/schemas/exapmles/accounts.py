@@ -22,8 +22,12 @@ user_login_request_schema_example: Dict[str, Any] = {
 }
 
 user_login_response_schema_example: Dict[str, Any] = {
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcl9pZCI6MSwiZW1haWwiOiJqb2huLmRvZUBleGFtcGxlLmNvbSIsImdyb3VwIjoiIn0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8",
-    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcl9pZCI6MSwiZW1haWwiOiJqb2huLmRvZUBleGFtcGxlLmNvbSIsImdyb3VwIjoiIn0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcl9pZCI6MSwiZW1haW"
+                    "wiOiJqb2huLmRvZUBleGFtcGxlLmNvbSIsImdyb3VwIjoiIn0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8E"
+                    "j8Ej8Ej8Ej8Ej8",
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcl9pZCI6MSwiZW1ha"
+                     "WwiOiJqb2huLmRvZUBleGFtcGxlLmNvbSIsImdyb3VwIjoiIn0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej"
+                     "8Ej8Ej8Ej8Ej8Ej8",
     "token_type": "bearer",
     "user": {
         "id": 1,
@@ -57,16 +61,22 @@ password_change_request_schema_example: Dict[str, Any] = {
 }
 
 token_refresh_request_schema_example: Dict[str, Any] = {
-    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcl9pZCI6MSwiZW1haWwiOiJqb2huLmRvZUBleGFtcGxlLmNvbSIsImdyb3VwIjoiIn0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8"
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcl9pZCI6MSwiZW1h"
+                     "aWwiOiJqb2huLmRvZUBleGFtcGxlLmNvbSIsImdyb3VwIjoiIn0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8"
+                     "Ej8Ej8Ej8Ej8Ej8Ej8"
 }
 
 token_refresh_response_schema_example: Dict[str, Any] = {
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcl9pZCI6MSwiZW1haWwiOiJqb2huLmRvZUBleGFtcGxlLmNvbSIsImdyb3VwIjoiIn0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcl9pZCI6MSwiZW1ha"
+                    "WwiOiJqb2huLmRvZUBleGFtcGxlLmNvbSIsImdyb3VwIjoiIn0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej"
+                    "8Ej8Ej8Ej8Ej8Ej8",
     "token_type": "bearer"
 }
 
 token_verify_request_schema_example: Dict[str, Any] = {
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcl9pZCI6MSwiZW1haWwiOiJqb2huLmRvZUBleGFtcGxlLmNvbSIsImdyb3VwIjoiIn0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8"
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcl9pZCI6MSwiZW1ha"
+                    "WwiOiJqb2huLmRvZUBleGFtcGxlLmNvbSIsImdyb3VwIjoiIn0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej"
+                    "8Ej8Ej8Ej8Ej8Ej8"
 }
 
 user_activation_request_schema_example: Dict[str, Any] = {

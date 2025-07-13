@@ -49,7 +49,8 @@ moderator_and_admin = RoleChecker(
     response_model=OrderSchema,
     status_code=status.HTTP_201_CREATED,
     summary="Create order",
-    description="Create a new order from cart items. Validates that movies are not already purchased and not in pending orders.",
+    description="Create a new order from cart items. "
+                "Validates that movies are not already purchased and not in pending orders.",
     responses={
         201: {
             "description": "Order created successfully",
@@ -368,8 +369,10 @@ async def get_user_orders(
 
     return OrderListSchema(
         orders=order_list,
-        prev_page=f"/ecommerce/orders/?page={page - 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page > 1 else None,
-        next_page=f"/ecommerce/orders/?page={page + 1}&per_page={per_page}{f'&sort_by={sort_by}' if sort_by else ''}" if page < total_pages else None,
+        prev_page=f"/ecommerce/orders/?page={page - 1}&per_page={per_page}"
+                  f"{f'&sort_by={sort_by}' if sort_by else ''}" if page > 1 else None,
+        next_page=f"/ecommerce/orders/?page={page + 1}&per_page={per_page}"
+                  f"{f'&sort_by={sort_by}' if sort_by else ''}" if page < total_pages else None,
         total_pages=total_pages,
         total_items=total_items
     )
@@ -583,7 +586,10 @@ async def cancel_order(
     response_model=MessageResponseSchema,
     status_code=status.HTTP_200_OK,
     summary="Request refund",
-    description="Request a refund for a paid order. Processes refund through payment service and removes movies from user's purchased list. Allowed refund reasons: 'requested_by_customer', 'fraudulent', 'duplicate'.",
+    description="Request a refund for a paid order. "
+                "Processes refund through payment service and removes movies from user's "
+                "purchased list. Allowed refund reasons: 'requested_by_customer', "
+                "'fraudulent', 'duplicate'.",
     responses={
         200: {
             "description": "Refund processed successfully",
@@ -761,7 +767,8 @@ async def refund_order(
     status_code=status.HTTP_200_OK,
     tags=["orders", "moderator"],
     summary="List all orders (Admin)",
-    description="Get a paginated list of all orders with filtering options. Only moderators and admins can access.",
+    description="Get a paginated list of all orders with filtering options. "
+                "Only moderators and admins can access.",
     responses={
         200: {
             "description": "List of orders returned successfully",
@@ -907,8 +914,16 @@ async def get_all_orders(
 
     return OrderListSchema(
         orders=order_list,
-        prev_page=f"/ecommerce/admin/orders/?page={page - 1}&per_page={per_page}{f'&user_id={user_id}' if user_id else ''}{f'&status_filter={status_filter}' if status_filter else ''}{f'&date_from={date_from}' if date_from else ''}{f'&date_to={date_to}' if date_to else ''}" if page > 1 else None,
-        next_page=f"/ecommerce/admin/orders/?page={page + 1}&per_page={per_page}{f'&user_id={user_id}' if user_id else ''}{f'&status_filter={status_filter}' if status_filter else ''}{f'&date_from={date_from}' if date_from else ''}{f'&date_to={date_to}' if date_to else ''}" if page < total_pages else None,
+        prev_page=f"/ecommerce/admin/orders/?page={page - 1}&per_page={per_page}"
+                  f"{f'&user_id={user_id}' if user_id else ''}"
+                  f"{f'&status_filter={status_filter}' if status_filter else ''}"
+                  f"{f'&date_from={date_from}' if date_from else ''}"
+                  f"{f'&date_to={date_to}' if date_to else ''}" if page > 1 else None,
+        next_page=f"/ecommerce/admin/orders/?page={page + 1}&per_page={per_page}"
+                  f"{f'&user_id={user_id}' if user_id else ''}"
+                  f"{f'&status_filter={status_filter}' if status_filter else ''}"
+                  f"{f'&date_from={date_from}' if date_from else ''}"
+                  f"{f'&date_to={date_to}' if date_to else ''}" if page < total_pages else None,
         total_pages=total_pages,
         total_items=total_items
     )

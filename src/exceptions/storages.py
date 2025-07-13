@@ -98,6 +98,7 @@ class S3PermissionError(BaseS3Error):
         """Initialize the S3 permission error.
 
         Args:
-            message (str): Error message. Defaults to "Insufficient permissions to access S3 resources."
+            message (str): Error message. Defaults to
+                            "Insufficient permissions to access S3 resources."
         """
         super().__init__(message)

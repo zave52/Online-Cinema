@@ -384,7 +384,10 @@ class FavoriteMovieModel(Base):
     __table_args__ = (UniqueConstraint("movie_id", "user_id"),)
 
     def __repr__(self) -> str:
-        return f"<FavoriteMovieModel(id={self.id}, user_id={self.user_id}, movie_id={self.movie_id})>"
+        return (
+            f"<FavoriteMovieModel(id={self.id}, user_id={self.user_id}, "
+            f"movie_id={self.movie_id})>"
+        )
 
 
 class RateMovieModel(Base):
@@ -424,4 +427,7 @@ class RateMovieModel(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<RateMovieModel(user_id={self.user_id}, movie_id={self.movie_id}, rate={self.rate})>"
+        return (
+            f"<RateMovieModel(user_id={self.user_id}, movie_id={self.movie_id}, "
+            f"rate={self.rate})>"
+        )

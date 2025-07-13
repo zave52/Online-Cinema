@@ -43,7 +43,8 @@ def validate_image(image: UploadFile) -> None:
         image_format = pil_image.format
         if image_format not in supported_image_formats:
             raise ValueError(
-                f"Unsupported image format: {image_format}. Use one of next: {supported_image_formats}"
+                f"Unsupported image format: {image_format}. "
+                f"Use one of next: {supported_image_formats}"
             )
     except IOError:
         raise ValueError("Invalid image format")

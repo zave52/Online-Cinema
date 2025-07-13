@@ -37,7 +37,8 @@ def create_app() -> FastAPI:
         # Online Cinema API Documentation
 
         ## Overview
-        This API provides comprehensive functionality for an online cinema platform, including user management, movie catalog, shopping cart, orders, and payment processing.
+        This API provides comprehensive functionality for an online cinema platform,
+        including user management, movie catalog, shopping cart, orders, and payment processing.
 
         ## Features
         - **User Management**: Registration, authentication, profile management
@@ -48,10 +49,12 @@ def create_app() -> FastAPI:
         - **Admin Functions**: User management and system administration
 
         ## Authentication
-        The API uses JWT (JSON Web Tokens) for authentication. Most endpoints require a valid access token in the Authorization header.
+        The API uses JWT (JSON Web Tokens) for authentication.
+        Most endpoints require a valid access token in the Authorization header.
 
         ## Error Handling
-        The API returns standardized error responses with appropriate HTTP status codes and detailed error messages.
+        The API returns standardized error responses
+        with appropriate HTTP status codes and detailed error messages.
 
         ## Versioning
         This is version 1.0 of the API. All endpoints are prefixed with `/api/v1/`.

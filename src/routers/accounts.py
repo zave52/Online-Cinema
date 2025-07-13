@@ -53,7 +53,8 @@ admin_only = RoleChecker([UserGroupEnum.ADMIN])
     response_model=UserRegistrationResponseSchema,
     status_code=status.HTTP_201_CREATED,
     summary="Register a new user",
-    description="Register a new user with email and password. Sends an activation email with a token.",
+    description="Register a new user with email and password. "
+                "Sends an activation email with a token.",
     responses={
         201: {
             "description": "User successfully registered",
@@ -156,7 +157,10 @@ async def register_user(
             detail="An error occurred during user creation."
         ) from e
     else:
-        activation_link = f"{settings.BASE_URL}/activate/?email={new_user.email}&token={activation_token.token}"
+        activation_link = (
+            f"{settings.BASE_URL}/activate/"
+            f"?email={new_user.email}&token={activation_token.token}"
+        )
 
         background_tasks.add_task(
             email_sender.send_activation_email,
@@ -179,7 +183,8 @@ async def register_user(
             "content": {
                 "application/json": {
                     "example": {
-                        "message": "If your account exists and is not activated, you will receive an email with instructions."
+                        "message": "If your account exists and is not activated, "
+                                   "you will receive an email with instructions."
                     }
                 }
             }
@@ -216,7 +221,8 @@ async def resend_activation_token(
         MessageResponseSchema: Standard message response.
     """
     standard_response = MessageResponseSchema(
-        message="If your account exists and is not activated, you will receive an email with instructions."
+        message="If your account exists and is not activated, "
+                "you will receive an email with instructions."
     )
 
     stmt = select(UserModel).where(UserModel.email == data.email)
@@ -245,7 +251,10 @@ async def resend_activation_token(
             detail="An error occurred during resending activation token."
         )
     else:
-        activation_link = f"{settings.BASE_URL}/activate/?email={user.email}&token={new_activation_token.token}"
+        activation_link = (
+            f"{settings.BASE_URL}/activate/"
+            f"?email={user.email}&token={new_activation_token.token}"
+        )
 
         background_tasks.add_task(
             email_sender.send_activation_email,
@@ -369,7 +378,8 @@ async def activate_account(
             "content": {
                 "application/json": {
                     "example": {
-                        "message": "If you are registered, you will receive an email with instructions."
+                        "message": "If you are registered, "
+                                   "you will receive an email with instructions."
                     }
                 }
             }
@@ -683,7 +693,8 @@ async def change_password(
             "content": {
                 "application/json": {
                     "example": {
-                        "detail": "Account is not activated. Please check your email for activation link."
+                        "detail": "Account is not activated. "
+                                  "Please check your email for activation link."
                     }
                 }
             }

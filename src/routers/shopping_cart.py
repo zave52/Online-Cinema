@@ -19,7 +19,8 @@ from schemas.shopping_cart import (
     MessageResponseSchema,
     ShoppingCartAddMovieRequestSchema,
     ShoppingCartAddMovieResponseSchema,
-    ShoppingCartGetMoviesSchema
+    ShoppingCartGetMoviesSchema,
+    ShoppingCartMovieItemSchema
 )
 
 router = APIRouter()
@@ -315,7 +316,7 @@ async def get_shopping_cart_movies(
     result = await db.execute(stmt)
     items_with_movies = result.all()
 
-    movie_items = []
+    movie_items: list[ShoppingCartMovieItemSchema] = []
     for cart_item, movie in items_with_movies:
         movie_dict = {
             "cart_item_id": cart_item.id,
@@ -324,7 +325,7 @@ async def get_shopping_cart_movies(
             "price": movie.price,
             "genres": [genre.name for genre in movie.genres]
         }
-        movie_items.append(movie_dict)
+        movie_items.append(ShoppingCartMovieItemSchema(**movie_dict))
 
     return ShoppingCartGetMoviesSchema(
         total_items=len(movie_items),
@@ -434,7 +435,7 @@ async def get_shopping_cart_movies_by_id(
     result = await db.execute(items_stmt)
     items_with_movies = result.all()
 
-    movie_items = []
+    movie_items: list[ShoppingCartMovieItemSchema] = []
     for cart_item, movie in items_with_movies:
         movie_dict = {
             "cart_item_id": cart_item.id,
@@ -443,7 +444,7 @@ async def get_shopping_cart_movies_by_id(
             "price": movie.price,
             "genres": [genre.name for genre in movie.genres]
         }
-        movie_items.append(movie_dict)
+        movie_items.append(ShoppingCartMovieItemSchema(**movie_dict))
 
     return ShoppingCartGetMoviesSchema(
         total_items=len(movie_items),
@@ -487,11 +488,6 @@ async def clear_shopping_cart(
     Returns:
         None
     """
-    stmt = select(CartItemModel).where(CartItemModel.cart_id == cart.id)
-    result = await db.execute(stmt)
-    if not result.scalars().first():
-        return
-
     stmt = delete(CartItemModel).where(CartItemModel.cart_id == cart.id)
     await db.execute(stmt)
     await db.commit()

@@ -40,6 +40,7 @@ mypy = "^1.16.1"
 types-python-jose = "^3.5.0.20250531"
 types-passlib = "^1.7.7.20250602"
 pytest-cov = "^6.2.1"
+gunicorn = "^23.0.0"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

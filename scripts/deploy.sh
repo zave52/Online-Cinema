@@ -7,7 +7,7 @@ handle_error() {
   exit 1
 }
 
-cd /home/ubuntu/src/online_cinema || handle_error "Failed to navigate to the application directory."
+cd /home/ubuntu/src/Online-Cinema || handle_error "Failed to navigate to the application directory."
 
 echo "Fetching the latest changes from the remote repository..."
 git fetch origin main || handle_error "Failed to fetch updates from the 'origin' remote."

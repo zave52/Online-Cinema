@@ -60,6 +60,8 @@ jobs:
           poetry install
 
       - name: Run api tests with coverage
+        env:
+          ENVIRONMENT: testing
         run: |
           poetry run pytest --cov=src --cov-report=xml -m api
 
@@ -87,6 +89,8 @@ jobs:
           poetry install
 
       - name: Run integration tests with coverage
+        env:
+          ENVIRONMENT: testing
         run: |
           poetry run pytest --cov=src --cov-report=xml -m integration
 
@@ -114,6 +118,8 @@ jobs:
           poetry install
 
       - name: Run unit tests with coverage
+        env:
+          ENVIRONMENT: testing
         run: |
           poetry run pytest --cov=src --cov-report=xml -m unit
 
@@ -142,6 +148,8 @@ jobs:
           poetry install
 
       - name: Run validation tests with coverage
+        env:
+          ENVIRONMENT: testing
         run: |
           poetry run pytest --cov=src --cov-report=xml -m validation
 

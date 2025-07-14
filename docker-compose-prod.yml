@@ -137,8 +137,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "5555:5555"
     env_file:
       - .env
     environment:

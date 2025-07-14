@@ -8,7 +8,7 @@ services:
     command: [ "pytest", "-c", "/usr/src/config/pytest.ini", "-m", "e2e",
                "--maxfail=5", "--disable-warnings", "-v", "--tb=short" ]
     env_file:
-      - .env.test
+      - docker/tests/.env
     depends_on:
       mailhog:
         condition: service_healthy
@@ -32,7 +32,7 @@ services:
       dockerfile: Dockerfile
     command: [ "celery", "-A", "tasks.celery_app", "worker", "-l", "info" ]
     env_file:
-      - .env.test
+      - docker/tests/.env
     depends_on:
       - redis
     networks:
@@ -45,7 +45,7 @@ services:
       dockerfile: Dockerfile
     command: [ "celery", "-A", "tasks.celery_app", "beat", "-l", "info" ]
     env_file:
-      - .env.test
+      - docker/tests/.env
     depends_on:
       - redis
       - celery-worker
@@ -75,7 +75,7 @@ services:
       - "9000:9000"
       - "9001:9001"
     env_file:
-      - .env.test
+      - docker/tests/.env
     volumes:
       - minio_data_test:/data
     healthcheck:
@@ -93,7 +93,7 @@ services:
       dockerfile: docker/minio_mc/Dockerfile
     command: [ "sh", "/scripts/setup_minio.sh" ]
     env_file:
-      - .env.test
+      - docker/tests/.env
     depends_on:
       minio:
         condition: service_healthy

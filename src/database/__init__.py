@@ -46,6 +46,7 @@ from database.models.payments import (
 )
 from database.models.profiles import UserProfileModel
 from database.models.shopping_cart import CartModel, CartItemModel
+from database.session_sqlite import reset_sqlite_database as reset_database
 
 environment = os.getenv("ENVIRONMENT", "developing")
 
@@ -60,6 +61,5 @@ else:
     from .session_sqlite import (
         get_sqlite_db as get_db,
         AsyncSQLiteSessionLocal as AsyncSessionLocal,
-        get_sqlite_db_contextmanager as get_db_contextmanager,
-        reset_sqlite_database as reset_database
+        get_sqlite_db_contextmanager as get_db_contextmanager
     )

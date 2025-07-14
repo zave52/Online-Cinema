@@ -1,0 +1,191 @@
+services:
+  db:
+    container_name: postgres-cinema
+    image: postgres:alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+    volumes:
+      - postgres_cinema_data:/var/lib/postgresql/data
+    networks:
+      - cinema_network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB -h 127.0.0.1 || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  pgadmin:
+    container_name: pgadmin-cinema
+    image: dpage/pgadmin4
+    ports:
+      - "3333:80"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - pgadmin_cinema_data:/var/lib/pgadmin
+    networks:
+      - cinema_network
+
+  app:
+    container_name: backend-cinema
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: ["sh", "/scripts/run_web_server_dev.sh"]
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - LOG_LEVEL=debug
+      - PYTHONPATH=/usr/src/fastapi
+      - WATCHFILES_FORCE_POLLING=true
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    volumes:
+      - ./src:/usr/src/fastapi
+    networks:
+      - cinema_network
+
+  migrator:
+    container_name: alembic-cinema
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["sh", "/scripts/run_migration.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - PYTHONPATH=/usr/src/fastapi
+    volumes:
+      - ./src:/usr/src/fastapi
+    networks:
+      - cinema_network
+
+  redis:
+    container_name: redis-cinema
+    image: redis:latest
+    networks:
+      - cinema_network
+
+  celery-worker:
+    container_name: celery-worker-cinema
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["celery", "-A", "tasks.celery_app", "worker", "-l", "info"]
+    env_file:
+      - .env
+    environment:
+      - PYTHONPATH=/usr/src/fastapi
+    depends_on:
+      - redis
+      - db
+    networks:
+      - cinema_network
+
+  celery-beat:
+    container_name: celery-beat-cinema
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["celery", "-A", "tasks.celery_app", "beat", "-l", "info"]
+    env_file:
+      - .env
+    environment:
+      - PYTHONPATH=/usr/src/fastapi
+    depends_on:
+      - redis
+      - db
+      - celery-worker
+    networks:
+      - cinema_network
+
+  flower:
+    container_name: flower-cinema
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5555:5555"
+    env_file:
+      - .env
+    environment:
+      - PYTHONPATH=/usr/src/fastapi
+    command: ["celery", "-A", "tasks.celery_app", "flower", "--address=0.0.0.0"]
+    depends_on:
+      - redis
+      - celery-worker
+    networks:
+      - cinema_network
+
+  mailhog:
+    container_name: mailhog-cinema
+    build:
+      context: .
+      dockerfile: ./docker/mailhog/Dockerfile
+    command: ["sh", "-c", "sh /scripts/setup_mailhog_auth.sh && ~/go/bin/MailHog"]
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    env_file:
+      - .env
+    environment:
+      MH_AUTH_FILE: /mailhog.auth
+    networks:
+      - cinema_network
+
+  minio:
+    container_name: minio-cinema
+    image: minio/minio:latest
+    command: server --console-address ":9001" /data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    env_file:
+      - .env
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - cinema_network
+
+  minio-mc:
+    container_name: minio-init
+    build:
+      context: .
+      dockerfile: docker/minio_mc/Dockerfile
+    command: ["sh", "/scripts/setup_minio.sh"]
+    env_file:
+      - .env
+    depends_on:
+      minio:
+        condition: service_healthy
+    networks:
+      - cinema_network
+
+volumes:
+  minio_data:
+  postgres_cinema_data:
+  pgadmin_cinema_data:
+
+networks:
+  cinema_network:

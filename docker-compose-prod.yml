@@ -58,7 +58,7 @@ services:
     restart: always
     command: [ "sh", "/scripts/run_web_server_prod.sh" ]
     ports:
-      - "8000:8000"
+      - "80:8000"
     env_file:
       - .env
     environment:

@@ -1,47 +1,58 @@
-[tool.poetry]
+[project]
 name = "Online-Cinema"
 version = "1.0.0"
 description = "Online Cinema API - A comprehensive platform for movie streaming and management"
-authors = ["zakhar <zakhar.savchyn.dev@gmail.com>"]
-license = "MIT"
+authors = [{ name = "zakhar", email = "zakhar.savchyn.dev@gmail.com" }]
+requires-python = ">=3.13,<4.0"
 readme = "README.md"
-packages = [{ include = "src" }]
+license = "MIT"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+    "fastapi>=0.115.14,<0.116.0",
+    "uvicorn>=0.35.0,<0.36.0",
+    "pydantic>=2.11.7,<3.0.0",
+    "fastapi-mail>=1.5.0,<2",
+    "sqlalchemy>=2.0.41,<3",
+    "celery>=5.5.3,<6",
+    "aiosqlite>=0.21.0,<0.22",
+    "passlib[bcrypt]>=1.7.4",
+    "stripe>=12.3.0,<13",
+    "python-jose>=3.5.0,<4",
+    "aioboto3>=15.0.0,<16",
+    "pillow>=11.3.0,<12",
+    "python-multipart>=0.0.20,<0.0.21",
+    "bcrypt>=4.1.0",
+    "flower>=2.0.1,<3",
+    "asgiref>=3.9.0,<4",
+    "redis>=6.2.0,<7",
+    "asyncpg>=0.30.0,<0.31",
+    "alembic>=1.16.2,<2",
+    "psycopg2-binary>=2.9.10,<3",
+    "pytest>=8.4.1,<9",
+    "httpx>=0.28.1,<0.29",
+    "pytest-asyncio>=1.0.0,<2",
+    "flake8>=7.3.0,<8",
+    "validators>=0.35.0,<0.36",
+    "bs4>=0.0.2,<0.0.3",
+    "pytest-order>=1.3.0,<2",
+    "mypy>=1.16.1,<2",
+    "types-python-jose>=3.5.0.20250531,<4",
+    "types-passlib>=1.7.7.20250602,<2",
+    "pytest-cov>=6.2.1,<7",
+    "gunicorn>=23.0.0,<24",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.13,<4.0"
-fastapi = ">=0.115.14,<0.116.0"
-uvicorn = ">=0.35.0,<0.36.0"
-pydantic = ">=2.11.7,<3.0.0"
-fastapi-mail = "^1.5.0"
-sqlalchemy = "^2.0.41"
-celery = "^5.5.3"
-aiosqlite = "^0.21.0"
-passlib = { version = ">=1.7.4", extras = ["bcrypt"] }
-stripe = "^12.3.0"
-python-jose = "^3.5.0"
-aioboto3 = "^15.0.0"
-pillow = "^11.3.0"
-python-multipart = "^0.0.20"
-bcrypt = ">=4.1.0"
-flower = "^2.0.1"
-asgiref = "^3.9.0"
-redis = "^6.2.0"
-asyncpg = "^0.30.0"
-alembic = "^1.16.2"
-psycopg2-binary = "^2.9.10"
-pytest = "^8.4.1"
-httpx = "^0.28.1"
-pytest-asyncio = "^1.0.0"
-flake8 = "^7.3.0"
-validators = "^0.35.0"
-bs4 = "^0.0.2"
-pytest-order = "^1.3.0"
-mypy = "^1.16.1"
-types-python-jose = "^3.5.0.20250531"
-types-passlib = "^1.7.7.20250602"
-pytest-cov = "^6.2.1"
-gunicorn = "^23.0.0"
+[tool.uv]
+
+[tool.uv.build-backend]
+module-name = ["src"]
+module-root = ""
+namespace = true
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.10.11,<0.11.0"]
+build-backend = "uv_build"

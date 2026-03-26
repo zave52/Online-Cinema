@@ -1,16 +1,6 @@
-FROM debian:bookworm-slim
+FROM golang:1.26.1-alpine3.23
 LABEL authors="zakhar"
 
-RUN apt update && apt install -y \
-    golang-go \
-    wget \
-    dos2unix \
-    && apt clean
-
-RUN go install github.com/mailhog/MailHog@latest
-
-ENV PATH="/root/go/bin:$PATH"
+RUN go install github.com/mailhog/MailHog@v1.0.1
 
 COPY scripts/setup_mailhog_auth.sh /scripts/setup_mailhog_auth.sh
-
-RUN dos2unix /scripts/setup_mailhog_auth.sh && chmod +x /scripts/setup_mailhog_auth.sh

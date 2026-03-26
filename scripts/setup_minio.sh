@@ -1,7 +1,18 @@
 #!/bin/sh
 
-echo "Waiting for MinIO service to be ready..."
-sleep 5
+MAX_RETRIES=30
+
+echo "Waiting for MinIO service at $MINIO_HOST:$MINIO_PORT to be ready..."
+
+for i in $(seq 1 ${MAX_RETRIES}); do
+  if curl --silent --fail http://${MINIO_HOST}:${MINIO_PORT}/minio/health/live; then
+    echo "MinIO is up!"
+    break
+  fi
+
+  echo "Waiting for MinIO... (${i}/${MAX_RETRIES}"
+  sleep 1
+done
 
 echo "Configuring MinIO to be ready..."
 mc alias set minio http://"$MINIO_HOST":"$MINIO_PORT" "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"

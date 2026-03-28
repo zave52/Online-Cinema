@@ -1,27 +1,21 @@
-FROM python:3.13-slim
+FROM python:3.13.12-alpine3.23
 LABEL authors="zakhar"
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV PIP_NO_CACHE_DIR=off
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-RUN apt update
+WORKDIR /tmp/build
 
-RUN python -m pip install --upgrade pip && \
-    pip install poetry
+COPY pyproject.toml uv.lock README.md ./
 
-COPY ./poetry.lock /usr/src/poetry/poetry.lock
-COPY ./pyproject.toml /usr/src/poetry/pyproject.toml
+RUN apk add --no-cache --virtual build-deps \
+    uv \
+    && uv export --frozen --group test --no-group dev --no-group ops > requirements.txt \
+    && uv pip install --system -r requirements.txt \
+    && rm -f requirements.txt \
+    && apk del build-deps
 
-COPY ./pytest.ini /usr/src/config/pytest.ini
+WORKDIR /opt/app
 
-RUN poetry config virtualenvs.create false
-
-WORKDIR /usr/src/poetry
-
-RUN poetry lock
-RUN poetry install --no-root --only main
-
-WORKDIR /usr/src/fastapi
-
-COPY ./src .
+COPY src .
+COPY pytest.ini .

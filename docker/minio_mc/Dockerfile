@@ -8,4 +8,4 @@ RUN apk add --no-cache \
 
 COPY ./scripts/setup_minio.sh /scripts/setup_minio.sh
 
-ENTRYPOINT ["/scripts/setup_minio.sh"]
+ENTRYPOINT [ "/scripts/setup_minio.sh" ]

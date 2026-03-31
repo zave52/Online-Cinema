@@ -7,4 +7,4 @@ COPY scripts/setup_mailhog_auth.sh /scripts/setup_mailhog_auth.sh
 
 EXPOSE 1025 8025
 
-ENTRYPOINT ["sh", "-c", "/scripts/setup_mailhog_auth.sh && exec /go/bin/MailHog"]
+ENTRYPOINT [ "sh", "-c", "/scripts/setup_mailhog_auth.sh && exec /go/bin/MailHog" ]

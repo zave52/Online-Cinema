@@ -7,6 +7,8 @@ RUN apk add --no-cache  \
 
 COPY ./scripts/set_nginx_basic_auth.sh /scripts/set_nginx_basic_auth.sh
 
+EXPOSE 80 5555
+
 ENTRYPOINT [ "/scripts/set_nginx_basic_auth.sh" ]
 
 CMD [ "nginx", "-g", "daemon off;" ]

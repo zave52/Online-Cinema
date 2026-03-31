@@ -18,3 +18,7 @@ RUN apk add --no-cache --virtual build-deps \
 WORKDIR /opt/app
 
 COPY src/ .
+
+EXPOSE 5555
+
+ENTRYPOINT [ "celery", "-A", "tasks.celery_app", "flower", "--address=0.0.0.0" ]

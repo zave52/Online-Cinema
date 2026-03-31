@@ -19,4 +19,6 @@ WORKDIR /opt/app
 
 COPY src/ .
 COPY alembic.ini /opt/alembic/alembic.ini
-COPY scripts/ /scripts/
+COPY scripts/run_migration.sh scripts/run_web_server_dev.sh scripts/run_web_server_prod.sh /scripts/
+
+EXPOSE 8000

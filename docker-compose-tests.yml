@@ -4,24 +4,37 @@ services:
     build:
       context: .
       dockerfile: ./docker/tests/Dockerfile
-    working_dir: /usr/src/fastapi
-    command: [ "pytest", "-c", "/usr/src/config/pytest.ini", "-m", "e2e",
-               "--maxfail=5", "--disable-warnings", "-v", "--tb=short" ]
-    env_file:
-      - docker/tests/.env
+    command: [ "-m", "e2e", "--maxfail=5", "--disable-warnings", "-v", "--tb=short" ]
+    environment:
+      - ENVIRONMENT=testing
+      - MAIL_SERVER
+      - MAIL_PORT
+      - MAIL_FROM
+      - MAIL_FROM_NAME
+      - MAIL_STARTTLS
+      - MAIL_SSL_TLS
+      - MINIO_HOST
+      - MINIO_PORT
+      - MINIO_ROOT_USER
+      - MINIO_ROOT_PASSWORD
+      - MINIO_STORAGE
+      - STRIPE_PUBLISHABLE_KEY
+      - STRIPE_SECRET_KEY
+      - CELERY_BROKER_URL
+      - CELERY_RESULT_BACKEND
     depends_on:
       mailhog:
         condition: service_healthy
       minio:
-        condition: service_healthy
-    volumes:
-      - ./src:/usr/src/fastapi
+        condition: service_started
+      minio-mc:
+        condition: service_completed_successfully
     networks:
       - cinema_network_test
 
   redis:
     container_name: redis-cinema-test
-    image: redis:latest
+    image: redis:alpine3.23
     networks:
       - cinema_network_test
 
@@ -31,8 +44,9 @@ services:
       context: .
       dockerfile: Dockerfile
     command: [ "celery", "-A", "tasks.celery_app", "worker", "-l", "info" ]
-    env_file:
-      - docker/tests/.env
+    environment:
+      - CELERY_BROKER_URL
+      - CELERY_RESULT_BACKEND
     depends_on:
       - redis
     networks:
@@ -44,8 +58,9 @@ services:
       context: .
       dockerfile: Dockerfile
     command: [ "celery", "-A", "tasks.celery_app", "beat", "-l", "info" ]
-    env_file:
-      - docker/tests/.env
+    environment:
+      - CELERY_BROKER_URL
+      - CELERY_RESULT_BACKEND
     depends_on:
       - redis
       - celery-worker
@@ -54,9 +69,8 @@ services:
 
   mailhog:
     container_name: mailhog-cinema-test
-    image: mailhog/mailhog
+    image: mailhog/mailhog:v1.0.1
     ports:
-      - "1025:1025"
       - "8025:8025"
     healthcheck:
       test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8025" ]
@@ -69,20 +83,16 @@ services:
 
   minio:
     container_name: minio-cinema-test
-    image: minio/minio:latest
-    command: server --console-address ":9001" /data
+    image: cgr.dev/chainguard/minio:latest
+    command: [ "server", "/data", "--console-address", ":9001", "--address", ":9000" ]
     ports:
-      - "9000:9000"
       - "9001:9001"
-    env_file:
-      - docker/tests/.env
+    environment:
+      - MINIO_ROOT_USER
+      - MINIO_ROOT_PASSWORD
+      - MINIO_USE_SSL
     volumes:
       - minio_data_test:/data
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
     networks:
       - cinema_network_test
 
@@ -91,12 +101,15 @@ services:
     build:
       context: .
       dockerfile: docker/minio_mc/Dockerfile
-    command: [ "sh", "/scripts/setup_minio.sh" ]
-    env_file:
-      - docker/tests/.env
+    environment:
+      - MINIO_HOST
+      - MINIO_PORT
+      - MINIO_ROOT_USER
+      - MINIO_ROOT_PASSWORD
+      - MINIO_STORAGE
     depends_on:
       minio:
-        condition: service_healthy
+        condition: service_started
     networks:
       - cinema_network_test
 

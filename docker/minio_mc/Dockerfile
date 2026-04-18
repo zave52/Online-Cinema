@@ -1,5 +1,4 @@
 FROM alpine:3.23.3
-LABEL authors="zakhar"
 
 RUN apk add --no-cache \
     curl \

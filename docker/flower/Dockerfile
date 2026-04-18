@@ -1,5 +1,4 @@
 FROM python:3.13.12-alpine3.23
-LABEL authors="zakhar"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1

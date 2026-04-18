@@ -1,5 +1,4 @@
 FROM python:3.13.12-alpine3.23
-LABEL authors="zakhar"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -19,3 +18,5 @@ WORKDIR /opt/app
 
 COPY src .
 COPY pytest.ini .
+
+ENTRYPOINT [ "pytest", "-c", "/opt/app/pytest.ini" ]

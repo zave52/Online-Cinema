@@ -1,5 +1,4 @@
 FROM golang:1.26.1-alpine3.23
-LABEL authors="zakhar"
 
 RUN go install github.com/mailhog/MailHog@v1.0.1
 

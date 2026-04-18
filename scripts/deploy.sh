@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 
-set -e
+set -eu
 
 handle_error() {
   echo "Error: $1"

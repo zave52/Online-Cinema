@@ -63,9 +63,9 @@ class BaseAppSettings(BaseSettings):
     STRIPE_PUBLISHABLE_KEY: str = os.getenv("STRIPE_PUBLISHABLE_KEY") or ""
     STRIPE_SECRET_KEY: str = os.getenv("STRIPE_SECRET_KEY") or ""
 
-    RATE_LIMIT_ANONYMOUS: int = int(os.getenv("RATE_LIMIT_ANONYMOUS", 2))
+    RATE_LIMIT_ANONYMOUS: int = int(os.getenv("RATE_LIMIT_ANONYMOUS", 5))
     RATE_LIMIT_AUTHENTICATED: int = int(
-        os.getenv("RATE_LIMIT_AUTHENTICATED", 10)
+        os.getenv("RATE_LIMIT_AUTHENTICATED", 20)
     )
     RATE_LIMIT_PERIOD: int = int(os.getenv("RATE_LIMIT_PERIOD", 60))
     CACHE_HOST: str = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")

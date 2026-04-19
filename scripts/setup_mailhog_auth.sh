@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -eu
+
 if [ -n "$MAILHOG_USER" ] && [ -n "$MAILHOG_PASSWORD" ]; then
   HASHED_PASSWORD=$(MailHog bcrypt "$MAILHOG_PASSWORD")
 

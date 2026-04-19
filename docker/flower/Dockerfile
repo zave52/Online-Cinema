@@ -10,14 +10,15 @@ COPY pyproject.toml uv.lock README.md ./
 
 RUN apk add --no-cache --virtual build-deps \
     uv \
-    && uv export --frozen --group test --no-group dev --no-group ops > requirements.txt \
+    && uv export --frozen --no-group dev --no-group test --group ops > requirements.txt \
     && uv pip install --system -r requirements.txt \
     && rm -f requirements.txt \
     && apk del build-deps
 
 WORKDIR /opt/app
 
-COPY src .
-COPY pytest.ini .
+COPY src/ .
 
-ENTRYPOINT [ "pytest", "-c", "/opt/app/pytest.ini" ]
+EXPOSE 5555
+
+ENTRYPOINT [ "celery", "-A", "tasks.celery_app", "flower", "--address=0.0.0.0" ]

@@ -1,39 +1,24 @@
-FROM python:3.13-slim
-LABEL authors="zakhar"
+FROM python:3.13.12-alpine3.23
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV PIP_NO_CACHE_DIR=off
-ENV ALEMBIC_CONFIG=/usr/src/alembic/alembic.ini
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/opt/app
 
-RUN apt update && apt install -y \
-    gcc \
-    libpq-dev \
-    netcat-openbsd \
-    postgresql-client \
-    dos2unix \
-    && apt clean
+WORKDIR /tmp/build
 
-RUN python -m pip install --upgrade pip && \
-    pip install poetry
+COPY pyproject.toml uv.lock README.md ./
 
-COPY ./poetry.lock /usr/src/poetry/poetry.lock
-COPY ./pyproject.toml /usr/src/poetry/pyproject.toml
-COPY ./alembic.ini /usr/src/alembic/alembic.ini
+RUN apk add --no-cache --virtual build-deps \
+    uv \
+    && uv export --frozen --no-group dev --no-group test --no-group ops > requirements.txt \
+    && uv pip install --system -r requirements.txt \
+    && rm -f requirements.txt \
+    && apk del build-deps
 
-RUN poetry config virtualenvs.create false
+WORKDIR /opt/app
 
-WORKDIR /usr/src/poetry
+COPY src/ .
+COPY alembic.ini /opt/alembic/alembic.ini
+COPY scripts/run_migration.sh scripts/run_web_server_dev.sh scripts/run_web_server_prod.sh /scripts/
 
-RUN poetry lock
-RUN poetry install --no-root --only main
-
-WORKDIR /usr/src/fastapi
-
-COPY ./src .
-
-COPY ./scripts /scripts
-
-RUN dos2unix /scripts/*.sh
-
-RUN chmod +x /scripts/*.sh
+EXPOSE 8000

@@ -19,7 +19,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install uv
-          uv build
+          uv sync --group test --no-group dev --no-group ops
       - name: Run flake8
         run: |
           uv run flake8 src
@@ -37,7 +37,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install uv
-          uv build
+          uv sync --group test --no-group dev --no-group ops
       - name: Run mypy
         run: |
           uv run mypy src
@@ -57,7 +57,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install uv
-          uv build
+          uv sync --group test --no-group dev --no-group ops
 
       - name: Run api tests with coverage
         env:
@@ -86,7 +86,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install uv
-          uv build
+          uv sync --group test --no-group dev --no-group ops
 
       - name: Run integration tests with coverage
         env:
@@ -115,7 +115,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install uv
-          uv build
+          uv sync --group test --no-group dev --no-group ops
 
       - name: Run unit tests with coverage
         env:
@@ -145,7 +145,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install uv
-          uv build
+          uv sync --group test --no-group dev --no-group ops
 
       - name: Run validation tests with coverage
         env:

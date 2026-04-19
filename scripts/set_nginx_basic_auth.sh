@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 
-set -e
+set -eu
 
 if [ -z "$API_USER" ] || [ -z "$API_PASSWORD" ]; then
   echo "Error: API_USER and API_PASSWORD must be set."

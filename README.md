@@ -162,7 +162,7 @@ cp docker/tests/.env.sample docker/tests/.env
 To run all tests, use the following command:
 
 ```bash
-docker-compose -f docker-compose-tests.yml up --build
+docker-compose -f docker-compose-tests.yml --env-file ./docker/tests/.env up --build
 ```
 
 This will run all tests, including unit, integration, and end-to-end tests.

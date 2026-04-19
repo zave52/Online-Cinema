@@ -1,6 +1,7 @@
 services:
   app:
     container_name: backend-cinema-test
+    image: online-cinema-backend-test:latest
     build:
       context: .
       dockerfile: ./docker/tests/Dockerfile
@@ -29,41 +30,47 @@ services:
         condition: service_started
       minio-mc:
         condition: service_completed_successfully
+      celery-beat:
+        condition: service_started
     networks:
       - cinema_network_test
 
   redis:
     container_name: redis-cinema-test
     image: redis:alpine3.23
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     networks:
       - cinema_network_test
 
   celery-worker:
     container_name: celery-worker-cinema-test
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: online-cinema-backend-test:latest
     command: [ "celery", "-A", "tasks.celery_app", "worker", "-l", "info" ]
     environment:
       - CELERY_BROKER_URL
       - CELERY_RESULT_BACKEND
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     networks:
       - cinema_network_test
 
   celery-beat:
     container_name: celery-beat-cinema-test
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: online-cinema-backend-test:latest
     command: [ "celery", "-A", "tasks.celery_app", "beat", "-l", "info" ]
     environment:
       - CELERY_BROKER_URL
       - CELERY_RESULT_BACKEND
     depends_on:
-      - redis
-      - celery-worker
+      redis:
+        condition: service_healthy
+      celery-worker:
+        condition: service_started
     networks:
       - cinema_network_test
 

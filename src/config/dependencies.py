@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import AsyncGenerator
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -143,7 +144,8 @@ async def optional_get_current_user_id(
         decoded = jwt_manager.decode_access_token(
             token=str(credentials.credentials)
         )
-        return int(decoded.get("user_id")) if decoded.get("user_id") else None
+        user_id = decoded.get("user_id")
+        return int(str(user_id)) if user_id else None
     except (TokenExpiredError, BaseSecurityError):
         return None
 
@@ -317,7 +319,7 @@ def get_payment_service(
 
 async def get_redis_client(
     settings: BaseAppSettings = Depends(get_settings)
-) -> Redis:
+) -> AsyncGenerator[Redis, None]:
     """Dependency that provides an asynchronous Redis client instance.
 
     Args:

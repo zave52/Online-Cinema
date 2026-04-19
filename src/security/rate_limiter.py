@@ -39,7 +39,8 @@ async def rate_limit(
         ),
     }
 
-    identity = str(user_id) if user_id is not None else request.client.host
+    client_host = request.client.host if request.client else "unknown"
+    identity = str(user_id) if user_id is not None else client_host
     limit_type = "authenticated" if user_id is not None else "anonymous"
 
     limit, period = RATE_LIMITS[limit_type]

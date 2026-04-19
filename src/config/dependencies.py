@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi_mail import ConnectionConfig
@@ -22,6 +23,7 @@ from storages.interfaces import S3StorageInterface
 from storages.s3 import S3Storage
 
 bearer_scheme = HTTPBearer()
+optional_bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def get_jwt_manager(
@@ -114,6 +116,35 @@ async def get_current_user_id(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user_id
+
+
+async def optional_get_current_user_id(
+    credentials: HTTPAuthorizationCredentials | None = Depends(
+        optional_bearer_scheme
+    ),
+    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager)
+) -> int | None:
+    """Optional user ID from JWT token.
+
+    Decodes JWT token if present and extracts the user ID, returns None otherwise or on error.
+
+    Args:
+        credentials (HTTPAuthorizationCredentials | None): The HTTP authorization credentials.
+        jwt_manager (JWTManagerInterface): JWT manager for token decoding.
+
+    Returns:
+        int | None: The user ID from the decoded token, or None if not present or invalid.
+    """
+    if not credentials:
+        return None
+
+    try:
+        decoded = jwt_manager.decode_access_token(
+            token=str(credentials.credentials)
+        )
+        return int(decoded.get("user_id")) if decoded.get("user_id") else None
+    except (TokenExpiredError, BaseSecurityError):
+        return None
 
 
 async def get_current_user(

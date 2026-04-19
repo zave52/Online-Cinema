@@ -1,5 +1,5 @@
 import asyncio
-from typing import Sequence, Optional
+from typing import Optional
 
 from fastapi import (
     APIRouter,
@@ -20,7 +20,6 @@ from database.models.accounts import (
     UserModel,
     purchased_movies_association
 )
-
 from database.models.movies import (
     MovieModel,
     StarModel,

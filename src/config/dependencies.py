@@ -1,8 +1,11 @@
 from pathlib import Path
+from typing import AsyncGenerator
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi_mail import ConnectionConfig
 from pydantic import SecretStr
+from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -22,6 +25,7 @@ from storages.interfaces import S3StorageInterface
 from storages.s3 import S3Storage
 
 bearer_scheme = HTTPBearer()
+optional_bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def get_jwt_manager(
@@ -114,6 +118,36 @@ async def get_current_user_id(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user_id
+
+
+async def optional_get_current_user_id(
+    credentials: HTTPAuthorizationCredentials | None = Depends(
+        optional_bearer_scheme
+    ),
+    jwt_manager: JWTManagerInterface = Depends(get_jwt_manager)
+) -> int | None:
+    """Optional user ID from JWT token.
+
+    Decodes JWT token if present and extracts the user ID, returns None otherwise or on error.
+
+    Args:
+        credentials (HTTPAuthorizationCredentials | None): The HTTP authorization credentials.
+        jwt_manager (JWTManagerInterface): JWT manager for token decoding.
+
+    Returns:
+        int | None: The user ID from the decoded token, or None if not present or invalid.
+    """
+    if not credentials:
+        return None
+
+    try:
+        decoded = jwt_manager.decode_access_token(
+            token=str(credentials.credentials)
+        )
+        user_id = decoded.get("user_id")
+        return int(str(user_id)) if user_id else None
+    except (TokenExpiredError, BaseSecurityError):
+        return None
 
 
 async def get_current_user(
@@ -281,3 +315,21 @@ def get_payment_service(
         secret_key=settings.STRIPE_SECRET_KEY,
         publishable_key=settings.STRIPE_PUBLISHABLE_KEY
     )
+
+
+async def get_redis_client(
+    settings: BaseAppSettings = Depends(get_settings)
+) -> AsyncGenerator[Redis, None]:
+    """Dependency that provides an asynchronous Redis client instance.
+
+    Args:
+        settings: Application settings containing the Redis cache host URL.
+
+    Yields:
+        Redis: An active Redis client instance.
+    """
+    client = Redis.from_url(settings.CACHE_HOST)
+    try:
+        yield client
+    finally:
+        await client.aclose()

@@ -31,11 +31,13 @@ from database.models.orders import OrderModel, OrderStatusEnum, OrderItemModel
 from main import create_app
 from security.interfaces import JWTManagerInterface
 from security.manager import JWTManager
+from security.rate_limiter import get_redis_client
 from storages.interfaces import S3StorageInterface
 from storages.s3 import S3Storage
 from tests.doubles.fakes.payments import FakePaymentService
 from tests.doubles.fakes.storage import FakeStorage
 from tests.doubles.stubs.emails import StubEmailSender
+from tests.doubles.stubs.redis import StubRedis
 
 
 @pytest_asyncio.fixture(scope="session")
@@ -116,6 +118,12 @@ async def payment_service_fake():
     return FakePaymentService()
 
 
+@pytest_asyncio.fixture(scope="function")
+async def redis_client_stub():
+    """Provide a stub implementation of the Redis client."""
+    return StubRedis()
+
+
 @pytest_asyncio.fixture(scope="session")
 async def s3_client(settings: BaseAppSettings) -> S3StorageInterface:
     """
@@ -151,6 +159,7 @@ async def client(
     email_sender_stub,
     s3_storage_fake,
     payment_service_fake,
+    redis_client_stub,
 ) -> AsyncGenerator[AsyncClient, Any]:
     """
     Provide an asynchronous HTTP client for testing.
@@ -159,6 +168,7 @@ async def client(
     app.dependency_overrides[get_email_sender] = lambda: email_sender_stub
     app.dependency_overrides[get_s3_storage] = lambda: s3_storage_fake
     app.dependency_overrides[get_payment_service] = lambda: payment_service_fake
+    app.dependency_overrides[get_redis_client] = lambda: redis_client_stub
 
     async with AsyncClient(
         transport=ASGITransport(app=app),

@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Depends
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.openapi.utils import get_openapi
-from fastapi.security import HTTPBearer
 from fastapi.responses import HTMLResponse
+from fastapi.security import HTTPBearer
 
 from config.dependencies import get_current_user
 from database.models.accounts import UserModel
@@ -21,6 +21,7 @@ from routers import (
     rates,
     favorites
 )
+from security.rate_limiter import rate_limit
 
 security = HTTPBearer(auto_error=False)
 
@@ -83,52 +84,62 @@ def create_app() -> FastAPI:
     app.include_router(
         accounts.router,
         prefix=f"{api_version_index}/accounts",
-        tags=["accounts"]
+        tags=["accounts"],
+        dependencies=[Depends(rate_limit)]
     )
     app.include_router(
         profiles.router,
         prefix=f"{api_version_index}/profiles",
-        tags=["profiles"]
+        tags=["profiles"],
+        dependencies=[Depends(rate_limit)]
     )
     app.include_router(
         directors.router,
         prefix=f"{api_version_index}/cinema",
-        tags=["directors"]
+        tags=["directors"],
+        dependencies=[Depends(rate_limit)]
     )
     app.include_router(
         comments.router,
         prefix=f"{api_version_index}/cinema",
-        tags=["comments"]
+        tags=["comments"],
+        dependencies=[Depends(rate_limit)]
     )
     app.include_router(
         favorites.router,
         prefix=f"{api_version_index}/cinema",
-        tags=["favorites"]
+        tags=["favorites"],
+        dependencies=[Depends(rate_limit)]
     )
     app.include_router(
         genres.router,
         prefix=f"{api_version_index}/cinema",
-        tags=["genres"]
+        tags=["genres"],
+        dependencies=[Depends(rate_limit)]
     )
     app.include_router(
         likes.router,
         prefix=f"{api_version_index}/cinema",
-        tags=["likes"]
+        tags=["likes"],
+        dependencies=[Depends(rate_limit)]
     )
     app.include_router(
         rates.router,
         prefix=f"{api_version_index}/cinema",
-        tags=["rates"]
+        tags=["rates"],
+        dependencies=[Depends(rate_limit)]
     )
     app.include_router(
         stars.router,
         prefix=f"{api_version_index}/cinema",
-        tags=["stars"]
+        tags=["stars"],
+        dependencies=[Depends(rate_limit)]
     )
     app.include_router(
         movies.router,
         prefix=f"{api_version_index}/cinema",
-        tags=["movies"]
+        tags=["movies"],
+        dependencies=[Depends(rate_limit)]
     )
     app.include_router(
         shopping_cart.router,
@@ -162,6 +173,8 @@ def create_app() -> FastAPI:
         }
     }
 
+    openapi_schema["security"] = [{"BearerAuth": []}]
+
     app.openapi_schema = openapi_schema
 
     return app
@@ -171,9 +184,7 @@ app = create_app()
 
 
 @app.get("/docs", include_in_schema=False)
-async def get_swagger_documentation(
-    authorized: UserModel = Depends(get_current_user)
-) -> HTMLResponse:
+async def get_swagger_documentation() -> HTMLResponse:
     """Get Swagger UI documentation with access control.
 
     Args:

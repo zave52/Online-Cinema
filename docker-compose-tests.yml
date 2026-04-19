@@ -1,7 +1,6 @@
 services:
   app:
     container_name: backend-cinema-test
-    image: online-cinema-backend-test:latest
     build:
       context: .
       dockerfile: ./docker/tests/Dockerfile
@@ -23,6 +22,9 @@ services:
       - STRIPE_SECRET_KEY
       - CELERY_BROKER_URL
       - CELERY_RESULT_BACKEND
+      - RATE_LIMIT_ANONYMOUS
+      - RATE_LIMIT_AUTHENTICATED
+      - RATE_LIMIT_PERIOD
     depends_on:
       mailhog:
         condition: service_healthy
@@ -48,7 +50,9 @@ services:
 
   celery-worker:
     container_name: celery-worker-cinema-test
-    image: online-cinema-backend-test:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     command: [ "celery", "-A", "tasks.celery_app", "worker", "-l", "info" ]
     environment:
       - CELERY_BROKER_URL
@@ -61,7 +65,9 @@ services:
 
   celery-beat:
     container_name: celery-beat-cinema-test
-    image: online-cinema-backend-test:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     command: [ "celery", "-A", "tasks.celery_app", "beat", "-l", "info" ]
     environment:
       - CELERY_BROKER_URL

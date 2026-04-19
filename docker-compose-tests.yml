@@ -23,6 +23,9 @@ services:
       - STRIPE_SECRET_KEY
       - CELERY_BROKER_URL
       - CELERY_RESULT_BACKEND
+      - RATE_LIMIT_ANONYMOUS
+      - RATE_LIMIT_AUTHENTICATED
+      - RATE_LIMIT_PERIOD
     depends_on:
       mailhog:
         condition: service_healthy

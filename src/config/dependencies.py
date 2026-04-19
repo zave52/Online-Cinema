@@ -4,6 +4,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi_mail import ConnectionConfig
 from pydantic import SecretStr
+from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -312,3 +313,21 @@ def get_payment_service(
         secret_key=settings.STRIPE_SECRET_KEY,
         publishable_key=settings.STRIPE_PUBLISHABLE_KEY
     )
+
+
+async def get_redis_client(
+    settings: BaseAppSettings = Depends(get_settings)
+) -> Redis:
+    """Dependency that provides an asynchronous Redis client instance.
+
+    Args:
+        settings: Application settings containing the Redis cache host URL.
+
+    Yields:
+        Redis: An active Redis client instance.
+    """
+    client = Redis.from_url(settings.CACHE_HOST)
+    try:
+        yield client
+    finally:
+        await client.aclose()

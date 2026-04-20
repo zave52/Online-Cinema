@@ -4,8 +4,6 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.security import HTTPBearer
 from fastapi.responses import HTMLResponse
 
-from config.dependencies import get_current_user
-from database.models.accounts import UserModel
 from routers import (
     accounts,
     profiles,
@@ -171,9 +169,7 @@ app = create_app()
 
 
 @app.get("/docs", include_in_schema=False)
-async def get_swagger_documentation(
-    authorized: UserModel = Depends(get_current_user)
-) -> HTMLResponse:
+async def get_swagger_documentation() -> HTMLResponse:
     """Get Swagger UI documentation with access control.
 
     Args:
@@ -191,9 +187,7 @@ async def get_swagger_documentation(
 
 
 @app.get("/redoc", include_in_schema=False)
-async def get_redoc_documentation(
-    authorized: UserModel = Depends(get_current_user)
-) -> HTMLResponse:
+async def get_redoc_documentation() -> HTMLResponse:
     """Get ReDoc documentation with access control.
 
     Args:

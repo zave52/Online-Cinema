@@ -169,9 +169,7 @@ app = create_app()
 
 
 @app.get("/docs", include_in_schema=False)
-async def get_swagger_documentation(
-    authorized: UserModel = Depends(get_current_user)
-) -> HTMLResponse:
+async def get_swagger_documentation() -> HTMLResponse:
     """Get Swagger UI documentation with access control.
 
     Args:

@@ -1,0 +1,5916 @@
+openapi: 3.1.0
+info:
+  title: Online Cinema API
+  description: |2-
+
+            # Online Cinema API Documentation
+
+            ## Overview
+            This API provides comprehensive functionality for an online cinema platform,
+            including user management, movie catalog, shopping cart, orders, and payment processing.
+
+            ## Features
+            - **User Management**: Registration, authentication, profile management
+            - **Movie Catalog**: Browse movies, view details, search and filter
+            - **Shopping Cart**: Add/remove movies, manage cart contents
+            - **Orders**: Create and manage movie purchases
+            - **Payments**: Secure payment processing with Stripe integration
+            - **Admin Functions**: User management and system administration
+
+            ## Authentication
+            The API uses JWT (JSON Web Tokens) for authentication.
+            Most endpoints require a valid access token in the Authorization header.
+
+            ## Error Handling
+            The API returns standardized error responses
+            with appropriate HTTP status codes and detailed error messages.
+
+            ## Versioning
+            This is version 1.0 of the API. All endpoints are prefixed with `/api/v1/`.
+
+  version: 1.0.0
+paths:
+  /api/v1/accounts/register/:
+    post:
+      tags:
+        - accounts
+      summary: Register a new user
+      description: >-
+        Register a new user with email and password. Sends an activation email
+        with a token.
+      operationId: register_user_api_v1_accounts_register__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequestSchema'
+        required: true
+      responses:
+        '201':
+          description: User successfully registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRegistrationResponseSchema'
+              example:
+                id: 1
+                email: user@example.com
+                is_active: false
+                created_at: '2024-01-01T00:00:00Z'
+                group:
+                  id: 1
+                  name: user
+        '409':
+          description: User with this email already exists
+          content:
+            application/json:
+              example:
+                detail: A user with this email user@example.com already exists.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '500':
+          description: Internal server error during user creation
+          content:
+            application/json:
+              example:
+                detail: An error occurred during user creation.
+      security:
+        - HTTPBearer: [ ]
+  /api/v1/accounts/activate/resend/:
+    post:
+      tags:
+        - accounts
+      summary: Resend activation token
+      description: >-
+        Resend a new activation token to the user's email if the previous one
+        expired.
+      operationId: resend_activation_token_api_v1_accounts_activate_resend__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendActivationTokenRequestSchema'
+        required: true
+      responses:
+        '200':
+          description: Activation token resent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas__accounts__MessageResponseSchema'
+              example:
+                message: >-
+                  If your account exists and is not activated, you will receive
+                  an email with instructions.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '500':
+          description: Internal server error during token resend
+          content:
+            application/json:
+              example:
+                detail: An error occurred during resending activation token.
+      security:
+        - HTTPBearer: [ ]
+  /api/v1/accounts/activate/:
+    post:
+      tags:
+        - accounts
+      summary: Activate user account
+      description: Activate a user account using the activation token sent via email.
+      operationId: activate_account_api_v1_accounts_activate__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserActivationRequestSchema'
+        required: true
+      responses:
+        '200':
+          description: User account activated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas__accounts__MessageResponseSchema'
+              example:
+                message: User account activated successfully.
+        '400':
+          description: Invalid or expired activation token or user already active
+          content:
+            application/json:
+              examples:
+                invalid_token:
+                  summary: Invalid Token
+                  value:
+                    detail: Invalid or expired activation token.
+                already_active:
+                  summary: Already Active
+                  value:
+                    detail: User account is already active.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - HTTPBearer: [ ]
+  /api/v1/accounts/password-reset/request/:
+    post:
+      tags:
+        - accounts
+      summary: Request password reset
+      description: Request a password reset token to be sent to the user's email.
+      operationId: >-
+        request_password_reset_token_api_v1_accounts_password_reset_request__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestSchema'
+        required: true
+      responses:
+        '200':
+          description: Password reset token sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas__accounts__MessageResponseSchema'
+              example:
+                message: >-
+                  If you are registered, you will receive an email with
+                  instructions.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - HTTPBearer: [ ]
+  /api/v1/accounts/password-reset/complete/:
+    post:
+      tags:
+        - accounts
+      summary: Complete password reset
+      description: Complete the password reset process using the token sent via email.
+      operationId: reset_password_api_v1_accounts_password_reset_complete__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetCompleteRequestSchema'
+        required: true
+      responses:
+        '200':
+          description: Password reset completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas__accounts__MessageResponseSchema'
+              example:
+                message: Password reset successfully.
+        '400':
+          description: Invalid email or token
+          content:
+            application/json:
+              example:
+                detail: Invalid email or token.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '500':
+          description: Internal server error during password reset
+          content:
+            application/json:
+              example:
+                detail: An error occurred while resetting the password.
+      security:
+        - HTTPBearer: [ ]
+  /api/v1/accounts/password-change/:
+    post:
+      tags:
+        - accounts
+      summary: Change password
+      description: Change the user's password by providing the old and new password.
+      operationId: change_password_api_v1_accounts_password_change__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeRequestSchema'
+        required: true
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas__accounts__MessageResponseSchema'
+              example:
+                message: Password changed successfully.
+        '400':
+          description: New password same as current password
+          content:
+            application/json:
+              example:
+                detail: New password must be different from the current password.
+        '401':
+          description: Current password incorrect
+          content:
+            application/json:
+              example:
+                detail: Current password is incorrect.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '500':
+          description: Internal server error during password change
+          content:
+            application/json:
+              example:
+                detail: An error occurred during password change.
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+  /api/v1/accounts/login/:
+    post:
+      tags:
+        - accounts
+      summary: User login
+      description: Authenticate user and return JWT access and refresh tokens.
+      operationId: login_user_api_v1_accounts_login__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLoginRequestSchema'
+        required: true
+      responses:
+        '200':
+          description: User successfully authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserLoginResponseSchema'
+              example:
+                access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                token_type: bearer
+                user:
+                  id: 1
+                  email: user@example.com
+                  is_active: true
+                  created_at: '2024-01-01T00:00:00Z'
+                  group:
+                    id: 1
+                    name: user
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              example:
+                detail: Invalid email or password
+        '403':
+          description: Account not activated
+          content:
+            application/json:
+              example:
+                detail: >-
+                  Account is not activated. Please check your email for
+                  activation link.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - HTTPBearer: [ ]
+  /api/v1/accounts/logout/:
+    post:
+      tags:
+        - accounts
+      summary: User logout
+      description: Logout user by deleting the refresh token.
+      operationId: logout_user_api_v1_accounts_logout__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequestSchema'
+        required: true
+      responses:
+        '200':
+          description: User logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas__accounts__MessageResponseSchema'
+              example:
+                message: Successfully logged out.
+        '401':
+          description: Invalid credentials or user not found/inactive
+          content:
+            application/json:
+              examples:
+                invalid_tokens:
+                  summary: Invalid Tokens
+                  value:
+                    detail: Invalid or mismatched tokens
+                not_found:
+                  summary: User Not Found
+                  value:
+                    detail: User not found or inactive
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '500':
+          description: Internal server error during logout
+          content:
+            application/json:
+              example:
+                detail: An error occurred during logout.
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+  /api/v1/accounts/refresh/:
+    post:
+      tags:
+        - accounts
+      summary: Refresh access token
+      description: Obtain a new access token using a valid refresh token.
+      operationId: refresh_access_token_api_v1_accounts_refresh__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequestSchema'
+        required: true
+      responses:
+        '200':
+          description: Access token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefreshResponseSchema'
+              example:
+                access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        '400':
+          description: Invalid refresh token
+          content:
+            application/json:
+              example:
+                detail: Invalid refresh token
+        '401':
+          description: Refresh token not found
+          content:
+            application/json:
+              example:
+                detail: Refresh token not found.
+        '404':
+          description: User not found
+          content:
+            application/json:
+              example:
+                detail: User not found.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - HTTPBearer: [ ]
+  /api/v1/accounts/verify/:
+    post:
+      tags:
+        - accounts
+      summary: Verify access token
+      description: Verify if a given access token is valid and not expired.
+      operationId: verify_access_token_api_v1_accounts_verify__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenVerifyRequestSchema'
+        required: true
+      responses:
+        '200':
+          description: Token is valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas__accounts__MessageResponseSchema'
+              example:
+                message: Token valid.
+        '401':
+          description: Token invalid or expired
+          content:
+            application/json:
+              example:
+                detail: Token invalid or expired.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - HTTPBearer: [ ]
+  '/api/v1/accounts/admin/users/{user_id}/change-group/':
+    post:
+      tags:
+        - accounts
+        - admin
+        - accounts
+      summary: Change user group (admin only)
+      description: Change the group (role) of a user. Only accessible by admins.
+      operationId: >-
+        change_user_group_api_v1_accounts_admin_users__user_id__change_group__post
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserGroupUpdateRequestSchema'
+      responses:
+        '200':
+          description: User group successfully changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas__accounts__MessageResponseSchema'
+              example:
+                message: User group successfully changed to admin
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              example:
+                detail: Access denied. Admin privileges required.
+        '404':
+          description: User not found
+          content:
+            application/json:
+              example:
+                detail: User not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/accounts/admin/users/activate/:
+    post:
+      tags:
+        - accounts
+        - admin
+        - accounts
+      summary: Manually activate user (admin only)
+      description: Manually activate a user account. Only accessible by admins.
+      operationId: admin_activate_user_api_v1_accounts_admin_users_activate__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserManualActivationSchema'
+        required: true
+      responses:
+        '200':
+          description: User activated successfully or already active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas__accounts__MessageResponseSchema'
+              examples:
+                activated:
+                  summary: User Activated
+                  value:
+                    message: >-
+                      User account for user@example.com has been manually
+                      activated.
+                already_active:
+                  summary: Already Active
+                  value:
+                    message: User account for user@example.com is already active.
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              example:
+                detail: Access denied. Admin privileges required.
+        '404':
+          description: User not found
+          content:
+            application/json:
+              example:
+                detail: User with email user@example.com not found.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '500':
+          description: Internal server error during activation
+          content:
+            application/json:
+              example:
+                detail: Failed to activate user account.
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+  '/api/v1/profiles/users/{user_id}/profile/':
+    post:
+      tags:
+        - profiles
+      summary: Create user profile
+      description: Create a new profile for a user with avatar upload to S3 storage.
+      operationId: create_profile_api_v1_profiles_users__user_id__profile__post
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: User Id
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: >-
+                #/components/schemas/Body_create_profile_api_v1_profiles_users__user_id__profile__post
+      responses:
+        '201':
+          description: Profile created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponseSchema'
+              example:
+                id: 1
+                user_id: 1
+                first_name: John
+                last_name: Doe
+                gender: MAN
+                date_of_birth: '1990-01-01'
+                info: Software developer from New York
+                avatar: 'https://example-bucket.s3.amazonaws.com/avatars/1_profile.jpg'
+        '400':
+          description: User already has a profile
+          content:
+            application/json:
+              example:
+                detail: User already has a profile.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: You don't have permission to edit this profile.
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - body
+                      - first_name
+                    msg: field required
+                    type: value_error.missing
+        '500':
+          description: Avatar upload failed
+          content:
+            application/json:
+              example:
+                detail: Failed to upload avatar. Please try again later.
+    get:
+      tags:
+        - profiles
+      summary: Get user profile
+      description: >-
+        Retrieve a user's profile. Users can only view their own profile unless
+        they are admin.
+      operationId: get_user_profile_api_v1_profiles_users__user_id__profile__get
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: User Id
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileRetrieveSchema'
+              example:
+                id: 1
+                user_id: 1
+                email: user@example.com
+                first_name: John
+                last_name: Doe
+                gender: MAN
+                info: Software developer from New York
+                date_of_birth: '1990-01-01'
+                avatar: 'https://example-bucket.s3.amazonaws.com/avatars/1_profile.jpg'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: You don't have permission to view this profile.
+        '404':
+          description: Profile not found
+          content:
+            application/json:
+              example:
+                detail: Profile for this user not found.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    put:
+      tags:
+        - profiles
+      summary: Update user profile
+      description: >-
+        Update a user's profile completely. Users can only update their own
+        profile unless they are admin.
+      operationId: update_profile_api_v1_profiles_users__user_id__profile__put
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: User Id
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: >-
+                #/components/schemas/Body_update_profile_api_v1_profiles_users__user_id__profile__put
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponseSchema'
+              example:
+                id: 1
+                user_id: 1
+                first_name: John
+                last_name: Doe
+                gender: MAN
+                date_of_birth: '1990-01-01'
+                info: Software developer from New York
+                avatar: 'https://example-bucket.s3.amazonaws.com/avatars/1_profile.jpg'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: You don't have permission to update this profile.
+        '404':
+          description: Profile not found
+          content:
+            application/json:
+              example:
+                detail: Profile for this user not found.
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - body
+                      - first_name
+                    msg: field required
+                    type: value_error.missing
+        '500':
+          description: Avatar upload failed
+          content:
+            application/json:
+              example:
+                detail: Failed to upload avatar. Please try again later.
+    patch:
+      tags:
+        - profiles
+      summary: Patch user profile
+      description: >-
+        Partially update a user's profile. Users can only update their own
+        profile unless they are admin.
+      operationId: patch_profile_api_v1_profiles_users__user_id__profile__patch
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: User Id
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: >-
+                #/components/schemas/Body_patch_profile_api_v1_profiles_users__user_id__profile__patch
+      responses:
+        '200':
+          description: Profile patched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponseSchema'
+              example:
+                id: 1
+                user_id: 1
+                first_name: John
+                last_name: Doe
+                gender: MAN
+                date_of_birth: '1990-01-01'
+                info: Software developer from New York
+                avatar: 'https://example-bucket.s3.amazonaws.com/avatars/1_profile.jpg'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: You don't have permission to update this profile.
+        '404':
+          description: Profile not found
+          content:
+            application/json:
+              example:
+                detail: Profile for this user not found.
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - body
+                      - first_name
+                    msg: ensure this value has at least 1 characters
+                    type: value_error.any_str.min_length
+        '500':
+          description: Avatar upload failed
+          content:
+            application/json:
+              example:
+                detail: Failed to upload avatar. Please try again later.
+  /api/v1/cinema/directors/:
+    get:
+      tags:
+        - directors
+        - moderator
+        - directors
+      summary: List directors
+      description: >-
+        Get a paginated list of all movie directors. Only moderators and admins
+        can access.
+      operationId: get_directors_api_v1_cinema_directors__get
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            title: Page
+        - name: per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 10
+            title: Per Page
+      responses:
+        '200':
+          description: List of directors returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DirectorListSchema'
+              example:
+                directors:
+                  - id: 1
+                    name: Frank Darabont
+                  - id: 2
+                    name: Francis Ford Coppola
+                total_pages: 1
+                total_items: 2
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: Access denied. Moderator or admin privileges required.
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - query
+                      - page
+                    msg: ensure this value is greater than or equal to 1
+                    type: value_error.number.not_ge
+    post:
+      tags:
+        - directors
+        - moderator
+        - directors
+      summary: Create director
+      description: >-
+        Create a new movie director. Only moderators and admins can perform this
+        action.
+      operationId: create_director_api_v1_cinema_directors__post
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NameSchema'
+      responses:
+        '201':
+          description: Director created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DirectorSchema'
+              example:
+                id: 1
+                name: New Director Name
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: Access denied. Moderator or admin privileges required.
+        '409':
+          description: Director already exists
+          content:
+            application/json:
+              example:
+                detail: Director with this name already exists.
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - body
+                      - name
+                    msg: field required
+                    type: value_error.missing
+  '/api/v1/cinema/directors/{director_id}/':
+    get:
+      tags:
+        - directors
+        - moderator
+        - directors
+      summary: Get director by ID
+      description: >-
+        Retrieve detailed information about a specific director by their ID.
+        Only moderators and admins can access.
+      operationId: get_director_by_id_api_v1_cinema_directors__director_id___get
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: director_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Director Id
+      responses:
+        '200':
+          description: Director details returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DirectorSchema'
+              example:
+                id: 1
+                name: Frank Darabont
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: Access denied. Moderator or admin privileges required.
+        '404':
+          description: Director not found
+          content:
+            application/json:
+              example:
+                detail: Director not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+        - directors
+        - moderator
+        - directors
+      summary: Update director
+      description: >-
+        Update an existing director's information. Only moderators and admins
+        can perform this action.
+      operationId: update_director_api_v1_cinema_directors__director_id___patch
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: director_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Director Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NameSchema'
+      responses:
+        '200':
+          description: Director updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DirectorSchema'
+              example:
+                id: 1
+                name: Updated Director Name
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: Access denied. Moderator or admin privileges required.
+        '404':
+          description: Director not found
+          content:
+            application/json:
+              example:
+                detail: Director not found
+        '409':
+          description: Director name already exists
+          content:
+            application/json:
+              example:
+                detail: Director with this name already exists.
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - body
+                      - name
+                    msg: field required
+                    type: value_error.missing
+    delete:
+      tags:
+        - directors
+        - moderator
+        - directors
+      summary: Delete director
+      description: >-
+        Delete a director from the database. Only moderators and admins can
+        perform this action.
+      operationId: delete_director_api_v1_cinema_directors__director_id___delete
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: director_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Director Id
+      responses:
+        '204':
+          description: Director deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: Access denied. Moderator or admin privileges required.
+        '404':
+          description: Director not found
+          content:
+            application/json:
+              example:
+                detail: Director not found
+        '409':
+          description: Director has associated movies
+          content:
+            application/json:
+              example:
+                detail: Cannot delete director that has associated movies.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  '/api/v1/cinema/movies/{movie_id}/comments/':
+    post:
+      tags:
+        - comments
+      summary: Add comment to movie
+      description: Add a new comment to a specific movie.
+      operationId: comment_movie_api_v1_cinema_movies__movie_id__comments__post
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: movie_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Movie Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentMovieRequestSchema'
+      responses:
+        '201':
+          description: Comment added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentSchema'
+              example:
+                id: 1
+                text: Amazing movie! Highly recommended.
+                user:
+                  id: 1
+                  email: user@example.com
+                created_at: '2024-01-01T00:00:00Z'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '404':
+          description: Movie not found
+          content:
+            application/json:
+              example:
+                detail: Movie not found
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - body
+                      - text
+                    msg: field required
+                    type: value_error.missing
+  '/api/v1/cinema/movies/{movie_id}/comments/{comment_id}/replies/':
+    post:
+      tags:
+        - comments
+      summary: Reply to comment
+      description: Add a reply to an existing comment on a movie.
+      operationId: >-
+        reply_to_comment_api_v1_cinema_movies__movie_id__comments__comment_id__replies__post
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: movie_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Movie Id
+        - name: comment_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Comment Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentMovieRequestSchema'
+      responses:
+        '201':
+          description: Reply added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentSchema'
+              example:
+                id: 2
+                text: I completely agree with your review!
+                user:
+                  id: 2
+                  email: another@example.com
+                created_at: '2024-01-01T00:00:00Z'
+                parent_id: 1
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '404':
+          description: Movie or comment not found
+          content:
+            application/json:
+              example:
+                detail: Movie or comment not found
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - body
+                      - text
+                    msg: field required
+                    type: value_error.missing
+  '/api/v1/cinema/movies/{movie_id}/comments/{comment_id}/':
+    delete:
+      tags:
+        - comments
+      summary: Delete comment
+      description: >-
+        Delete a comment from a movie. Users can only delete their own comments
+        unless they are admin/moderator.
+      operationId: >-
+        delete_comment_api_v1_cinema_movies__movie_id__comments__comment_id___delete
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: movie_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Movie Id
+        - name: comment_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Comment Id
+      responses:
+        '204':
+          description: Comment deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: You can only delete your own comments.
+        '404':
+          description: Movie or comment not found
+          content:
+            application/json:
+              example:
+                detail: Movie or comment not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/cinema/movies/favorites/:
+    get:
+      tags:
+        - favorites
+      summary: List favorite movies
+      description: Get a paginated list of movies marked as favorite by the current user.
+      operationId: get_favorite_movies_api_v1_cinema_movies_favorites__get
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            title: Page
+        - name: per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 10
+            title: Per Page
+        - name: sort_by
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Sort By
+      responses:
+        '200':
+          description: List of favorite movies returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovieListResponseSchema'
+              example:
+                movies:
+                  - id: 1
+                    name: The Shawshank Redemption
+                    year: 1994
+                    price: 9.99
+                    imdb: 9.3
+                    time: 142
+                    genres:
+                      - id: 1
+                        name: Drama
+                    stars:
+                      - id: 1
+                        name: Tim Robbins
+                    directors:
+                      - id: 1
+                        name: Frank Darabont
+                total_pages: 1
+                total_items: 1
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - query
+                      - page
+                    msg: ensure this value is greater than or equal to 1
+                    type: value_error.number.not_ge
+  '/api/v1/cinema/movies/{movie_id}/favorites/':
+    post:
+      tags:
+        - favorites
+      summary: Add movie to favorites
+      description: Add a movie to the user's favorites list.
+      operationId: add_movie_to_favorites_api_v1_cinema_movies__movie_id__favorites__post
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: movie_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Movie Id
+      responses:
+        '200':
+          description: Movie added to favorites successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas__movies__MessageResponseSchema'
+              example:
+                message: Movie added to favorites successfully.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '404':
+          description: Movie not found
+          content:
+            application/json:
+              example:
+                detail: Movie not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+        - favorites
+      summary: Remove movie from favorites
+      description: Remove a movie from the user's favorites list.
+      operationId: >-
+        remove_movie_from_favorites_api_v1_cinema_movies__movie_id__favorites__delete
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: movie_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Movie Id
+      responses:
+        '204':
+          description: Movie removed from favorites successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '404':
+          description: Movie not found or not in favorites
+          content:
+            application/json:
+              example:
+                detail: Movie not found or not in favorites
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/cinema/genres/:
+    get:
+      tags:
+        - genres
+        - moderator
+        - genres
+      summary: List genres
+      description: >-
+        Get a paginated list of all movie genres. Only moderators and admins can
+        access.
+      operationId: get_genres_api_v1_cinema_genres__get
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            title: Page
+        - name: per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 10
+            title: Per Page
+      responses:
+        '200':
+          description: List of genres returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenreListSchema'
+              example:
+                genres:
+                  - id: 1
+                    name: Drama
+                    movie_count: 15
+                  - id: 2
+                    name: Action
+                    movie_count: 12
+                total_pages: 1
+                total_items: 2
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: Access denied. Moderator or admin privileges required.
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - query
+                      - page
+                    msg: ensure this value is greater than or equal to 1
+                    type: value_error.number.not_ge
+    post:
+      tags:
+        - genres
+        - moderator
+        - genres
+      summary: Create genre
+      description: >-
+        Create a new movie genre. Only moderators and admins can perform this
+        action.
+      operationId: create_genre_api_v1_cinema_genres__post
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NameSchema'
+      responses:
+        '201':
+          description: Genre created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenreSchema'
+              example:
+                id: 1
+                name: Thriller
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: Access denied. Moderator or admin privileges required.
+        '409':
+          description: Genre already exists
+          content:
+            application/json:
+              example:
+                detail: Genre with this name already exists.
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - body
+                      - name
+                    msg: field required
+                    type: value_error.missing
+  '/api/v1/cinema/genres/{genre_id}/':
+    get:
+      tags:
+        - genres
+        - moderator
+        - genres
+      summary: Get genre by ID
+      description: >-
+        Retrieve detailed information about a specific genre by its ID. Only
+        moderators and admins can access.
+      operationId: get_genre_by_id_api_v1_cinema_genres__genre_id___get
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: genre_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Genre Id
+      responses:
+        '200':
+          description: Genre details returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenreWithMovieCountSchema'
+              example:
+                id: 1
+                name: Drama
+                movie_count: 15
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: Access denied. Moderator or admin privileges required.
+        '404':
+          description: Genre not found
+          content:
+            application/json:
+              example:
+                detail: Genre not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+        - genres
+        - moderator
+        - genres
+      summary: Update genre
+      description: >-
+        Update an existing genre's information. Only moderators and admins can
+        perform this action.
+      operationId: update_genre_api_v1_cinema_genres__genre_id___patch
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: genre_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Genre Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NameSchema'
+      responses:
+        '200':
+          description: Genre updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenreSchema'
+              example:
+                id: 1
+                name: Updated Genre Name
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: Access denied. Moderator or admin privileges required.
+        '404':
+          description: Genre not found
+          content:
+            application/json:
+              example:
+                detail: Genre not found
+        '409':
+          description: Genre name already exists
+          content:
+            application/json:
+              example:
+                detail: Genre with this name already exists.
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - body
+                      - name
+                    msg: field required
+                    type: value_error.missing
+    delete:
+      tags:
+        - genres
+        - moderator
+        - genres
+      summary: Delete genre
+      description: >-
+        Delete a genre from the database. Only moderators and admins can perform
+        this action.
+      operationId: delete_genre_api_v1_cinema_genres__genre_id___delete
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: genre_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Genre Id
+      responses:
+        '204':
+          description: Genre deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: Access denied. Moderator or admin privileges required.
+        '404':
+          description: Genre not found
+          content:
+            application/json:
+              example:
+                detail: Genre not found
+        '409':
+          description: Genre has associated movies
+          content:
+            application/json:
+              example:
+                detail: Cannot delete genre that has associated movies.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/cinema/movies/likes/:
+    get:
+      tags:
+        - likes
+      summary: List liked movies
+      description: Get a paginated list of movies liked by the current user.
+      operationId: get_liked_movies_api_v1_cinema_movies_likes__get
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            title: Page
+        - name: per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 10
+            title: Per Page
+        - name: sort_by
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Sort By
+      responses:
+        '200':
+          description: List of liked movies returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovieListResponseSchema'
+              example:
+                movies:
+                  - id: 1
+                    name: The Shawshank Redemption
+                    year: 1994
+                    price: 9.99
+                    imdb: 9.3
+                    time: 142
+                    genres:
+                      - id: 1
+                        name: Drama
+                    stars:
+                      - id: 1
+                        name: Tim Robbins
+                    directors:
+                      - id: 1
+                        name: Frank Darabont
+                total_pages: 1
+                total_items: 1
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - query
+                      - page
+                    msg: ensure this value is greater than or equal to 1
+                    type: value_error.number.not_ge
+  '/api/v1/cinema/movies/{movie_id}/likes/':
+    post:
+      tags:
+        - likes
+      summary: Like movie
+      description: Add a like to a specific movie.
+      operationId: like_movie_api_v1_cinema_movies__movie_id__likes__post
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: movie_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Movie Id
+      responses:
+        '200':
+          description: Movie liked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas__movies__MessageResponseSchema'
+              example:
+                message: Movie liked successfully.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '404':
+          description: Movie not found
+          content:
+            application/json:
+              example:
+                detail: Movie not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+        - likes
+      summary: Unlike movie
+      description: Remove a like from a specific movie.
+      operationId: unlike_movie_api_v1_cinema_movies__movie_id__likes__delete
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: movie_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Movie Id
+      responses:
+        '204':
+          description: Movie unliked successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '404':
+          description: Movie not found or not liked
+          content:
+            application/json:
+              example:
+                detail: Movie not found or not liked
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  '/api/v1/cinema/movies/{movie_id}/rates/':
+    post:
+      tags:
+        - rates
+      summary: Rate movie
+      description: >-
+        Rate a movie with a score from 1 to 10. If already rated, updates the
+        existing rating.
+      operationId: rate_movie_api_v1_cinema_movies__movie_id__rates__post
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: movie_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Movie Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RateMovieSchema'
+      responses:
+        '200':
+          description: Movie rated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas__movies__MessageResponseSchema'
+              example:
+                message: Movie rated successfully with score 9.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '404':
+          description: Movie not found
+          content:
+            application/json:
+              example:
+                detail: Movie not found
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - body
+                      - score
+                    msg: ensure this value is greater than or equal to 1
+                    type: value_error.number.not_ge
+    delete:
+      tags:
+        - rates
+      summary: Delete movie rating
+      description: Remove the user's rating for a specific movie.
+      operationId: delete_rate_api_v1_cinema_movies__movie_id__rates__delete
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: movie_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Movie Id
+      responses:
+        '204':
+          description: Rating deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '404':
+          description: Movie not found or not rated
+          content:
+            application/json:
+              example:
+                detail: Movie not found or not rated
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/cinema/stars/:
+    get:
+      tags:
+        - stars
+        - moderator
+        - stars
+      summary: List stars
+      description: >-
+        Get a paginated list of all movie stars. Only moderators and admins can
+        access.
+      operationId: get_stars_api_v1_cinema_stars__get
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            title: Page
+        - name: per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 10
+            title: Per Page
+      responses:
+        '200':
+          description: List of stars returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StarListSchema'
+              example:
+                stars:
+                  - id: 1
+                    name: Tim Robbins
+                  - id: 2
+                    name: Marlon Brando
+                total_pages: 1
+                total_items: 2
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: Access denied. Moderator or admin privileges required.
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - query
+                      - page
+                    msg: ensure this value is greater than or equal to 1
+                    type: value_error.number.not_ge
+    post:
+      tags:
+        - stars
+        - moderator
+        - stars
+      summary: Create star
+      description: >-
+        Create a new movie star. Only moderators and admins can perform this
+        action.
+      operationId: create_star_api_v1_cinema_stars__post
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NameSchema'
+      responses:
+        '201':
+          description: Star created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StarSchema'
+              example:
+                id: 1
+                name: New Star Name
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: Access denied. Moderator or admin privileges required.
+        '409':
+          description: Star already exists
+          content:
+            application/json:
+              example:
+                detail: Star with this name already exists.
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - body
+                      - name
+                    msg: field required
+                    type: value_error.missing
+  '/api/v1/cinema/stars/{star_id}/':
+    get:
+      tags:
+        - stars
+        - moderator
+        - stars
+      summary: Get star by ID
+      description: >-
+        Retrieve detailed information about a specific star by their ID. Only
+        moderators and admins can access.
+      operationId: get_star_by_id_api_v1_cinema_stars__star_id___get
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: star_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Star Id
+      responses:
+        '200':
+          description: Star details returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StarSchema'
+              example:
+                id: 1
+                name: Tim Robbins
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: Access denied. Moderator or admin privileges required.
+        '404':
+          description: Star not found
+          content:
+            application/json:
+              example:
+                detail: Star not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+        - stars
+        - moderator
+        - stars
+      summary: Update star
+      description: >-
+        Update an existing star's information. Only moderators and admins can
+        perform this action.
+      operationId: update_star_api_v1_cinema_stars__star_id___patch
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: star_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Star Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NameSchema'
+      responses:
+        '200':
+          description: Star updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StarSchema'
+              example:
+                id: 1
+                name: Updated Star Name
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: Access denied. Moderator or admin privileges required.
+        '404':
+          description: Star not found
+          content:
+            application/json:
+              example:
+                detail: Star not found
+        '409':
+          description: Star name already exists
+          content:
+            application/json:
+              example:
+                detail: Star with this name already exists.
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - body
+                      - name
+                    msg: field required
+                    type: value_error.missing
+    delete:
+      tags:
+        - stars
+        - moderator
+        - stars
+      summary: Delete star
+      description: >-
+        Delete a star from the database. Only moderators and admins can perform
+        this action.
+      operationId: delete_star_api_v1_cinema_stars__star_id___delete
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: star_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Star Id
+      responses:
+        '204':
+          description: Star deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: Access denied. Moderator or admin privileges required.
+        '404':
+          description: Star not found
+          content:
+            application/json:
+              example:
+                detail: Star not found
+        '409':
+          description: Star has associated movies
+          content:
+            application/json:
+              example:
+                detail: Cannot delete star that has associated movies.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/cinema/movies/:
+    get:
+      tags:
+        - movies
+      summary: List movies
+      description: >-
+        Browse the movie catalog with pagination, filtering, sorting, and
+        search.
+      operationId: get_movies_api_v1_cinema_movies__get
+      security:
+        - HTTPBearer: [ ]
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            title: Page
+        - name: per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 10
+            title: Per Page
+        - name: sort_by
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Sort By
+        - name: search
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Search
+        - name: year_from
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: integer
+              - type: 'null'
+            title: Year From
+        - name: year_to
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: integer
+              - type: 'null'
+            title: Year To
+        - name: imdb_min
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: integer
+              - type: 'null'
+            title: Imdb Min
+        - name: genre
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Genre
+      responses:
+        '200':
+          description: List of movies returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovieListResponseSchema'
+              example:
+                movies:
+                  - id: 1
+                    name: The Shawshank Redemption
+                    year: 1994
+                    price: 9.99
+                    imdb: 9.3
+                    time: 142
+                    genres:
+                      - id: 1
+                        name: Drama
+                    stars:
+                      - id: 1
+                        name: Tim Robbins
+                    directors:
+                      - id: 1
+                        name: Frank Darabont
+                  - id: 2
+                    name: The Godfather
+                    year: 1972
+                    price: 9.99
+                    imdb: 9.2
+                    time: 175
+                    genres:
+                      - id: 2
+                        name: Crime
+                    stars:
+                      - id: 2
+                        name: Marlon Brando
+                    directors:
+                      - id: 2
+                        name: Francis Ford Coppola
+                total_pages: 1
+                total_items: 2
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - query
+                      - page
+                    msg: ensure this value is greater than or equal to 1
+                    type: value_error.number.not_ge
+    post:
+      tags:
+        - movies
+        - movies
+        - moderator
+      summary: Create a new movie
+      description: >-
+        Create a new movie entry. Only moderators and admins can perform this
+        action.
+      operationId: create_movie_api_v1_cinema_movies__post
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovieCreateRequestSchema'
+      responses:
+        '201':
+          description: Movie created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovieCreateResponseSchema'
+              example:
+                id: 1
+                name: The Shawshank Redemption
+                description: Two imprisoned men bond over a number of years...
+                year: 1994
+                price: 9.99
+                imdb: 9.3
+                time: 142
+                genres:
+                  - id: 1
+                    name: Drama
+                stars:
+                  - id: 1
+                    name: Tim Robbins
+                directors:
+                  - id: 1
+                    name: Frank Darabont
+                certification:
+                  id: 1
+                  name: R
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: Access denied. Moderator or admin privileges required.
+        '409':
+          description: Movie already exists
+          content:
+            application/json:
+              example:
+                detail: Movie with this name already exists.
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - body
+                      - name
+                    msg: field required
+                    type: value_error.missing
+  /api/v1/cinema/movies/purchased/:
+    get:
+      tags:
+        - movies
+      summary: List purchased movies
+      description: Get a paginated list of movies purchased by the current user.
+      operationId: get_purchased_movies_api_v1_cinema_movies_purchased__get
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            title: Page
+        - name: per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 10
+            title: Per Page
+        - name: sort_by
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Sort By
+      responses:
+        '200':
+          description: List of purchased movies returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovieListResponseSchema'
+              example:
+                movies:
+                  - id: 1
+                    name: The Shawshank Redemption
+                    year: 1994
+                    price: 9.99
+                    imdb: 9.3
+                    time: 142
+                    genres:
+                      - id: 1
+                        name: Drama
+                    stars:
+                      - id: 1
+                        name: Tim Robbins
+                    directors:
+                      - id: 1
+                        name: Frank Darabont
+                total_pages: 1
+                total_items: 1
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - query
+                      - page
+                    msg: ensure this value is greater than or equal to 1
+                    type: value_error.number.not_ge
+  '/api/v1/cinema/movies/{movie_id}/':
+    get:
+      tags:
+        - movies
+      summary: Get movie details
+      description: Retrieve detailed information about a specific movie by its ID.
+      operationId: get_movie_by_id_api_v1_cinema_movies__movie_id___get
+      security:
+        - HTTPBearer: [ ]
+      parameters:
+        - name: movie_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Movie Id
+      responses:
+        '200':
+          description: Movie details returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovieDetailSchema'
+              example:
+                id: 1
+                name: The Shawshank Redemption
+                description: Two imprisoned men bond over a number of years...
+                year: 1994
+                price: 9.99
+                imdb: 9.3
+                time: 142
+                genres:
+                  - id: 1
+                    name: Drama
+                stars:
+                  - id: 1
+                    name: Tim Robbins
+                directors:
+                  - id: 1
+                    name: Frank Darabont
+                certification:
+                  id: 1
+                  name: R
+                comments:
+                  - id: 1
+                    text: Amazing movie!
+                    user:
+                      id: 1
+                      email: user@example.com
+                    created_at: '2024-01-01T00:00:00Z'
+                likes_count: 150
+                favorites_count: 75
+                average_rating: 9.2
+        '404':
+          description: Movie not found
+          content:
+            application/json:
+              example:
+                detail: Movie not found
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - path
+                      - movie_id
+                    msg: ensure this value is greater than 0
+                    type: value_error.number.not_gt
+    patch:
+      tags:
+        - movies
+        - movies
+        - moderator
+      summary: Update movie
+      description: >-
+        Update an existing movie's information. Only moderators and admins can
+        perform this action.
+      operationId: update_movie_api_v1_cinema_movies__movie_id___patch
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: movie_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Movie Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovieUpdateSchema'
+      responses:
+        '200':
+          description: Movie updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas__movies__MessageResponseSchema'
+              example:
+                message: Movie updated successfully.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: Access denied. Moderator or admin privileges required.
+        '404':
+          description: Movie not found
+          content:
+            application/json:
+              example:
+                detail: Movie not found
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - body
+                      - name
+                    msg: ensure this value has at least 1 characters
+                    type: value_error.any_str.min_length
+    delete:
+      tags:
+        - movies
+        - movies
+        - moderator
+      summary: Delete movie
+      description: >-
+        Delete a movie from the database. Only moderators and admins can perform
+        this action.
+      operationId: delete_movie_api_v1_cinema_movies__movie_id___delete
+      security:
+        - HTTPBearer: [ ]
+        - HTTPBearer: [ ]
+      parameters:
+        - name: movie_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Movie Id
+      responses:
+        '200':
+          description: Movie deleted successfully
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: >-
+                      #/components/schemas/schemas__movies__MessageResponseSchema
+                  - type: 'null'
+                title: Response Delete Movie Api V1 Cinema Movies  Movie Id   Delete
+              example:
+                message: Movie deleted successfully.
+        '204':
+          description: Movie deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: Access denied. Moderator or admin privileges required.
+        '404':
+          description: Movie not found
+          content:
+            application/json:
+              example:
+                detail: Movie not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/ecommerce/cart/items/:
+    post:
+      tags:
+        - cart
+      summary: Add movie to cart
+      description: >-
+        Add a movie to the user's shopping cart. Validates that the movie is not
+        already purchased.
+      operationId: add_movie_to_cart_api_v1_ecommerce_cart_items__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShoppingCartAddMovieRequestSchema'
+        required: true
+      responses:
+        '200':
+          description: Movie added to cart successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingCartAddMovieResponseSchema'
+              example:
+                cart_item_id: 1
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '404':
+          description: Movie not found
+          content:
+            application/json:
+              example:
+                detail: Movie with the given id was not found.
+        '409':
+          description: Movie already in cart or already purchased
+          content:
+            application/json:
+              examples:
+                in_cart:
+                  summary: Already in Cart
+                  value:
+                    detail: Movie is already in the cart.
+                purchased:
+                  summary: Already Purchased
+                  value:
+                    detail: Movie has already been purchased.
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - body
+                      - movie_id
+                    msg: ensure this value is greater than 0
+                    type: value_error.number.not_gt
+      security:
+        - HTTPBearer: [ ]
+  '/api/v1/ecommerce/cart/items/{cart_item_id}/':
+    delete:
+      tags:
+        - cart
+      summary: Remove movie from cart
+      description: Remove a specific movie item from the user's shopping cart.
+      operationId: >-
+        delete_movie_from_cart_api_v1_ecommerce_cart_items__cart_item_id___delete
+      security:
+        - HTTPBearer: [ ]
+      parameters:
+        - name: cart_item_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Cart Item Id
+      responses:
+        '204':
+          description: Movie removed from cart successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '404':
+          description: Cart item not found
+          content:
+            application/json:
+              example:
+                detail: Cart item with the given id was not found in your cart.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/ecommerce/cart/:
+    get:
+      tags:
+        - cart
+      summary: Get shopping cart
+      description: Retrieve all movies in the current user's shopping cart with details.
+      operationId: get_shopping_cart_movies_api_v1_ecommerce_cart__get
+      responses:
+        '200':
+          description: Shopping cart contents returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingCartGetMoviesSchema'
+              example:
+                cart_id: 1
+                total_price: '29.97'
+                movies:
+                  - id: 1
+                    name: The Shawshank Redemption
+                    year: 1994
+                    price: '9.99'
+                    imdb: 9.3
+                    time: 142
+                    genres:
+                      - id: 1
+                        name: Drama
+                  - id: 2
+                    name: The Godfather
+                    year: 1972
+                    price: '9.99'
+                    imdb: 9.2
+                    time: 175
+                    genres:
+                      - id: 2
+                        name: Crime
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+      security:
+        - HTTPBearer: [ ]
+    delete:
+      tags:
+        - cart
+      summary: Clear shopping cart
+      description: Remove all items from the user's shopping cart.
+      operationId: clear_shopping_cart_api_v1_ecommerce_cart__delete
+      responses:
+        '204':
+          description: Shopping cart cleared successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+      security:
+        - HTTPBearer: [ ]
+  '/api/v1/ecommerce/cart/{cart_id}/':
+    get:
+      tags:
+        - cart
+        - cart
+        - moderator
+      summary: Get cart by ID (Admin)
+      description: >-
+        Retrieve shopping cart contents by cart ID. Only moderators and admins
+        can access.
+      operationId: get_shopping_cart_movies_by_id_api_v1_ecommerce_cart__cart_id___get
+      security:
+        - HTTPBearer: [ ]
+      parameters:
+        - name: cart_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Cart Id
+      responses:
+        '200':
+          description: Shopping cart contents returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingCartGetMoviesSchema'
+              example:
+                cart_id: 1
+                total_price: '29.97'
+                movies:
+                  - id: 1
+                    name: The Shawshank Redemption
+                    year: 1994
+                    price: '9.99'
+                    imdb: 9.3
+                    time: 142
+                    genres:
+                      - id: 1
+                        name: Drama
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: Access denied. Moderator or admin privileges required.
+        '404':
+          description: Cart not found
+          content:
+            application/json:
+              example:
+                detail: Shopping cart with the given id was not found.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/ecommerce/cart/checkout/:
+    post:
+      tags:
+        - cart
+      summary: Checkout cart
+      description: >-
+        Create an order from all items in the shopping cart and redirect to
+        payment.
+      operationId: checkout_cart_items_api_v1_ecommerce_cart_checkout__post
+      responses:
+        '200':
+          description: Checkout initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/schemas__shopping_cart__MessageResponseSchema
+              example:
+                message: Order created successfully. Redirecting to payment...
+        '400':
+          description: Cart is empty or checkout failed
+          content:
+            application/json:
+              example:
+                detail: Cannot checkout empty cart.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '409':
+          description: Some movies already purchased or in pending orders
+          content:
+            application/json:
+              example:
+                detail: Some movies in your cart have already been purchased.
+      security:
+        - HTTPBearer: [ ]
+  /api/v1/ecommerce/orders/:
+    post:
+      tags:
+        - orders
+      summary: Create order
+      description: >-
+        Create a new order from cart items. Validates that movies are not
+        already purchased and not in pending orders.
+      operationId: create_order_api_v1_ecommerce_orders__post
+      security:
+        - HTTPBearer: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderSchema'
+      responses:
+        '201':
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderSchema'
+              example:
+                id: 1
+                user_id: 1
+                status: pending
+                total_amount: '29.97'
+                created_at: '2024-01-01T00:00:00Z'
+                updated_at: '2024-01-01T00:00:00Z'
+                items:
+                  - id: 1
+                    order_id: 1
+                    movie_id: 1
+                    price_at_order: '9.99'
+        '400':
+          description: Cart is empty or invalid cart items
+          content:
+            application/json:
+              example:
+                detail: Cart is empty. Cannot create order.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '409':
+          description: Movies already purchased or in pending orders
+          content:
+            application/json:
+              example:
+                detail: 'Movies already purchased: The Shawshank Redemption'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - body
+                      - cart_item_ids
+                    msg: field required
+                    type: value_error.missing
+    get:
+      tags:
+        - orders
+      summary: List user orders
+      description: >-
+        Get a paginated list of orders for the current user with sorting
+        options.
+      operationId: get_user_orders_api_v1_ecommerce_orders__get
+      security:
+        - HTTPBearer: [ ]
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            title: Page
+        - name: per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 10
+            title: Per Page
+        - name: sort_by
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Sort By
+      responses:
+        '200':
+          description: List of orders returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderListSchema'
+              example:
+                orders:
+                  - id: 1
+                    user_id: 1
+                    status: completed
+                    total_amount: '29.97'
+                    created_at: '2024-01-01T00:00:00Z'
+                    updated_at: '2024-01-01T00:00:00Z'
+                    items:
+                      - id: 1
+                        order_id: 1
+                        movie_id: 1
+                        price_at_order: '9.99'
+                total_pages: 1
+                total_items: 1
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - query
+                      - page
+                    msg: ensure this value is greater than or equal to 1
+                    type: value_error.number.not_ge
+  '/api/v1/ecommerce/orders/{order_id}/':
+    get:
+      tags:
+        - orders
+      summary: Get order details
+      description: Retrieve detailed information about a specific order by its ID.
+      operationId: get_order_by_id_api_v1_ecommerce_orders__order_id___get
+      security:
+        - HTTPBearer: [ ]
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Order Id
+      responses:
+        '200':
+          description: Order details returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderSchema'
+              example:
+                id: 1
+                user_id: 1
+                status: completed
+                total_amount: '29.97'
+                created_at: '2024-01-01T00:00:00Z'
+                updated_at: '2024-01-01T00:00:00Z'
+                items:
+                  - id: 1
+                    order_id: 1
+                    movie_id: 1
+                    price_at_order: '9.99'
+                  - id: 2
+                    order_id: 1
+                    movie_id: 2
+                    price_at_order: '9.99'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              example:
+                detail: Order not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+        - orders
+      summary: Cancel order
+      description: Cancel a pending order. Paid orders cannot be canceled directly.
+      operationId: cancel_order_api_v1_ecommerce_orders__order_id___delete
+      security:
+        - HTTPBearer: [ ]
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Order Id
+      responses:
+        '204':
+          description: Order canceled successfully
+        '400':
+          description: Order cannot be canceled
+          content:
+            application/json:
+              example:
+                detail: Cannot cancel a completed order.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              example:
+                detail: Order not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  '/api/v1/ecommerce/orders/{order_id}/refund/':
+    post:
+      tags:
+        - orders
+      summary: Request refund
+      description: >-
+        Request a refund for a paid order. Processes refund through payment
+        service and removes movies from user's purchased list. Allowed refund
+        reasons: 'requested_by_customer', 'fraudulent', 'duplicate'.
+      operationId: refund_order_api_v1_ecommerce_orders__order_id__refund__post
+      security:
+        - HTTPBearer: [ ]
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Order Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundRequestSchema'
+      responses:
+        '200':
+          description: Refund processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas__orders__MessageResponseSchema'
+              example:
+                message: 'Refund processed successfully. Amount: $29.97'
+        '400':
+          description: Order cannot be refunded
+          content:
+            application/json:
+              example:
+                detail: Order is not in a refundable state.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '404':
+          description: Order or payment not found
+          content:
+            application/json:
+              example:
+                detail: Order or payment not found
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - body
+                      - reason
+                    msg: field required
+                    type: value_error.missing
+  /api/v1/ecommerce/admin/orders/:
+    get:
+      tags:
+        - orders
+        - orders
+        - moderator
+      summary: List all orders (Admin)
+      description: >-
+        Get a paginated list of all orders with filtering options. Only
+        moderators and admins can access.
+      operationId: get_all_orders_api_v1_ecommerce_admin_orders__get
+      security:
+        - HTTPBearer: [ ]
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            title: Page
+        - name: per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 10
+            title: Per Page
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: integer
+              - type: 'null'
+            title: User Id
+        - name: status_filter
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - $ref: '#/components/schemas/OrderStatusEnum'
+              - type: 'null'
+            title: Status Filter
+        - name: date_from
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Date From
+        - name: date_to
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Date To
+      responses:
+        '200':
+          description: List of orders returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderListSchema'
+              example:
+                orders:
+                  - id: 1
+                    user_id: 1
+                    status: completed
+                    total_amount: '29.97'
+                    created_at: '2024-01-01T00:00:00Z'
+                    updated_at: '2024-01-01T00:00:00Z'
+                    items:
+                      - id: 1
+                        order_id: 1
+                        movie_id: 1
+                        price_at_order: '9.99'
+                total_pages: 1
+                total_items: 1
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: Access denied. Moderator or admin privileges required.
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - query
+                      - page
+                    msg: ensure this value is greater than or equal to 1
+                    type: value_error.number.not_ge
+  /api/v1/ecommerce/payments/create-intent/:
+    post:
+      tags:
+        - payments
+      summary: Create payment intent
+      description: >-
+        Create a payment intent for a pending order. This is the first step in
+        the payment process.
+      operationId: create_payment_intent_api_v1_ecommerce_payments_create_intent__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentIntentSchema'
+        required: true
+      responses:
+        '200':
+          description: Payment intent created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentIntentResponseSchema'
+              example:
+                id: pi_1234567890abcdef
+                client_secret: pi_1234567890abcdef_secret_abcdef1234567890
+                amount: '2997'
+                currency: usd
+        '400':
+          description: Order is not in pending status or payment service error
+          content:
+            application/json:
+              example:
+                detail: Order is not on pending status.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              example:
+                detail: Order not found.
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - body
+                      - order_id
+                    msg: field required
+                    type: value_error.missing
+      security:
+        - HTTPBearer: [ ]
+  /api/v1/ecommerce/payments/process/:
+    post:
+      tags:
+        - payments
+      summary: Process payment
+      description: >-
+        Process a payment using a payment intent. Updates order status and adds
+        movies to user's purchased list.
+      operationId: process_payment_api_v1_ecommerce_payments_process__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessPaymentRequestSchema'
+        required: true
+      responses:
+        '200':
+          description: Payment processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessPaymentResponseSchema'
+              example:
+                payment_id: 1
+        '400':
+          description: Payment processing failed or order already paid
+          content:
+            application/json:
+              example:
+                detail: This order has already been paid for.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              example:
+                detail: Order not found.
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - body
+                      - payment_intent_id
+                    msg: field required
+                    type: value_error.missing
+      security:
+        - HTTPBearer: [ ]
+  /api/v1/ecommerce/payments/:
+    get:
+      tags:
+        - payments
+      summary: List user payments
+      description: >-
+        Get a paginated list of payments for the current user with sorting
+        options.
+      operationId: get_user_payments_api_v1_ecommerce_payments__get
+      security:
+        - HTTPBearer: [ ]
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            title: Page
+        - name: per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 10
+            title: Per Page
+        - name: sort_by
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Sort By
+      responses:
+        '200':
+          description: List of payments returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentListSchema'
+              example:
+                payments:
+                  - id: 1
+                    user_id: 1
+                    order_id: 1
+                    payment_intent_id: pi_1234567890abcdef
+                    amount: '29.97'
+                    currency: usd
+                    status: succeeded
+                    created_at: '2024-01-01T00:00:00Z'
+                    updated_at: '2024-01-01T00:00:00Z'
+                total_pages: 1
+                total_items: 1
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - query
+                      - page
+                    msg: ensure this value is greater than or equal to 1
+                    type: value_error.number.not_ge
+  '/api/v1/ecommerce/payments/{payment_id}/':
+    get:
+      tags:
+        - payments
+      summary: Get payment details
+      description: Retrieve detailed information about a specific payment by its ID.
+      operationId: get_payment_by_id_api_v1_ecommerce_payments__payment_id___get
+      security:
+        - HTTPBearer: [ ]
+      parameters:
+        - name: payment_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Payment Id
+      responses:
+        '200':
+          description: Payment details returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentSchema'
+              example:
+                id: 1
+                user_id: 1
+                order_id: 1
+                payment_intent_id: pi_1234567890abcdef
+                amount: '29.97'
+                currency: usd
+                status: succeeded
+                created_at: '2024-01-01T00:00:00Z'
+                updated_at: '2024-01-01T00:00:00Z'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '404':
+          description: Payment not found
+          content:
+            application/json:
+              example:
+                detail: Payment not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/ecommerce/payments/checkout-session/:
+    post:
+      tags:
+        - payments
+      summary: Create checkout session
+      description: >-
+        Create a checkout session for a pending order. Used for redirect-based
+        payment flows.
+      operationId: create_checkout_session_api_v1_ecommerce_payments_checkout_session__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutSessionRequestSchema'
+        required: true
+      responses:
+        '200':
+          description: Checkout session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutSessionResponseSchema'
+              example:
+                id: cs_1234567890abcdef
+                url: 'https://checkout.stripe.com/pay/cs_1234567890abcdef'
+        '400':
+          description: Order is not in pending status or payment service error
+          content:
+            application/json:
+              example:
+                detail: Order is not on pending status.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              example:
+                detail: Order not found.
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - body
+                      - order_id
+                    msg: field required
+                    type: value_error.missing
+      security:
+        - HTTPBearer: [ ]
+  /api/v1/ecommerce/payments/webhook/:
+    post:
+      tags:
+        - payments
+      summary: Handle payment webhook
+      description: >-
+        Handle incoming webhooks from payment service (e.g., Stripe). Processes
+        payment status updates.
+      operationId: handle_webhook_api_v1_ecommerce_payments_webhook__post
+      responses:
+        '200':
+          description: Webhook processed successfully
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: >-
+                  Response Handle Webhook Api V1 Ecommerce Payments Webhook 
+                  Post
+              example:
+                status: success
+                message: Webhook processed successfully
+        '400':
+          description: Webhook processing failed
+          content:
+            application/json:
+              example:
+                detail: Invalid webhook signature
+  /api/v1/ecommerce/admin/payments/:
+    get:
+      tags:
+        - payments
+        - payments
+        - moderator
+      summary: List all payments (Admin)
+      description: >-
+        Get a paginated list of all payments with filtering options. Only
+        moderators and admins can access.
+      operationId: get_all_payments_api_v1_ecommerce_admin_payments__get
+      security:
+        - HTTPBearer: [ ]
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            title: Page
+        - name: per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 10
+            title: Per Page
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: integer
+              - type: 'null'
+            title: User Id
+        - name: status_filter
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - $ref: '#/components/schemas/PaymentStatusEnum'
+              - type: 'null'
+            title: Status Filter
+        - name: date_from
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Date From
+        - name: date_to
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Date To
+      responses:
+        '200':
+          description: List of payments returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentListSchema'
+              example:
+                payments:
+                  - id: 1
+                    user_id: 1
+                    order_id: 1
+                    payment_intent_id: pi_1234567890abcdef
+                    amount: '29.97'
+                    currency: usd
+                    status: succeeded
+                    created_at: '2024-01-01T00:00:00Z'
+                    updated_at: '2024-01-01T00:00:00Z'
+                total_pages: 1
+                total_items: 1
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                detail: Not authenticated
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              example:
+                detail: Access denied. Moderator or admin privileges required.
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                detail:
+                  - loc:
+                      - query
+                      - page
+                    msg: ensure this value is greater than or equal to 1
+                    type: value_error.number.not_ge
+components:
+  schemas:
+    Body_create_profile_api_v1_profiles_users__user_id__profile__post:
+      properties:
+        first_name:
+          type: string
+          title: First Name
+        last_name:
+          type: string
+          title: Last Name
+        avatar:
+          type: string
+          format: binary
+          title: Avatar
+        gender:
+          type: string
+          title: Gender
+        date_of_birth:
+          type: string
+          format: date
+          title: Date Of Birth
+        info:
+          type: string
+          title: Info
+      type: object
+      required:
+        - first_name
+        - last_name
+        - avatar
+        - gender
+        - date_of_birth
+        - info
+      title: Body_create_profile_api_v1_profiles_users__user_id__profile__post
+    Body_patch_profile_api_v1_profiles_users__user_id__profile__patch:
+      properties:
+        first_name:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: First Name
+        last_name:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Last Name
+        gender:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Gender
+        date_of_birth:
+          anyOf:
+            - type: string
+              format: date
+            - type: 'null'
+          title: Date Of Birth
+        info:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Info
+        avatar:
+          anyOf:
+            - type: string
+              format: binary
+            - type: 'null'
+          title: Avatar
+      type: object
+      title: Body_patch_profile_api_v1_profiles_users__user_id__profile__patch
+    Body_update_profile_api_v1_profiles_users__user_id__profile__put:
+      properties:
+        first_name:
+          type: string
+          title: First Name
+        last_name:
+          type: string
+          title: Last Name
+        gender:
+          type: string
+          title: Gender
+        date_of_birth:
+          type: string
+          format: date
+          title: Date Of Birth
+        info:
+          type: string
+          title: Info
+        avatar:
+          anyOf:
+            - type: string
+              format: binary
+            - type: 'null'
+          title: Avatar
+      type: object
+      required:
+        - first_name
+        - last_name
+        - gender
+        - date_of_birth
+        - info
+      title: Body_update_profile_api_v1_profiles_users__user_id__profile__put
+    CertificationSchema:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          maxLength: 100
+          title: Name
+      type: object
+      required:
+        - id
+        - name
+      title: CertificationSchema
+      example:
+        id: 1
+        name: PG-13
+    CheckoutSessionRequestSchema:
+      properties:
+        order_id:
+          type: integer
+          title: Order Id
+        success_url:
+          type: string
+          title: Success Url
+        cancel_url:
+          type: string
+          title: Cancel Url
+      type: object
+      required:
+        - order_id
+        - success_url
+        - cancel_url
+      title: CheckoutSessionRequestSchema
+    CheckoutSessionResponseSchema:
+      properties:
+        id:
+          type: string
+          title: Id
+        url:
+          type: string
+          title: Url
+        amount_total:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Amount Total
+      type: object
+      required:
+        - id
+        - url
+        - amount_total
+      title: CheckoutSessionResponseSchema
+    CommentMovieRequestSchema:
+      properties:
+        content:
+          type: string
+          title: Content
+      type: object
+      required:
+        - content
+      title: CommentMovieRequestSchema
+      example:
+        content: Great movie! Highly recommended.
+    CommentSchema:
+      properties:
+        id:
+          type: integer
+          title: Id
+        content:
+          type: string
+          title: Content
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        parent_id:
+          anyOf:
+            - type: integer
+            - type: 'null'
+          title: Parent Id
+      type: object
+      required:
+        - id
+        - content
+        - created_at
+        - parent_id
+      title: CommentSchema
+      example:
+        content: >-
+          This movie was absolutely fantastic! The plot twists were unexpected
+          and the acting was superb.
+        created_at: '2024-01-15T10:30:00Z'
+        id: 1
+    CreateOrderSchema:
+      properties:
+        cart_item_ids:
+          items:
+            type: integer
+          type: array
+          title: Cart Item Ids
+      type: object
+      required:
+        - cart_item_ids
+      title: CreateOrderSchema
+      example:
+        cart_item_ids:
+          - 1
+          - 2
+          - 3
+    CreatePaymentIntentSchema:
+      properties:
+        order_id:
+          type: integer
+          title: Order Id
+      type: object
+      required:
+        - order_id
+      title: CreatePaymentIntentSchema
+      example:
+        order_id: 1
+    DirectorListSchema:
+      properties:
+        prev_page:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Prev Page
+        next_page:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Next Page
+        total_pages:
+          type: integer
+          title: Total Pages
+        total_items:
+          type: integer
+          title: Total Items
+        directors:
+          items:
+            $ref: '#/components/schemas/DirectorSchema'
+          type: array
+          title: Directors
+      type: object
+      required:
+        - total_pages
+        - total_items
+        - directors
+      title: DirectorListSchema
+      example:
+        directors:
+          - id: 1
+            name: Lana Wachowski
+          - id: 2
+            name: Christopher Nolan
+          - id: 3
+            name: Quentin Tarantino
+          - id: 4
+            name: Steven Spielberg
+          - id: 5
+            name: James Cameron
+        next_page: /api/v1/cinema/directors/?page=2&per_page=5
+        total_items: 10
+        total_pages: 2
+    DirectorSchema:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          maxLength: 100
+          title: Name
+      type: object
+      required:
+        - id
+        - name
+      title: DirectorSchema
+      example:
+        id: 1
+        name: Lana Wachowski
+    GenreListSchema:
+      properties:
+        prev_page:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Prev Page
+        next_page:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Next Page
+        total_pages:
+          type: integer
+          title: Total Pages
+        total_items:
+          type: integer
+          title: Total Items
+        genres:
+          items:
+            $ref: '#/components/schemas/GenreSchema'
+          type: array
+          title: Genres
+      type: object
+      required:
+        - total_pages
+        - total_items
+        - genres
+      title: GenreListSchema
+      example:
+        genres:
+          - id: 1
+            name: Action
+          - id: 2
+            name: Sci-Fi
+          - id: 3
+            name: Thriller
+          - id: 4
+            name: Adventure
+          - id: 5
+            name: Drama
+        next_page: /api/v1/cinema/genres/?page=2&per_page=5
+        total_items: 15
+        total_pages: 3
+    GenreSchema:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          maxLength: 100
+          title: Name
+      type: object
+      required:
+        - id
+        - name
+      title: GenreSchema
+      example:
+        id: 1
+        name: Action
+    GenreWithMovieCountSchema:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          maxLength: 100
+          title: Name
+        movie_count:
+          type: integer
+          title: Movie Count
+      type: object
+      required:
+        - id
+        - name
+        - movie_count
+      title: GenreWithMovieCountSchema
+      example:
+        id: 1
+        movie_count: 150
+        name: Action
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    MovieCreateRequestSchema:
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          title: Name
+        year:
+          type: integer
+          title: Year
+        time:
+          type: integer
+          minimum: 0
+          title: Time
+        imdb:
+          type: number
+          maximum: 10
+          minimum: 0
+          title: Imdb
+        votes:
+          type: integer
+          minimum: 0
+          title: Votes
+        meta_score:
+          type: number
+          maximum: 100
+          minimum: 0
+          title: Meta Score
+        gross:
+          type: number
+          minimum: 0
+          title: Gross
+        description:
+          type: string
+          title: Description
+        price:
+          anyOf:
+            - type: number
+            - type: string
+          title: Price
+        certification:
+          type: string
+          title: Certification
+        genres:
+          items:
+            type: string
+          type: array
+          title: Genres
+        stars:
+          items:
+            type: string
+          type: array
+          title: Stars
+        directors:
+          items:
+            type: string
+          type: array
+          title: Directors
+      type: object
+      required:
+        - name
+        - year
+        - time
+        - imdb
+        - votes
+        - meta_score
+        - gross
+        - description
+        - price
+        - certification
+        - genres
+        - stars
+        - directors
+      title: MovieCreateRequestSchema
+      example:
+        certification: PG-13
+        description: An exciting new movie that will captivate audiences worldwide.
+        directors:
+          - Christopher Nolan
+        genres:
+          - Action
+          - Adventure
+          - Sci-Fi
+        gross: 50000000
+        imdb: 8.5
+        meta_score: 85
+        name: New Blockbuster Movie
+        price: '12.99'
+        stars:
+          - Tom Cruise
+          - Emily Blunt
+        time: 120
+        votes: 1000
+        year: 2024
+    MovieCreateResponseSchema:
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          title: Name
+        year:
+          type: integer
+          title: Year
+        time:
+          type: integer
+          minimum: 0
+          title: Time
+        imdb:
+          type: number
+          maximum: 10
+          minimum: 0
+          title: Imdb
+        votes:
+          type: integer
+          minimum: 0
+          title: Votes
+        meta_score:
+          type: number
+          maximum: 100
+          minimum: 0
+          title: Meta Score
+        gross:
+          type: number
+          minimum: 0
+          title: Gross
+        description:
+          type: string
+          title: Description
+        price:
+          type: string
+          title: Price
+        id:
+          type: integer
+          title: Id
+        uuid:
+          type: string
+          format: uuid
+          title: Uuid
+        certification:
+          $ref: '#/components/schemas/CertificationSchema'
+        genres:
+          items:
+            $ref: '#/components/schemas/GenreSchema'
+          type: array
+          title: Genres
+        stars:
+          items:
+            $ref: '#/components/schemas/StarSchema'
+          type: array
+          title: Stars
+        directors:
+          items:
+            $ref: '#/components/schemas/DirectorSchema'
+          type: array
+          title: Directors
+      type: object
+      required:
+        - name
+        - year
+        - time
+        - imdb
+        - votes
+        - meta_score
+        - gross
+        - description
+        - price
+        - id
+        - uuid
+        - certification
+        - genres
+        - stars
+        - directors
+      title: MovieCreateResponseSchema
+      example:
+        certification:
+          id: 1
+          name: PG-13
+        description: An exciting new movie that will captivate audiences worldwide.
+        directors:
+          - id: 1
+            name: Christopher Nolan
+        genres:
+          - id: 1
+            name: Action
+          - id: 4
+            name: Adventure
+          - id: 2
+            name: Sci-Fi
+        gross: 50000000
+        id: 3
+        imdb: 8.5
+        meta_score: 85
+        name: New Blockbuster Movie
+        price: '12.99'
+        stars:
+          - id: 1
+            name: Tom Cruise
+          - id: 2
+            name: Emily Blunt
+        time: 120
+        uuid: 550e8400-e29b-41d4-a716-446655440000
+        votes: 1000
+        year: 2024
+    MovieDetailSchema:
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          title: Name
+        year:
+          type: integer
+          title: Year
+        time:
+          type: integer
+          minimum: 0
+          title: Time
+        imdb:
+          type: number
+          maximum: 10
+          minimum: 0
+          title: Imdb
+        votes:
+          type: integer
+          minimum: 0
+          title: Votes
+        meta_score:
+          type: number
+          maximum: 100
+          minimum: 0
+          title: Meta Score
+        gross:
+          type: number
+          minimum: 0
+          title: Gross
+        description:
+          type: string
+          title: Description
+        price:
+          type: string
+          title: Price
+        id:
+          type: integer
+          title: Id
+        uuid:
+          type: string
+          format: uuid
+          title: Uuid
+        certification:
+          $ref: '#/components/schemas/CertificationSchema'
+        genres:
+          items:
+            $ref: '#/components/schemas/GenreSchema'
+          type: array
+          title: Genres
+        stars:
+          items:
+            $ref: '#/components/schemas/StarSchema'
+          type: array
+          title: Stars
+        directors:
+          items:
+            $ref: '#/components/schemas/DirectorSchema'
+          type: array
+          title: Directors
+        likes:
+          type: integer
+          title: Likes
+        favorites:
+          type: integer
+          title: Favorites
+        average_rating:
+          type: number
+          title: Average Rating
+        comments:
+          items:
+            $ref: '#/components/schemas/CommentSchema'
+          type: array
+          title: Comments
+      type: object
+      required:
+        - name
+        - year
+        - time
+        - imdb
+        - votes
+        - meta_score
+        - gross
+        - description
+        - price
+        - id
+        - uuid
+        - certification
+        - genres
+        - stars
+        - directors
+        - likes
+        - favorites
+        - average_rating
+        - comments
+      title: MovieDetailSchema
+      example:
+        average_rating: 8.7
+        certification:
+          id: 1
+          name: PG-13
+        comments:
+          - content: Amazing movie! The special effects are incredible.
+            created_at: '2024-01-15T10:30:00Z'
+            id: 1
+          - content: 'I agree, the plot was really well thought out.'
+            created_at: '2024-01-15T11:00:00Z'
+            id: 2
+            parent_id: 1
+        description: An exciting new movie that will captivate audiences worldwide.
+        directors:
+          - id: 1
+            name: Christopher Nolan
+        favorites: 890
+        genres:
+          - id: 1
+            name: Action
+          - id: 4
+            name: Adventure
+          - id: 2
+            name: Sci-Fi
+        gross: 50000000
+        id: 3
+        imdb: 8.5
+        likes: 1250
+        meta_score: 85
+        name: New Blockbuster Movie
+        price: '12.99'
+        stars:
+          - id: 1
+            name: Tom Cruise
+          - id: 2
+            name: Emily Blunt
+        time: 120
+        uuid: 550e8400-e29b-41d4-a716-446655440000
+        votes: 1000
+        year: 2024
+    MovieListItemSchema:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          maxLength: 255
+          title: Name
+        time:
+          type: integer
+          minimum: 0
+          title: Time
+        imdb:
+          type: number
+          minimum: 0
+          title: Imdb
+        genres:
+          items:
+            $ref: '#/components/schemas/GenreSchema'
+          type: array
+          title: Genres
+        description:
+          type: string
+          title: Description
+      type: object
+      required:
+        - id
+        - name
+        - time
+        - imdb
+        - genres
+        - description
+      title: MovieListItemSchema
+      example:
+        description: >-
+          A computer hacker learns from mysterious rebels about the true nature
+          of his reality and his role in the war against its controllers.
+        genres:
+          - id: 1
+            name: Action
+          - id: 2
+            name: Sci-Fi
+        gross: 171479930
+        id: 1
+        imdb: 8.7
+        meta_score: 73
+        name: The Matrix
+        price: '9.99'
+        time: 136
+        votes: 1895412
+        year: 1999
+    MovieListResponseSchema:
+      properties:
+        prev_page:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Prev Page
+        next_page:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Next Page
+        total_pages:
+          type: integer
+          title: Total Pages
+        total_items:
+          type: integer
+          title: Total Items
+        movies:
+          items:
+            $ref: '#/components/schemas/MovieListItemSchema'
+          type: array
+          title: Movies
+      type: object
+      required:
+        - total_pages
+        - total_items
+        - movies
+      title: MovieListResponseSchema
+      example:
+        movies:
+          - description: >-
+              A computer hacker learns from mysterious rebels about the true
+              nature of his reality and his role in the war against its
+              controllers.
+            genres:
+              - id: 1
+                name: Action
+              - id: 2
+                name: Sci-Fi
+            gross: 171479930
+            id: 1
+            imdb: 8.7
+            meta_score: 73
+            name: The Matrix
+            price: '9.99'
+            time: 136
+            votes: 1895412
+            year: 1999
+          - description: >-
+              A thief who steals corporate secrets through the use of
+              dream-sharing technology is given the inverse task of planting an
+              idea into the mind of a C.E.O.
+            genres:
+              - id: 1
+                name: Action
+              - id: 3
+                name: Thriller
+            id: 2
+            imdb: 8.8
+            name: Inception
+            time: 148
+        next_page: /api/v1/cinema/movies/?page=3&per_page=10
+        prev_page: /api/v1/cinema/movies/?page=1&per_page=10
+        total_items: 50
+        total_pages: 5
+    MovieUpdateSchema:
+      properties:
+        name:
+          anyOf:
+            - type: string
+              maxLength: 255
+            - type: 'null'
+          title: Name
+        year:
+          anyOf:
+            - type: integer
+            - type: 'null'
+          title: Year
+        time:
+          anyOf:
+            - type: integer
+              minimum: 0
+            - type: 'null'
+          title: Time
+        imdb:
+          anyOf:
+            - type: number
+              maximum: 10
+              minimum: 0
+            - type: 'null'
+          title: Imdb
+        votes:
+          anyOf:
+            - type: integer
+              minimum: 0
+            - type: 'null'
+          title: Votes
+        meta_score:
+          anyOf:
+            - type: number
+              maximum: 100
+              minimum: 0
+            - type: 'null'
+          title: Meta Score
+        gross:
+          anyOf:
+            - type: number
+              minimum: 0
+            - type: 'null'
+          title: Gross
+        description:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Description
+        price:
+          anyOf:
+            - type: number
+            - type: string
+            - type: 'null'
+          title: Price
+        certification:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Certification
+        genres:
+          anyOf:
+            - items:
+                type: string
+              type: array
+            - type: 'null'
+          title: Genres
+        stars:
+          anyOf:
+            - items:
+                type: string
+              type: array
+            - type: 'null'
+          title: Stars
+        directors:
+          anyOf:
+            - items:
+                type: string
+              type: array
+            - type: 'null'
+          title: Directors
+      type: object
+      title: MovieUpdateSchema
+      example:
+        certification: R
+        description: Updated description for the movie.
+        directors:
+          - Christopher Nolan
+          - Jane Smith
+        genres:
+          - Action
+          - Drama
+        gross: 55000000
+        imdb: 8.6
+        meta_score: 87
+        name: Updated Movie Title
+        price: '13.99'
+        stars:
+          - Tom Cruise
+          - Emily Blunt
+          - John Doe
+        time: 125
+        votes: 1500
+        year: 2024
+    NameSchema:
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          title: Name
+      type: object
+      required:
+        - name
+      title: NameSchema
+      example:
+        name: New Genre
+    OrderItemSchema:
+      properties:
+        id:
+          type: integer
+          title: Id
+        movie_id:
+          type: integer
+          title: Movie Id
+        movie_name:
+          type: string
+          title: Movie Name
+        price_at_order:
+          type: string
+          title: Price At Order
+      type: object
+      required:
+        - id
+        - movie_id
+        - movie_name
+        - price_at_order
+      title: OrderItemSchema
+      example:
+        id: 1
+        movie_id: 1
+        movie_name: The Matrix
+        price_at_order: '9.99'
+    OrderListSchema:
+      properties:
+        orders:
+          items:
+            $ref: '#/components/schemas/OrderSchema'
+          type: array
+          title: Orders
+        total_pages:
+          type: integer
+          title: Total Pages
+        total_items:
+          type: integer
+          title: Total Items
+        prev_page:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Prev Page
+        next_page:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Next Page
+      type: object
+      required:
+        - orders
+        - total_pages
+        - total_items
+      title: OrderListSchema
+      example:
+        next_page: /api/v1/orders/?page=2&per_page=10
+        orders:
+          - created_at: '2024-01-15T10:30:00Z'
+            id: 1
+            items:
+              - id: 1
+                movie_id: 1
+                movie_name: The Matrix
+                price_at_order: '9.99'
+              - id: 2
+                movie_id: 2
+                movie_name: Inception
+                price_at_order: '9.99'
+              - id: 3
+                movie_id: 3
+                movie_name: Interstellar
+                price_at_order: '9.99'
+            status: pending
+            total_amount: '29.97'
+            user_id: 1
+          - created_at: '2024-01-14T15:45:00Z'
+            id: 2
+            items:
+              - id: 4
+                movie_id: 4
+                movie_name: The Dark Knight
+                price_at_order: '9.99'
+              - id: 5
+                movie_id: 5
+                movie_name: Pulp Fiction
+                price_at_order: '9.99'
+            status: paid
+            total_amount: '19.98'
+            user_id: 1
+        total_items: 5
+        total_pages: 2
+    OrderSchema:
+      properties:
+        id:
+          type: integer
+          title: Id
+        user_id:
+          type: integer
+          title: User Id
+        status:
+          $ref: '#/components/schemas/OrderStatusEnum'
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        total_amount:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Total Amount
+        items:
+          items:
+            $ref: '#/components/schemas/OrderItemSchema'
+          type: array
+          title: Items
+      type: object
+      required:
+        - id
+        - user_id
+        - status
+        - created_at
+        - total_amount
+        - items
+      title: OrderSchema
+      example:
+        created_at: '2024-01-15T10:30:00Z'
+        id: 1
+        items:
+          - id: 1
+            movie_id: 1
+            movie_name: The Matrix
+            price_at_order: '9.99'
+          - id: 2
+            movie_id: 2
+            movie_name: Inception
+            price_at_order: '9.99'
+          - id: 3
+            movie_id: 3
+            movie_name: Interstellar
+            price_at_order: '9.99'
+        status: pending
+        total_amount: '29.97'
+        user_id: 1
+    OrderStatusEnum:
+      type: string
+      enum:
+        - pending
+        - paid
+        - canceled
+      title: OrderStatusEnum
+      description: |-
+        Enumeration for order status values.
+
+        Defines the possible states an order can be in:
+        - PENDING: Order created but not yet paid
+        - PAID: Order has been successfully paid
+        - CANCELED: Order has been canceled
+    PasswordChangeRequestSchema:
+      properties:
+        old_password:
+          type: string
+          title: Old Password
+        new_password:
+          type: string
+          title: New Password
+      type: object
+      required:
+        - old_password
+        - new_password
+      title: PasswordChangeRequestSchema
+      example:
+        new_password: NewSecurePassword123!
+        old_password: SecurePassword123!
+    PasswordResetCompleteRequestSchema:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+        password:
+          type: string
+          title: Password
+        token:
+          type: string
+          title: Token
+      type: object
+      required:
+        - email
+        - password
+        - token
+      title: PasswordResetCompleteRequestSchema
+      example:
+        email: john.doe@example.com
+        password: NewSecurePassword123!
+        token: reset_token_123456789
+    PasswordResetRequestSchema:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+      type: object
+      required:
+        - email
+      title: PasswordResetRequestSchema
+      example:
+        email: john.doe@example.com
+    PaymentIntentResponseSchema:
+      properties:
+        id:
+          type: string
+          title: Id
+        client_secret:
+          type: string
+          title: Client Secret
+        amount:
+          type: string
+          title: Amount
+        currency:
+          type: string
+          title: Currency
+      type: object
+      required:
+        - id
+        - client_secret
+        - amount
+        - currency
+      title: PaymentIntentResponseSchema
+      example:
+        amount: '29.97'
+        client_secret: pi_1234567890abcdef_secret_abc123def456
+        currency: usd
+        id: pi_1234567890abcdef
+    PaymentItemSchema:
+      properties:
+        id:
+          type: integer
+          title: Id
+        order_item_id:
+          type: integer
+          title: Order Item Id
+        price_at_payment:
+          type: string
+          title: Price At Payment
+      type: object
+      required:
+        - id
+        - order_item_id
+        - price_at_payment
+      title: PaymentItemSchema
+      example:
+        id: 1
+        order_item_id: 1
+        price_at_payment: '9.99'
+    PaymentListSchema:
+      properties:
+        payments:
+          items:
+            $ref: '#/components/schemas/PaymentSchema'
+          type: array
+          title: Payments
+        total_pages:
+          type: integer
+          title: Total Pages
+        total_items:
+          type: integer
+          title: Total Items
+        prev_page:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Prev Page
+        next_page:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Next Page
+      type: object
+      required:
+        - payments
+        - total_pages
+        - total_items
+      title: PaymentListSchema
+      example:
+        next_page: /api/v1/payments/?page=2&per_page=10
+        payments:
+          - amount: '29.97'
+            created_at: '2024-01-15T10:30:00Z'
+            external_payment_id: pi_1234567890abcdef
+            id: 1
+            items:
+              - id: 1
+                order_item_id: 1
+                price_at_payment: '9.99'
+              - id: 2
+                order_item_id: 2
+                price_at_payment: '9.99'
+              - id: 3
+                order_item_id: 3
+                price_at_payment: '9.99'
+            order_id: 1
+            status: succeeded
+            user_id: 1
+          - amount: '19.98'
+            created_at: '2024-01-14T15:45:00Z'
+            external_payment_id: pi_0987654321fedcba
+            id: 2
+            items:
+              - id: 4
+                order_item_id: 4
+                price_at_payment: '9.99'
+              - id: 5
+                order_item_id: 5
+                price_at_payment: '9.99'
+            order_id: 2
+            status: succeeded
+            user_id: 1
+        total_items: 5
+        total_pages: 2
+    PaymentSchema:
+      properties:
+        id:
+          type: integer
+          title: Id
+        user_id:
+          type: integer
+          title: User Id
+        order_id:
+          type: integer
+          title: Order Id
+        status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+        amount:
+          type: string
+          title: Amount
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        items:
+          items:
+            $ref: '#/components/schemas/PaymentItemSchema'
+          type: array
+          title: Items
+        external_payment_id:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: External Payment Id
+      type: object
+      required:
+        - id
+        - user_id
+        - order_id
+        - status
+        - amount
+        - created_at
+        - items
+        - external_payment_id
+      title: PaymentSchema
+      example:
+        amount: '29.97'
+        created_at: '2024-01-15T10:30:00Z'
+        external_payment_id: pi_1234567890abcdef
+        id: 1
+        items:
+          - id: 1
+            order_item_id: 1
+            price_at_payment: '9.99'
+          - id: 2
+            order_item_id: 2
+            price_at_payment: '9.99'
+          - id: 3
+            order_item_id: 3
+            price_at_payment: '9.99'
+        order_id: 1
+        status: succeeded
+        user_id: 1
+    PaymentStatusEnum:
+      type: string
+      enum:
+        - successful
+        - canceled
+        - refunded
+      title: PaymentStatusEnum
+      description: |-
+        Enumeration for payment status values.
+
+        Defines the possible states a payment can be in:
+        - SUCCESSFUL: Payment was completed successfully
+        - CANCELED: Payment was canceled
+        - REFUNDED: Payment was refunded
+    ProcessPaymentRequestSchema:
+      properties:
+        payment_intent_id:
+          type: string
+          title: Payment Intent Id
+      type: object
+      required:
+        - payment_intent_id
+      title: ProcessPaymentRequestSchema
+      example:
+        payment_intent_id: pi_1234567890abcdef
+    ProcessPaymentResponseSchema:
+      properties:
+        payment_id:
+          type: integer
+          title: Payment Id
+      type: object
+      required:
+        - payment_id
+      title: ProcessPaymentResponseSchema
+      example:
+        payment_id: 1
+    ProfileResponseSchema:
+      properties:
+        first_name:
+          type: string
+          title: First Name
+        last_name:
+          type: string
+          title: Last Name
+        gender:
+          type: string
+          title: Gender
+        date_of_birth:
+          type: string
+          format: date
+          title: Date Of Birth
+        info:
+          type: string
+          title: Info
+        id:
+          type: integer
+          title: Id
+        user_id:
+          type: integer
+          title: User Id
+        avatar:
+          type: string
+          maxLength: 2083
+          minLength: 1
+          format: uri
+          title: Avatar
+      type: object
+      required:
+        - first_name
+        - last_name
+        - gender
+        - date_of_birth
+        - info
+        - id
+        - user_id
+        - avatar
+      title: ProfileResponseSchema
+      example:
+        avatar: 'https://example.com/avatars/john_doe_avatar.jpg'
+        date_of_birth: '1990-05-15'
+        first_name: John
+        gender: man
+        id: 1
+        info: >-
+          Movie enthusiast and film critic. Love watching sci-fi and action
+          movies.
+        last_name: Doe
+        user_id: 1
+    ProfileRetrieveSchema:
+      properties:
+        first_name:
+          type: string
+          title: First Name
+        last_name:
+          type: string
+          title: Last Name
+        gender:
+          type: string
+          title: Gender
+        date_of_birth:
+          type: string
+          format: date
+          title: Date Of Birth
+        info:
+          type: string
+          title: Info
+        id:
+          type: integer
+          title: Id
+        user_id:
+          type: integer
+          title: User Id
+        avatar:
+          type: string
+          maxLength: 2083
+          minLength: 1
+          format: uri
+          title: Avatar
+        email:
+          type: string
+          title: Email
+      type: object
+      required:
+        - first_name
+        - last_name
+        - gender
+        - date_of_birth
+        - info
+        - id
+        - user_id
+        - avatar
+        - email
+      title: ProfileRetrieveSchema
+      example:
+        avatar: 'https://example.com/avatars/john_doe_avatar.jpg'
+        date_of_birth: '1990-05-15'
+        email: john.doe@example.com
+        first_name: John
+        gender: man
+        id: 1
+        info: >-
+          Movie enthusiast and film critic. Love watching sci-fi and action
+          movies.
+        last_name: Doe
+        user_id: 1
+    RateMovieSchema:
+      properties:
+        rate:
+          type: integer
+          maximum: 10
+          minimum: 1
+          title: Rate
+      type: object
+      required:
+        - rate
+      title: RateMovieSchema
+      example:
+        rate: 9
+    RefundRequestSchema:
+      properties:
+        reason:
+          type: string
+          title: Reason
+        amount:
+          anyOf:
+            - type: number
+            - type: string
+            - type: 'null'
+          title: Amount
+      type: object
+      required:
+        - reason
+      title: RefundRequestSchema
+      example:
+        amount: '29.97'
+        reason: requested_by_customer
+    ResendActivationTokenRequestSchema:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+      type: object
+      required:
+        - email
+      title: ResendActivationTokenRequestSchema
+      example:
+        email: john.doe@example.com
+    ShoppingCartAddMovieRequestSchema:
+      properties:
+        movie_id:
+          type: integer
+          title: Movie Id
+      type: object
+      required:
+        - movie_id
+      title: ShoppingCartAddMovieRequestSchema
+      example:
+        movie_id: 1
+    ShoppingCartAddMovieResponseSchema:
+      properties:
+        cart_item_id:
+          type: integer
+          title: Cart Item Id
+      type: object
+      required:
+        - cart_item_id
+      title: ShoppingCartAddMovieResponseSchema
+      example:
+        cart_item_id: 1
+    ShoppingCartGetMoviesSchema:
+      properties:
+        total_items:
+          type: integer
+          title: Total Items
+        movies:
+          items:
+            $ref: '#/components/schemas/ShoppingCartMovieItemSchema'
+          type: array
+          title: Movies
+      type: object
+      required:
+        - total_items
+        - movies
+      title: ShoppingCartGetMoviesSchema
+      example:
+        movies:
+          - cart_item_id: 1
+            genres:
+              - Action
+              - Sci-Fi
+            name: The Matrix
+            price: '9.99'
+            year: 1999
+          - cart_item_id: 2
+            genres:
+              - Action
+              - Thriller
+              - Sci-Fi
+            name: Inception
+            price: '9.99'
+            year: 2010
+          - cart_item_id: 3
+            genres:
+              - Adventure
+              - Drama
+              - Sci-Fi
+            name: Interstellar
+            price: '9.99'
+            year: 2014
+        total_items: 3
+    ShoppingCartMovieItemSchema:
+      properties:
+        cart_item_id:
+          type: integer
+          title: Cart Item Id
+        name:
+          type: string
+          title: Name
+        year:
+          type: integer
+          title: Year
+        price:
+          type: string
+          title: Price
+        genres:
+          items:
+            type: string
+          type: array
+          title: Genres
+      type: object
+      required:
+        - cart_item_id
+        - name
+        - year
+        - price
+        - genres
+      title: ShoppingCartMovieItemSchema
+      example:
+        cart_item_id: 1
+        genres:
+          - Action
+          - Sci-Fi
+        name: The Matrix
+        price: '9.99'
+        year: 1999
+    StarListSchema:
+      properties:
+        prev_page:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Prev Page
+        next_page:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Next Page
+        total_pages:
+          type: integer
+          title: Total Pages
+        total_items:
+          type: integer
+          title: Total Items
+        stars:
+          items:
+            $ref: '#/components/schemas/StarSchema'
+          type: array
+          title: Stars
+      type: object
+      required:
+        - total_pages
+        - total_items
+        - stars
+      title: StarListSchema
+      example:
+        next_page: /api/v1/cinema/stars/?page=2&per_page=5
+        stars:
+          - id: 1
+            name: Keanu Reeves
+          - id: 2
+            name: Tom Cruise
+          - id: 3
+            name: Emily Blunt
+          - id: 4
+            name: Leonardo DiCaprio
+          - id: 5
+            name: Brad Pitt
+        total_items: 20
+        total_pages: 4
+    StarSchema:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          maxLength: 100
+          title: Name
+      type: object
+      required:
+        - id
+        - name
+      title: StarSchema
+      example:
+        id: 1
+        name: Keanu Reeves
+    TokenRefreshRequestSchema:
+      properties:
+        refresh_token:
+          type: string
+          title: Refresh Token
+      type: object
+      required:
+        - refresh_token
+      title: TokenRefreshRequestSchema
+      example:
+        refresh_token: >-
+          eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcl9pZCI6MSwiZW1haWwiOiJqb2huLmRvZUBleGFtcGxlLmNvbSIsImdyb3VwIjoiIn0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8
+    TokenRefreshResponseSchema:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+        token_type:
+          type: string
+          title: Token Type
+          default: bearer
+      type: object
+      required:
+        - access_token
+      title: TokenRefreshResponseSchema
+      example:
+        access_token: >-
+          eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcl9pZCI6MSwiZW1haWwiOiJqb2huLmRvZUBleGFtcGxlLmNvbSIsImdyb3VwIjoiIn0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8
+        token_type: bearer
+    TokenVerifyRequestSchema:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+      type: object
+      required:
+        - access_token
+      title: TokenVerifyRequestSchema
+      example:
+        access_token: >-
+          eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcl9pZCI6MSwiZW1haWwiOiJqb2huLmRvZUBleGFtcGxlLmNvbSIsImdyb3VwIjoiIn0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8
+    UserActivationRequestSchema:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+        token:
+          type: string
+          title: Token
+      type: object
+      required:
+        - email
+        - token
+      title: UserActivationRequestSchema
+      example:
+        email: john.doe@example.com
+        token: activation_token_123456789
+    UserGroupEnum:
+      type: string
+      enum:
+        - user
+        - moderator
+        - admin
+      title: UserGroupEnum
+      description: |-
+        Enumeration for user group types.
+
+        Defines the different user groups in the system:
+        - USER: Regular user with basic permissions
+        - MODERATOR: User with moderation capabilities
+        - ADMIN: Administrator with full system access
+    UserGroupUpdateRequestSchema:
+      properties:
+        group_name:
+          $ref: '#/components/schemas/UserGroupEnum'
+      type: object
+      required:
+        - group_name
+      title: UserGroupUpdateRequestSchema
+      example:
+        group_name: moderator
+    UserLoginRequestSchema:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+        password:
+          type: string
+          title: Password
+      type: object
+      required:
+        - email
+        - password
+      title: UserLoginRequestSchema
+      example:
+        email: john.doe@example.com
+        password: SecurePassword123!
+    UserLoginResponseSchema:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+        refresh_token:
+          type: string
+          title: Refresh Token
+        token_type:
+          type: string
+          title: Token Type
+          default: bearer
+      type: object
+      required:
+        - access_token
+        - refresh_token
+      title: UserLoginResponseSchema
+      example:
+        access_token: >-
+          eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcl9pZCI6MSwiZW1haWwiOiJqb2huLmRvZUBleGFtcGxlLmNvbSIsImdyb3VwIjoiIn0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8
+        refresh_token: >-
+          eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcl9pZCI6MSwiZW1haWwiOiJqb2huLmRvZUBleGFtcGxlLmNvbSIsImdyb3VwIjoiIn0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8
+        token_type: bearer
+        user:
+          created_at: '2024-01-15T10:30:00Z'
+          email: john.doe@example.com
+          group:
+            id: 1
+            name: user
+          id: 1
+          is_active: true
+    UserManualActivationSchema:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+      type: object
+      required:
+        - email
+      title: UserManualActivationSchema
+      example:
+        email: john.doe@example.com
+    UserRegistrationRequestSchema:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+        password:
+          type: string
+          title: Password
+      type: object
+      required:
+        - email
+        - password
+      title: UserRegistrationRequestSchema
+      example:
+        email: john.doe@example.com
+        password: SecurePassword123!
+    UserRegistrationResponseSchema:
+      properties:
+        id:
+          type: integer
+          title: Id
+        email:
+          type: string
+          format: email
+          title: Email
+      type: object
+      required:
+        - id
+        - email
+      title: UserRegistrationResponseSchema
+      example:
+        created_at: '2024-01-15T10:30:00Z'
+        email: john.doe@example.com
+        group:
+          id: 1
+          name: user
+        id: 1
+        is_active: false
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError
+    schemas__accounts__MessageResponseSchema:
+      properties:
+        message:
+          type: string
+          title: Message
+      type: object
+      required:
+        - message
+      title: MessageResponseSchema
+      example:
+        message: Operation completed successfully
+    schemas__movies__MessageResponseSchema:
+      properties:
+        message:
+          type: string
+          title: Message
+      type: object
+      required:
+        - message
+      title: MessageResponseSchema
+      example:
+        message: Operation completed successfully
+    schemas__orders__MessageResponseSchema:
+      properties:
+        message:
+          type: string
+          title: Message
+      type: object
+      required:
+        - message
+      title: MessageResponseSchema
+      example:
+        message: Order created successfully
+    schemas__shopping_cart__MessageResponseSchema:
+      properties:
+        message:
+          type: string
+          title: Message
+      type: object
+      required:
+        - message
+      title: MessageResponseSchema
+      example:
+        message: Movie added to cart successfully
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from login endpoint
+security:
+  - BearerAuth: [ ]
